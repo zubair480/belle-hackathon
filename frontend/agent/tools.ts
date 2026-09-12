@@ -6,7 +6,7 @@
  */
 import { z } from "zod";
 import type { Issue, ReferenceCatalog } from "@/contracts/issues";
-import { EV_TRACE_DEMO } from "@/contracts/recall";
+import { EV_TRACE_DEMO, CURRENT_REVISION_ALIAS } from "@/contracts/recall";
 import type { RecallClient } from "../features/recall/api/types";
 import { CIRCUITS, PARTS, SKETCH_VEHICLES, entityIdFor, searchCircuits, searchParts, slotById, slotForEntityId, slotsForCircuit, wiresForCircuit, wiresForSlot, type PartSlot } from "../features/recall/sketches/car3d";
 import type { AgentContext, UiAction } from "./types";
@@ -187,8 +187,9 @@ export const impactOfPart = def({
     if (!rec.ok) return { text: `No backend record for ${p.entityId} (${rec.error.code}).`, ok: false };
     const o = rec.data.entity.origin;
     const root =
-      o?.sourcingType === "supplier" && o.supplierBatchCode ? { kind: "supplier_batch" as const, id: o.supplierBatchCode } : o?.sourcingType === "in_house" && o.manufacturingLotCode ? { kind: "manufacturing_lot" as const, id: o.manufacturingLotCode } : { kind: "component_serial" as const, id: p.entityId };
-    const r = await ctx.client.runTrace(`INC-${p.entityId}`, { contractVersion: "assembly-quality-v4", revisionId: "ui-current", root, scope: { ...EV_TRACE_DEMO.scope, trackedPartNumber: rec.data.entity.partNumber, configurationAsOf: new Date().toISOString().replace(/\.\d{3}Z$/, "Z") } });
+      // Roots use the canonical production lot id (ProductionOrigin.productionLotId), never the display batch code.
+      o?.sourcingType === "supplier" && o.productionLotId ? { kind: "supplier_batch" as const, id: o.productionLotId } : o?.sourcingType === "in_house" && o.productionLotId ? { kind: "manufacturing_lot" as const, id: o.productionLotId } : { kind: "component_serial" as const, id: p.entityId };
+    const r = await ctx.client.runTrace(`INC-${p.entityId}`, { contractVersion: "assembly-quality-v4", revisionId: CURRENT_REVISION_ALIAS, root, scope: { ...EV_TRACE_DEMO.scope, trackedPartNumber: rec.data.entity.partNumber, configurationAsOf: new Date().toISOString().replace(/\.\d{3}Z$/, "Z") } });
     if (!r.ok) return { text: `Trace unavailable (${r.error.code}: ${r.error.message}).`, ok: false };
     const t = r.data;
     const vehicles = t.rows.filter((row) => row.entityKind === "vehicle");

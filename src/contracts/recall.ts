@@ -48,6 +48,13 @@ export const ScopeSchema = z
   });
 export type Scope = z.infer<typeof ScopeSchema>;
 
+/**
+ * Revision alias accepted by `TraceRequest.revisionId`: services resolve it to the latest accepted
+ * revision of the workspace. Clients that do not manage revisions (e.g. the in-app agent) use this
+ * instead of guessing an id. Results still carry the concrete `revisionId` they ran against.
+ */
+export const CURRENT_REVISION_ALIAS = "current" as const;
+
 export const ROOT_KINDS = ["supplier_batch", "manufacturing_lot", "component_serial"] as const;
 export const RootSelectorSchema = z.object({ kind: z.enum(ROOT_KINDS), id: IdSchema });
 export type RootSelector = z.infer<typeof RootSelectorSchema>;

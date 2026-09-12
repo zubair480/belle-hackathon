@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { DomainServices } from "@/contracts/recall";
+import { graphServices } from "@/server/graph";
 
 const METHODS: Array<keyof DomainServices> = [
   "getCatalog", "upsertCatalogItem", "getEntityContext", "createIssue", "listIssues", "getIssue", "updateIssue", "addIssueComment",
@@ -13,13 +14,7 @@ const METHODS: Array<keyof DomainServices> = [
 ];
 
 async function loadGraph(): Promise<Partial<DomainServices> | null> {
-  const modulePath = "@/server/graph"; // FINAL INTEGRATION: replace with a static import
-  try {
-    const mod = (await import(/* @vite-ignore */ modulePath)) as { graphServices?: DomainServices; default?: DomainServices };
-    return mod.graphServices ?? mod.default ?? null;
-  } catch {
-    return null;
-  }
+  return graphServices;
 }
 
 describe("graphServices export shape", () => {

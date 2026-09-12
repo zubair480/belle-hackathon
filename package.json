@@ -20,7 +20,8 @@
     "reference:assembly": "python docs/reference/assembly/assembly_reference_case.py",
     "reference:quality": "python docs/reference/quality/build_quality_fixture.py",
     "acceptance": "node tests/integration/acceptance-runner.mts",
-    "neo4j:check": "node tests/integration/neo4j-check.mts"
+    "neo4j:check": "node tests/integration/neo4j-check.mts",
+    "neo4j:seed": "node --import ./scripts/neo4j/alias-loader.mjs scripts/neo4j/seed-ev.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.125.0",

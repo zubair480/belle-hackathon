@@ -11,6 +11,7 @@ import { DomainError, type Evidence, type RequestContext, type ReviewIssue } fro
 import {
   ASSEMBLY_REGRESSION,
   CONTRACT_VERSION,
+  CURRENT_REVISION_ALIAS,
   IMPORT_FILE_NAMES,
   REVIEW_ISSUE_CODES,
   type ImportInput,
@@ -342,7 +343,7 @@ export function createTraceDouble(options: TraceDoubleOptions = {}): TraceServic
     async runTrace(ctx, request) {
       await gate("runTrace");
       assertWorkspace(ctx);
-      const rev = revisions.get(request.revisionId);
+      const rev = request.revisionId === CURRENT_REVISION_ALIAS ? latest() : revisions.get(request.revisionId);
       if (!rev) throw new DomainError("NOT_FOUND", "Revision " + request.revisionId + " does not exist.");
       if (rev.fixture === "ev") {
         if (request.scope.siteId !== EV_DEMO.siteId) throw new DomainError("SCOPE_INVALID", "Site " + request.scope.siteId + " is outside the accepted revision's coverage.");

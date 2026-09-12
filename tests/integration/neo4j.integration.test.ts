@@ -13,19 +13,14 @@ import type { ApiResponse } from "@/contracts/common";
 import { EV_DEMO, type CauseAssessment, type FixRevision, type Insights, type Issue, type IssueDetail, type SimilarResolutions, type Verification } from "@/contracts/issues";
 import { ASSEMBLY_REGRESSION, type DomainServices, type ImportPreview, type RevisionInfo, type TraceComparison, type TraceResult } from "@/contracts/recall";
 import { createHandlers } from "@/server/application/handlers";
+import { graphServices } from "@/server/graph";
 
 const env = process.env;
 const hasCreds = Boolean(env.NEO4J_URI && env.NEO4J_USERNAME && env.NEO4J_PASSWORD && !env.NEO4J_URI.includes("<"));
 const graphMode = env.RECALL_SERVICES !== "double";
 
 async function loadGraphServices(): Promise<DomainServices | null> {
-  const modulePath = "@/server/graph"; // FINAL INTEGRATION: replace with a static import
-  try {
-    const mod = (await import(/* @vite-ignore */ modulePath)) as { graphServices?: DomainServices; default?: DomainServices };
-    return mod.graphServices ?? mod.default ?? null;
-  } catch {
-    return null;
-  }
+  return graphServices;
 }
 
 const post = (body: unknown) => new Request("http://t/", { method: "POST", body: JSON.stringify(body) });
