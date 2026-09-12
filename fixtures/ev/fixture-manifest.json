@@ -1,0 +1,13 @@
+{
+  "contractVersion": "assembly-quality-v4",
+  "workspaceId": "synthetic-ev-assembler",
+  "files": [
+    "entities.csv",
+    "batches.csv",
+    "manufacturing_lots.csv",
+    "installations.csv",
+    "shipments.csv"
+  ],
+  "lateEvidence": "CONN-0099 provenance is added to LOT-SUP-01 without adding an installation.",
+  "externalRecords": "nhtsa/ioniq5-2022-reviewed.json remains unjoined from synthetic factory genealogy."
+}

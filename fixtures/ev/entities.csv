@@ -1,0 +1,22 @@
+id,kind,partNumber,partRevision,serialNumber,displayCode,issuerId,locationState,sourcingType,originId,vehicleBuildId,vin,engineeringReview,evidenceJson
+CONN-0004,component,CP-CONN-100,A,CONN-0004,Connector 0004,SUP-CONNECTOR,installed,supplier,LOT-SUP-01,,,reviewed,[]
+CONN-0005,component,CP-CONN-100,A,CONN-0005,Connector 0005,SUP-CONNECTOR,installed,supplier,LOT-SUP-01,,,reviewed,[]
+CONN-0006,component,CP-CONN-100,A,CONN-0006,Connector 0006,SUP-CONNECTOR,installed,supplier,LOT-SUP-01,,,reviewed,[]
+CONN-0007,component,CP-CONN-100,A,CONN-0007,Connector 0007,SUP-CONNECTOR,installed,supplier,LOT-SUP-01,,,reviewed,[]
+CONN-0008,component,CP-CONN-100,A,CONN-0008,Connector 0008,SUP-CONNECTOR,onsite,supplier,LOT-SUP-01,,,not_recorded,[]
+CONN-0009,component,CP-CONN-100,A,CONN-0009,Connector 0009,SUP-CONNECTOR,quarantine,supplier,LOT-SUP-01,,,reviewed,"[{""id"":""EVID-HIST-CONN-SUP-0009"",""sourceName"":""Supplier connector case"",""locator"":""supplier-case-0009"",""text"":""Synthetic historical supplier-caused connector case reviewed with supplier evidence."",""sourceKind"":""synthetic""}]"
+CONN-0099,component,CP-CONN-100,A,CONN-0099,Connector 0099,UNKNOWN,installed,unknown,,,,pending,[]
+BRKT-0004,component,CP-BRKT-200,A,BRKT-0004,Bracket 0004,PLANT-1,installed,in_house,LOT-MFG-01,,,reviewed,[]
+BRKT-0005,component,CP-BRKT-200,A,BRKT-0005,Bracket 0005,PLANT-1,installed,in_house,LOT-MFG-01,,,reviewed,[]
+BRKT-0007,component,CP-BRKT-200,A,BRKT-0007,Bracket 0007,PLANT-1,quarantine,in_house,LOT-MFG-01,,,pending,"[{""id"":""EVID-HIST-BRKT-FIX-0007"",""sourceName"":""Verified bracket fix"",""locator"":""bracket-fix-0007"",""text"":""Synthetic historical in-house manufacturing cause reviewed at bracket-forming; corrective action verified by passed gauge check."",""sourceKind"":""synthetic""}]"
+BRKT-CONTROL-0007,component,CP-BRKT-200,A,BRKT-CONTROL-0007,Control bracket 0007,PLANT-1,installed,in_house,LOT-CONTROL-01,,,reviewed,[]
+CPM-0004,subassembly,CP-MOD-300,A,CPM-0004,Charge-port module 0004,PLANT-1,installed,unknown,,,,reviewed,[]
+CPM-0005,subassembly,CP-MOD-300,A,CPM-0005,Charge-port module 0005,PLANT-1,installed,unknown,,,,reviewed,[]
+CPM-0006,subassembly,CP-MOD-300,A,CPM-0006,Charge-port module 0006,PLANT-1,installed,unknown,,,,reviewed,[]
+CPM-0007,subassembly,CP-MOD-300,A,CPM-0007,Charge-port module 0007,PLANT-1,installed,unknown,,,,pending,[]
+CPM-0008,subassembly,CP-MOD-300,A,CPM-0008,Charge-port module 0008,PLANT-1,installed,unknown,,,,pending,[]
+DEMO-EV-004,vehicle,EV-PLATFORM-1,A,DEMO-EV-004,EV build 004,PLANT-1,shipped,unknown,,DEMO-EV-004,,reviewed,[]
+DEMO-EV-005,vehicle,EV-PLATFORM-1,A,DEMO-EV-005,EV build 005,PLANT-1,onsite,unknown,,DEMO-EV-005,,reviewed,[]
+DEMO-EV-006,vehicle,EV-PLATFORM-1,A,DEMO-EV-006,EV build 006,PLANT-1,shipped,unknown,,DEMO-EV-006,,reviewed,[]
+DEMO-EV-007,vehicle,EV-PLATFORM-1,A,DEMO-EV-007,EV build 007,PLANT-1,shipped,unknown,,DEMO-EV-007,,pending,[]
+DEMO-EV-008,vehicle,EV-PLATFORM-1,A,DEMO-EV-008,EV build 008,PLANT-1,shipped,unknown,,DEMO-EV-008,,pending,[]
