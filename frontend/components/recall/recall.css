@@ -154,7 +154,7 @@
 .rrx-model span { color: var(--rr-muted); font-size: 12px; }
 .rrx-stage { position: relative; background: #000; border: 1px solid var(--rr-border); border-radius: var(--rr-radius); overflow: hidden; }
 .rrx-stage svg { width: 100%; height: auto; display: block; touch-action: manipulation; }
-.rrx-stage-hud { position: absolute; top: 10px; left: 12px; display: flex; gap: 8px; align-items: center; }
+.rrx-stage-hud { position: absolute; top: 10px; left: 12px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; max-width: 36%; }
 .rrx-stage-hud-right { position: absolute; top: 10px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 62%; }
 .rrx-stage-legend { position: absolute; bottom: 10px; left: 12px; display: flex; gap: 12px; font-size: 12px; color: var(--rr-muted); }
 .rrx-sketch-line { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: rrx-draw 1.8s cubic-bezier(.4,0,.2,1) forwards; }

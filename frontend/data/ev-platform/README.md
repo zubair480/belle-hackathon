@@ -6,7 +6,9 @@ Design-level data for the demo EV platform, prepared by Ali for Codey to load in
 | --- | --- |
 | `parts.json` | 56 part slots: label, synonyms (for search), kind, optional parent slot, system, zone, side, entity-id prefix/suffix, part number/revision, sourcing template (supplier batch or in-house lot/work order/process/team), free-form spec |
 | `wiring.json` | 12 circuits (with synonyms such as "ignition"), 42 connectors, 45 wires (from/to slot, connectors, harness, voltage class HV/LV/signal, gauge, colour, signal name) |
-| `export-neo4j.mjs` | `node frontend/data/ev-platform/export-neo4j.mjs` regenerates `neo4j/` |
+| `seed.json` | Synthetic vehicle and issue seed: 3 customers, 6 vehicles (sedan / SUV / sports styles, per-vehicle overrides and unknown origins), one connector replacement, 4 shipments, 25 evidence records, 13 issues, 9 cause assessments, 2 fixes, 2 verifications, comments, audit events, supplier inspection cohorts |
+| `export-neo4j.mjs` | `node frontend/data/ev-platform/export-neo4j.mjs` regenerates `neo4j/` (design import and seed) |
+| `neo4j/seed.cypher` | Vehicles, every instantiated part (`Entity` + `ProductionOrigin`), `INSTALLED_IN` intervals (incl. the replaced connector), `SHIPPED_TO` customers, issues with `REPORTED_BY` / `ASSIGNED_TO` / `DETECTED_AT` / `AFFECTS` / `LINKED_SUPPLIER`, cause assessments, fixes, verifications, comments, audit, evidence, inspection cohorts; `Entity-[:INSTANCE_OF_SLOT]->PartSlot` links the instance to the wiring design |
 | `neo4j/*.csv` | `part_slots`, `circuits`, `connectors`, `wires`, `zones`, `systems` for `LOAD CSV` |
 | `neo4j/import.cypher` | Inline `MERGE` script (no file access needed); namespaced by `platform` + `revision` |
 
@@ -58,5 +60,6 @@ RETURN path LIMIT 50;
 ## Limits
 
 - Design data, not measured harness routing; wire paths in the 3D sketch are drawn between part positions.
-- One platform revision. Vehicle-specific deviations (replaced connector on DEMO-EV-006, unknown windshield origin on 005/007, older bracket lot on 002) live in the mock/service data, not here.
+- One platform revision. Vehicle-specific deviations (replaced connector on DEMO-EV-006, unknown windshield origin on 004/005/007, older bracket lot on 002) live in `seed.json` and therefore in `seed.cypher`.
+- `seed.cypher` uses v4 DTO field names as properties and plain relationship names; Codey owns the final Neo4j schema and may rename labels/relationships when loading. The UI mock loads the same `seed.json`, so the app and the graph stay in step.
 - Codey owns persistence: copy or reference these files from `fixtures/` as he prefers; do not treat them as measured factory data.

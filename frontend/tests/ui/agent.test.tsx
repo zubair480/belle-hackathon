@@ -79,7 +79,7 @@ describe("stub planner tool loop", () => {
     const r3 = await runStubTurn(ctx3, { messages: [{ role: "user", content: "open an issue for this" }], context: ctx3.context, sessionId: null });
     expect(r3.uiActions.some((a) => a.type === "open_new_issue" && a.entityIds.includes("BRKT-0005") && a.entityIds.includes("DEMO-EV-005"))).toBe(true);
     const after = await ctx3.client.listIssues({});
-    expect(after.ok && after.data.total).toBe(8);
+    expect(after.ok && after.data.total).toBe(13);
     expect(before).toBe(1);
   });
 

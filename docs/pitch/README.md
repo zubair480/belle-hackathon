@@ -23,5 +23,8 @@
 | `15-chat-ignition-circuit.png` | Assistant: "Ignition does not respond on DEMO-EV-007" switches vehicle, highlights the start circuit, zooms to the start switch, lists the open issue |
 | `16-chat-impact-customers.png` | Assistant: connector batch impact, vehicles on site / shipped and the customers that received them |
 | `17-chat-markers.png` | Assistant: markers placed on bracket and connector, ready for "Open issue for marked items" |
+| `18-3d-suv.png` | SUV body style (DEMO-EV-006) with its open issues on the sketch |
+| `19-3d-sports.png` | Sports car body style (DEMO-EV-007) |
+| `20-zoom-wire-hover.png` | Zoomed onto the start switch: attached wires revealed, hover tooltip on W-011 showing from/to, connectors, harness and circuit |
 
 Do not add customers, savings or accuracy claims. The judge kit in `docs/JUDGE_SUBMISSION_KIT.md` holds the 200-word description draft; Zubair submits.
