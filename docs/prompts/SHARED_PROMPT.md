@@ -1,4 +1,7 @@
-EV VEHICLE ASSEMBLY UPDATE - READ FIRST
+CURRENT MILESTONE - READ FIRST
+The v4 source contract is already published, and Ali's UI plus Zubair's API are integrated on codex/final-integration. The user reports that Codey is provisioning Neo4j in the cloud. Current continuation tasks are [Ali next steps](ALI_NEXT_STEPS.md) and [Zubair next steps](ZUBAIR_NEXT_STEPS.md). Follow those before the original build-order instructions below. Codey retains ownership of graph services and EV data. Zubair owns the remaining final integration; preserve work already merged. Actual database persistence remains unverified until the graph-backed checks and restart test pass.
+
+EV VEHICLE ASSEMBLY UPDATE
 The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md before the rest of this prompt. It defines the current demo and takes precedence over legacy robotics fixture examples. Proposed shared contract: assembly-quality-v4; Zubair must publish its exact source schema before implementations depend on it. Preserve existing code and coordinate the migration. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
 
 The official event is an open-ended AI-native development/agentic-engineering hackathon. No EV-specific required theme or track was found. EV assembly is our chosen domain for Track A Builder plus the separate Neo4j bonus. Use Qoder in development and substantive Neo4j queries; the app's core manual issue workflow still works without AI.

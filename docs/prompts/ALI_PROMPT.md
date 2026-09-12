@@ -1,5 +1,8 @@
-EV VEHICLE ASSEMBLY UPDATE - READ FIRST
-The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md before the rest of this prompt. It defines the current demo and takes precedence over legacy robotics fixture examples. Proposed shared contract: assembly-quality-v4; Zubair must publish its exact source schema before implementations depend on it. Preserve existing code and coordinate the migration. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
+CURRENT MILESTONE - READ FIRST
+Your frontend and Zubair's API are already combined on codex/final-integration. Codey is provisioning a Neo4j cloud instance. Follow [Ali's current next steps](ALI_NEXT_STEPS.md) to finish the browser journey, sourcing labels, unsupported sketch states and pitch while the database is prepared. This current task takes precedence over the earlier build-order instructions below. The actual UI ownership is now frontend/** with the src/features/recall re-export shim. Do not rebuild completed features or repeat the source-contract migration.
+
+EV VEHICLE ASSEMBLY UPDATE
+The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md. The assembly-quality-v4 source contract is already published; bind to the current source definitions and coordinate further changes with Zubair. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
 
 The official event is an open-ended AI-native development/agentic-engineering hackathon. No EV-specific required theme or track was found. EV assembly is our chosen domain for Track A Builder plus the separate Neo4j bonus. Use Qoder in development and substantive Neo4j queries; the app's core manual issue workflow still works without AI.
 
@@ -21,7 +24,7 @@ PRODUCT AND USER
 The user is an operator, manufacturing quality manager or production engineer assembling EV vehicles from supplier parts and internally manufactured components. They can report an issue inside the app, mark its component/assembly/station, assign it, learn from previous verified fixes and see process/team/supplier patterns. Imports and supplier notices are optional additional inputs.
 
 YOUR FILE OWNERSHIP
-Own src/components/recall/**, src/features/recall/**, tests/ui/**, docs/pitch/** and docs/handoffs/ALI.md. Export RecallWorkspace from src/features/recall/index.ts for Zubair to mount. Codey owns data/graph logic; Zubair owns routes, contracts and AI. Request shared configuration/dependency changes through Zubair.
+Own frontend/components/recall/**, frontend/features/recall/**, frontend/tests/ui/**, docs/pitch/** and docs/handoffs/ALI.md. Preserve the src/features/recall/index.ts re-export shim; RecallWorkspace is already mounted in the integration branch. Codey owns data/graph logic; Zubair owns routes, contracts and AI. Request shared configuration/dependency changes through Zubair.
 
 P0: THE PRIMARY INTERFACE
 1. Issue board and New Issue: a prominent manual creation action, status/severity, title, observed problem, reporting team, assigned team, detection station/process and optional part/serial/supplier links. Users can select/mark an affected item and add notes/evidence. Keep unknown fields editable; no CSV or AI is required to submit an issue.
@@ -62,4 +65,4 @@ Start with the manual issue form, issue detail and similar-resolution panel. Bui
 
 
 REPOSITORY CONTEXT UPDATE
-Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v4 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.
+Read docs/prompts/ALI_NEXT_STEPS.md and the latest integration handoffs first. The v4 source contract was published at 71e4773; Ali's UI and Zubair's API are already merged on codex/final-integration. Earlier statements about pending source migration or rebuilding the foundation are historical. Preserve existing code and teammate commits; inspect current branch state before work.

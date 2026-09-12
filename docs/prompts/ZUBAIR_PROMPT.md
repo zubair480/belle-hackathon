@@ -1,5 +1,8 @@
-EV VEHICLE ASSEMBLY UPDATE - READ FIRST
-The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md before the rest of this prompt. It defines the current demo and takes precedence over legacy robotics fixture examples. Proposed shared contract: assembly-quality-v4; Zubair must publish its exact source schema before implementations depend on it. Preserve existing code and coordinate the migration. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
+CURRENT MILESTONE - READ FIRST
+Your API lane and Ali's frontend are already combined on codex/final-integration. Codey is provisioning a Neo4j cloud instance. Follow [Zubair's current next steps](ZUBAIR_NEXT_STEPS.md) for integration preparation, actual graph wiring, restart-persistence verification and submission readiness. This current task takes precedence over the earlier build-order instructions below. Reuse the integrated implementation; do not restart scaffolding, repeat source migration or duplicate Codey's graph work.
+
+EV VEHICLE ASSEMBLY UPDATE
+The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md. The assembly-quality-v4 source contract is already published; use its current source definitions and coordinate further changes. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
 
 The official event is an open-ended AI-native development/agentic-engineering hackathon. No EV-specific required theme or track was found. EV assembly is our chosen domain for Track A Builder plus the separate Neo4j bonus. Use Qoder in development and substantive Neo4j queries; the app's core manual issue workflow still works without AI.
 
@@ -73,4 +76,4 @@ Start with the shared foundation and exact issue contracts, then implement my AP
 
 
 REPOSITORY CONTEXT UPDATE
-Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v4 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.
+Read docs/prompts/ZUBAIR_NEXT_STEPS.md and the latest integration handoffs first. The v4 source contract was published at 71e4773; Ali's UI and Zubair's API are already merged on codex/final-integration. Earlier statements about pending source migration or rebuilding the foundation are historical. Preserve existing code and teammate commits; inspect current branch state before work.
