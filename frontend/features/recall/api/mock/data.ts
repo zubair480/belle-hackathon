@@ -1,11 +1,13 @@
 /**
  * SAMPLE DATA for UI development (mock mode only). Everything here is synthetic and labeled as
- * such in the UI. Identifiers follow EV_DEMO in src/contracts/issues.ts so the mock story matches
- * the seed Codey builds for Neo4j. Public-evidence records keep NHTSA provenance and are never
- * joined to a synthetic vehicle as an actual occurrence.
+ * such in the UI. Vehicles are instantiated from the platform part catalog
+ * (frontend/data/ev-platform/parts.json) so the sketch, the wiring overlay and the mock share
+ * one vocabulary. Identifiers follow EV_DEMO in src/contracts/issues.ts. Public-evidence records
+ * keep NHTSA provenance and are never joined to a synthetic vehicle as an actual occurrence.
  */
 import type { EntityRecord, Evidence, Installation } from "@/contracts/common";
 import { EV_DEMO, type AuditEvent, type CauseAssessment, type FixRevision, type Issue, type IssueComment, type ReferenceCatalog, type Verification } from "@/contracts/issues";
+import { PARTS, entityIdFor, type PartSlot } from "../../sketches/car3d";
 
 export const MOCK_ACTOR = "qa-reviewer-demo";
 export const MOCK_WORKSPACE = EV_DEMO.workspaceId;
@@ -22,43 +24,65 @@ export function pseudoHash(text: string): string {
   return (seed + seed + seed + seed).slice(0, 64);
 }
 
+const T = EV_DEMO.teams;
+const S = EV_DEMO.stations;
+const P = EV_DEMO.processSteps;
+
 export const catalog: ReferenceCatalog = {
   contractVersion: "assembly-quality-v4",
   teams: [
-    { id: EV_DEMO.teams.finalInspection, name: "Final Inspection", active: true },
-    { id: EV_DEMO.teams.inHouseManufacturing, name: "In-house Manufacturing (bracket cell)", active: true },
-    { id: EV_DEMO.teams.assembly, name: "Charge-port Assembly", active: true },
-    { id: EV_DEMO.teams.supplierQuality, name: "Supplier Quality", active: true },
-    { id: EV_DEMO.teams.incomingQuality, name: "Incoming Quality", active: true },
+    { id: T.finalInspection, name: "Final Inspection", active: true },
+    { id: T.inHouseManufacturing, name: "In-house Manufacturing (bracket cell)", active: true },
+    { id: T.assembly, name: "Charge-port Assembly", active: true },
+    { id: T.supplierQuality, name: "Supplier Quality", active: true },
+    { id: T.incomingQuality, name: "Incoming Quality", active: true },
     { id: "TEAM-BODY", name: "Body Shop", active: true },
-    { id: "TEAM-BATTERY", name: "Battery Pack Assembly", active: true },
+    { id: "TEAM-BATTERY", name: "Battery and Drive Unit Assembly", active: true },
+    { id: "TEAM-ELECTRONICS", name: "Electronics and Software", active: true },
     { id: "TEAM-QUALITY-ENG", name: "Quality Engineering", active: true },
   ],
   suppliers: [
     { id: EV_DEMO.suppliers.connector, name: "Demo Connector Supplier", active: true },
     { id: "SUP-CELLS", name: "Demo Cell Supplier", active: true },
     { id: "SUP-LAMP", name: "Demo Lighting Supplier", active: true },
-    { id: "SUP-WHEEL", name: "Demo Wheel Supplier", active: true },
+    { id: "SUP-WHEEL", name: "Demo Wheel and Tire Supplier", active: true },
     { id: "SUP-HARNESS", name: "Demo Harness Supplier", active: true },
     { id: "SUP-GLASS", name: "Demo Glazing Supplier", active: true },
+    { id: "SUP-POWER", name: "Demo Power Electronics Supplier", active: true },
+    { id: "SUP-ELEC", name: "Demo Electronics Supplier", active: true },
+    { id: "SUP-BATT12", name: "Demo 12 V Battery Supplier", active: true },
+    { id: "SUP-INTERIOR", name: "Demo Interior Supplier", active: true },
+    { id: "SUP-STEER", name: "Demo Steering Supplier", active: true },
+    { id: "SUP-SEATS", name: "Demo Seat Supplier", active: true },
+    { id: "SUP-MIRROR", name: "Demo Mirror Supplier", active: true },
+    { id: "SUP-PLASTICS", name: "Demo Plastics Supplier", active: true },
+    { id: "SUP-THERMAL", name: "Demo Thermal Supplier", active: true },
   ],
   stations: [
-    { id: EV_DEMO.stations.finalInspection, name: "Final Inspection", active: true, siteId: EV_DEMO.siteId, areaLabel: "End of line" },
-    { id: EV_DEMO.stations.chargePortAssembly, name: "Charge-port Assembly", active: true, siteId: EV_DEMO.siteId, areaLabel: "Trim line" },
-    { id: EV_DEMO.stations.bracketCell, name: "Bracket Forming Cell", active: true, siteId: EV_DEMO.siteId, areaLabel: "In-house manufacturing" },
+    { id: S.finalInspection, name: "Final Inspection", active: true, siteId: EV_DEMO.siteId, areaLabel: "End of line" },
+    { id: S.chargePortAssembly, name: "Charge-port Assembly", active: true, siteId: EV_DEMO.siteId, areaLabel: "Trim line" },
+    { id: S.bracketCell, name: "Bracket Forming Cell", active: true, siteId: EV_DEMO.siteId, areaLabel: "In-house manufacturing" },
     { id: "ST-INCOMING", name: "Incoming Inspection", active: true, siteId: EV_DEMO.siteId, areaLabel: "Receiving" },
     { id: "ST-BATTERY-MARRIAGE", name: "Battery Marriage", active: true, siteId: EV_DEMO.siteId, areaLabel: "Chassis line" },
     { id: "ST-BODY-SHOP", name: "Body Shop", active: true, siteId: EV_DEMO.siteId, areaLabel: "Body" },
+    { id: "ST-ELECTRICAL-EOL", name: "Electrical End-of-line Test", active: true, siteId: EV_DEMO.siteId, areaLabel: "End of line" },
+    { id: "ST-WHEEL-FIT", name: "Wheel Fitment", active: true, siteId: EV_DEMO.siteId, areaLabel: "Chassis line" },
   ],
   processSteps: [
-    { id: EV_DEMO.processSteps.chargePortInstall, name: "Charge-port module install", active: true, areaLabel: "Trim line" },
-    { id: EV_DEMO.processSteps.bracketForming, name: "Bracket forming", active: true, areaLabel: "In-house manufacturing" },
-    { id: EV_DEMO.processSteps.finalInspection, name: "Final inspection", active: true, areaLabel: "End of line" },
+    { id: P.chargePortInstall, name: "Charge-port module install", active: true, areaLabel: "Trim line" },
+    { id: P.bracketForming, name: "Bracket forming", active: true, areaLabel: "In-house manufacturing" },
+    { id: P.finalInspection, name: "Final inspection", active: true, areaLabel: "End of line" },
     { id: "incoming-inspection", name: "Incoming inspection", active: true, areaLabel: "Receiving" },
     { id: "battery-pack-assembly", name: "Battery pack assembly", active: true, areaLabel: "Battery shop" },
     { id: "battery-marriage", name: "Battery marriage", active: true, areaLabel: "Chassis line" },
-    { id: "door-stamping", name: "Door stamping", active: true, areaLabel: "Body" },
+    { id: "door-stamping", name: "Door and closure stamping", active: true, areaLabel: "Body" },
     { id: "drive-unit-assembly", name: "Drive unit assembly", active: true, areaLabel: "Powertrain" },
+    { id: "hv-box-assembly", name: "HV junction box assembly", active: true, areaLabel: "Battery shop" },
+    { id: "controller-flash", name: "Controller assembly and flash", active: true, areaLabel: "Electronics" },
+    { id: "ip-subassembly", name: "Instrument panel subassembly", active: true, areaLabel: "Trim line" },
+    { id: "final-assembly", name: "Final assembly", active: true, areaLabel: "Trim line" },
+    { id: "electrical-eol", name: "Electrical end-of-line test", active: true, areaLabel: "End of line" },
+    { id: "wheel-fitment", name: "Wheel fitment", active: true, areaLabel: "Chassis line" },
   ],
   defectCodes: [
     { id: EV_DEMO.defectCodes.misalignment, name: "Connector misaligned", active: true, family: "Charge port" },
@@ -66,7 +90,10 @@ export const catalog: ReferenceCatalog = {
     { id: "CONNECTOR_PIN_DAMAGE", name: "Connector pin damage", active: true, family: "Charge port" },
     { id: "LAMP_CONDENSATION", name: "Headlamp condensation", active: true, family: "Lighting" },
     { id: "DOOR_GAP", name: "Door gap out of spec", active: true, family: "Body fit" },
+    { id: "DOOR_SEAL_NOISE", name: "Door seal wind noise", active: true, family: "Body fit" },
     { id: "BATTERY_FASTENER_TORQUE", name: "Battery fastener torque", active: true, family: "HV battery" },
+    { id: "NO_WAKE_ON_START", name: "No wake on start button", active: true, family: "Electrical" },
+    { id: "TPMS_FAULT", name: "Tire pressure sensor fault", active: true, family: "Chassis" },
   ],
   sites: [{ id: EV_DEMO.siteId, name: "Demo Plant 1", active: true }],
 };
@@ -99,25 +126,41 @@ export const evidence: Evidence[] = [
   ev("EVID-CONN-PIN", "Assembly line photo (sample)", "photo/conn-0006-pin", "Bent pin on connector CONN-0006 visible before installation of the module; packaging intact."),
   ev("EVID-CONN-SUPPLIER-8D", "Supplier response (sample)", "notice/SUP-CONNECTOR-8D-01", "Supplier confirmed a pin-insertion tooling fault affecting part of lot DEMO-SUP-LOT-01; replacement lot DEMO-SUP-LOT-02 shipped.", { sourceKind: "supplier_notice" }),
   ev("EVID-CONN-VERIFY", "Verification record (sample)", "verify/VER-CONN-001-1", "Replacement connector CONN-0106 installed; pin check and alignment gauge passed on DEMO-EV-006."),
-  ev("EVID-LAMP-OBS", "Final inspection note (sample)", "issue/ISS-LAMP-002", "Condensation inside left headlamp LAMP-0007 after rain test; no lens crack visible."),
-  ev("EVID-DOOR-OBS", "Final inspection note (sample)", "issue/ISS-DOOR-003", "Front door gap 5.1 mm at B-pillar on DEMO-EV-006 (spec 4.0 +/- 0.5)."),
+  ev("EVID-LAMP-OBS", "Final inspection note (sample)", "issue/ISS-LAMP-002", "Condensation inside left headlamp LAMP-0007-L after rain test; no lens crack visible."),
+  ev("EVID-DOOR-OBS", "Final inspection note (sample)", "issue/ISS-DOOR-003", "Front left door gap 5.1 mm at B-pillar on DEMO-EV-006 (spec 4.0 +/- 0.5)."),
+  ev("EVID-DOOR-NOISE", "Road test note (sample)", "issue/ISS-DOOR-005", "Wind noise at 80 km/h from the front left door upper seal on DEMO-EV-006."),
   ev("EVID-BATT-OBS", "Line note (sample)", "issue/ISS-BATT-004", "Torque tool log has no entry for battery fastener row 3 on DEMO-EV-005."),
+  ev("EVID-IGN-OBS", "Electrical EOL log (sample)", "issue/ISS-IGN-006", "Start button press on DEMO-EV-007 gives no wake: cluster stays dark, no contactor click. 12 V battery 12.7 V. Fuse F12 OK."),
+  ev("EVID-IGN-SCOPE", "Diagnostic capture (sample)", "capture/ign-0007-scope", "Start request line W-011 stays high at BCM connector X-BCM-A pin 14 while the switch is pressed; switch contact measured OK at X-STSW-01."),
+  ev("EVID-TIRE-OBS", "Final inspection note (sample)", "issue/ISS-TIRE-007", "TPMS warning for front right wheel on DEMO-EV-005 at rolling test; pressure measured 2.5 bar (in spec)."),
   ev(
     "EVID-PUBLIC-NHTSA-CP",
     "NHTSA complaints endpoint (public)",
     "complaintsByVehicle?make=hyundai&model=ioniq 5&modelYear=2022",
     "Public complaint category reference for charge-port symptoms. Endpoint returned 404 complaint records across all components on retrieval. Public evidence only: not a record about any synthetic vehicle, supplier or factory here, and not proof of the same cause.",
-    {
-      sourceKind: "public_complaint",
-      sourceRecordId: "NHTSA-complaintsByVehicle-2022-ioniq5",
-      sourceUrl: "https://api.nhtsa.gov/complaints/complaintsByVehicle?make=hyundai&model=ioniq%205&modelYear=2022",
-      retrievedAt: "2026-09-12T09:00:00Z",
-    },
+    { sourceKind: "public_complaint", sourceRecordId: "NHTSA-complaintsByVehicle-2022-ioniq5", sourceUrl: "https://api.nhtsa.gov/complaints/complaintsByVehicle?make=hyundai&model=ioniq%205&modelYear=2022", retrievedAt: "2026-09-12T09:00:00Z" },
   ),
 ];
 
 // ---------------------------------------------------------------------------
-// Vehicles, components, origins and installations
+// Customers and shipments
+// ---------------------------------------------------------------------------
+
+export const customers: Array<{ id: string; name: string; kind: string }> = [
+  { id: "CUST-FLEET-A", name: "Demo Fleet Operator A", kind: "fleet operator" },
+  { id: "CUST-DEALER-N", name: "Demo Dealer North", kind: "dealer" },
+  { id: "CUST-DEALER-S", name: "Demo Dealer South", kind: "dealer" },
+];
+
+export const shipments: Array<{ id: string; vehicleId: string; customerId: string; shippedAt: string }> = [
+  { id: "SHP-0002", vehicleId: "DEMO-EV-002", customerId: "CUST-FLEET-A", shippedAt: "2026-08-25T09:00:00Z" },
+  { id: "SHP-0003", vehicleId: "DEMO-EV-003", customerId: "CUST-FLEET-A", shippedAt: "2026-09-03T09:00:00Z" },
+  { id: "SHP-0004", vehicleId: "DEMO-EV-004", customerId: "CUST-DEALER-S", shippedAt: "2026-09-05T09:00:00Z" },
+  { id: "SHP-0007", vehicleId: "DEMO-EV-007", customerId: "CUST-DEALER-N", shippedAt: "2026-09-11T09:00:00Z" },
+];
+
+// ---------------------------------------------------------------------------
+// Vehicles: instantiate every slot from the platform catalog with per-vehicle overrides
 // ---------------------------------------------------------------------------
 
 export type MockVehicleSpec = {
@@ -125,79 +168,37 @@ export type MockVehicleSpec = {
   buildId: string;
   vin: string | null;
   locationState: EntityRecord["locationState"];
-  connectorLot: "DEMO-SUP-LOT-01" | "DEMO-SUP-LOT-02";
-  bracketLot: string;
-  bracketWorkOrder: string;
-  windshieldKnown: boolean;
+  builtDay: string;
+  /** slot -> origin overrides (e.g. a different lot) */
+  overrides: Record<string, Partial<PartSlot>>;
+  /** slots whose origin is not recorded on this vehicle */
+  unknownOrigin: string[];
 };
 
 export const vehicleSpecs: MockVehicleSpec[] = [
-  { suffix: "0002", buildId: "DEMO-EV-002", vin: "DEMOVIN0000000002", locationState: "shipped", connectorLot: "DEMO-SUP-LOT-01", bracketLot: "DEMO-MFG-LOT-00", bracketWorkOrder: "WO-DEMO-0000", windshieldKnown: true },
-  { suffix: "0005", buildId: EV_DEMO.vehicleBuildId, vin: null, locationState: "onsite", connectorLot: "DEMO-SUP-LOT-01", bracketLot: EV_DEMO.manufacturingLotCode, bracketWorkOrder: EV_DEMO.workOrderId, windshieldKnown: false },
-  { suffix: "0006", buildId: "DEMO-EV-006", vin: "DEMOVIN0000000006", locationState: "onsite", connectorLot: "DEMO-SUP-LOT-01", bracketLot: EV_DEMO.manufacturingLotCode, bracketWorkOrder: EV_DEMO.workOrderId, windshieldKnown: true },
-  { suffix: "0007", buildId: "DEMO-EV-007", vin: "DEMOVIN0000000007", locationState: "shipped", connectorLot: "DEMO-SUP-LOT-02", bracketLot: EV_DEMO.manufacturingLotCode, bracketWorkOrder: EV_DEMO.workOrderId, windshieldKnown: false },
+  { suffix: "0002", buildId: "DEMO-EV-002", vin: "DEMOVIN0000000002", locationState: "shipped", builtDay: "2026-08-20", overrides: { "charge-bracket": { manufacturingLotCode: "DEMO-MFG-LOT-00", workOrderId: "WO-DEMO-0000" } }, unknownOrigin: [] },
+  { suffix: "0003", buildId: "DEMO-EV-003", vin: "DEMOVIN0000000003", locationState: "shipped", builtDay: "2026-09-01", overrides: {}, unknownOrigin: [] },
+  { suffix: "0004", buildId: "DEMO-EV-004", vin: "DEMOVIN0000000004", locationState: "shipped", builtDay: "2026-09-03", overrides: { "charge-connector": { supplierBatchCode: "DEMO-SUP-LOT-02" } }, unknownOrigin: ["windshield"] },
+  { suffix: "0005", buildId: EV_DEMO.vehicleBuildId, vin: null, locationState: "onsite", builtDay: "2026-09-10", overrides: {}, unknownOrigin: ["windshield"] },
+  { suffix: "0006", buildId: "DEMO-EV-006", vin: "DEMOVIN0000000006", locationState: "onsite", builtDay: "2026-09-07", overrides: {}, unknownOrigin: [] },
+  { suffix: "0007", buildId: "DEMO-EV-007", vin: "DEMOVIN0000000007", locationState: "shipped", builtDay: "2026-09-09", overrides: { "charge-connector": { supplierBatchCode: "DEMO-SUP-LOT-02" } }, unknownOrigin: ["windshield"] },
 ];
 
-type OriginArgs = Partial<NonNullable<EntityRecord["origin"]>> & { partNumber: string };
-const supplierOrigin = (id: string, supplierId: string, batch: string, a: OriginArgs, evidenceIds: string[] = []): EntityRecord["origin"] => ({
-  id,
-  sourcingType: "supplier",
-  producerOrganizationId: supplierId,
-  partNumber: a.partNumber,
-  partRevision: a.partRevision ?? null,
-  productionLotId: `LOT-${batch}`,
-  supplierId,
-  supplierBatchCode: batch,
-  siteId: null,
-  manufacturingLotCode: null,
-  workOrderId: null,
-  manufacturingTeamId: null,
-  processStepId: null,
-  evidenceIds,
-});
-const inHouseOrigin = (id: string, lot: string, workOrder: string, process: string, team: string, a: OriginArgs, evidenceIds: string[] = []): EntityRecord["origin"] => ({
-  id,
-  sourcingType: "in_house",
-  producerOrganizationId: "ORG-DEMO-PLANT",
-  partNumber: a.partNumber,
-  partRevision: a.partRevision ?? null,
-  productionLotId: `LOT-${lot}`,
-  supplierId: null,
-  supplierBatchCode: null,
-  siteId: EV_DEMO.siteId,
-  manufacturingLotCode: lot,
-  workOrderId: workOrder,
-  manufacturingTeamId: team,
-  processStepId: process,
-  evidenceIds,
-});
-const unknownOrigin = (id: string, a: OriginArgs): EntityRecord["origin"] => ({
-  id,
-  sourcingType: "unknown",
-  producerOrganizationId: null,
-  partNumber: a.partNumber,
-  partRevision: a.partRevision ?? null,
-  productionLotId: null,
-  supplierId: null,
-  supplierBatchCode: null,
-  siteId: null,
-  manufacturingLotCode: null,
-  workOrderId: null,
-  manufacturingTeamId: null,
-  processStepId: null,
-  evidenceIds: [],
-});
+const RECEIPT_EVIDENCE: Record<string, string> = { "DEMO-SUP-LOT-01": "EVID-SUP-RECEIPT-01", "DEMO-SUP-LOT-02": "EVID-SUP-RECEIPT-02" };
+const LOT_EVIDENCE: Record<string, string> = { "DEMO-MFG-LOT-01": "EVID-MFG-INSP-01", "DEMO-MFG-LOT-00": "EVID-MFG-INSP-00" };
 
-const rec = (
-  id: string,
-  kind: EntityRecord["kind"],
-  partNumber: string,
-  partRevision: string | null,
-  locationState: EntityRecord["locationState"],
-  origin: EntityRecord["origin"],
-  vehicle: EntityRecord["vehicle"] = null,
-  issuerId: string | null = "ORG-DEMO-PLANT",
-): EntityRecord => ({ id, kind, partNumber, partRevision, serialNumber: id, displayCode: id, issuerId, locationState, origin, vehicle });
+function originFor(slot: PartSlot, entityId: string, unknown: boolean): EntityRecord["origin"] {
+  const base = { id: `ORG-${entityId}`, partNumber: slot.partNumber, partRevision: slot.partRevision ?? null, evidenceIds: [] as string[] };
+  if (unknown || slot.sourcing === "unknown") {
+    return { ...base, sourcingType: "unknown", producerOrganizationId: null, productionLotId: null, supplierId: null, supplierBatchCode: null, siteId: null, manufacturingLotCode: null, workOrderId: null, manufacturingTeamId: null, processStepId: null };
+  }
+  if (slot.sourcing === "supplier") {
+    const batch = slot.supplierBatchCode ?? null;
+    return { ...base, sourcingType: "supplier", producerOrganizationId: slot.supplierId ?? null, productionLotId: batch ? `LOT-${batch}` : null, supplierId: slot.supplierId ?? null, supplierBatchCode: batch, siteId: null, manufacturingLotCode: null, workOrderId: null, manufacturingTeamId: null, processStepId: null, evidenceIds: batch && RECEIPT_EVIDENCE[batch] ? [RECEIPT_EVIDENCE[batch]!] : [] };
+  }
+  const lot = slot.manufacturingLotCode ?? null;
+  return { ...base, sourcingType: "in_house", producerOrganizationId: "ORG-DEMO-PLANT", productionLotId: lot ? `LOT-${lot}` : null, supplierId: null, supplierBatchCode: null, siteId: EV_DEMO.siteId, manufacturingLotCode: lot, workOrderId: slot.workOrderId ?? null, manufacturingTeamId: slot.manufacturingTeamId ?? null, processStepId: slot.processStepId ?? null, evidenceIds: lot && LOT_EVIDENCE[lot] ? [LOT_EVIDENCE[lot]!] : [] };
+}
 
 export function buildEntities(): { entities: EntityRecord[]; installations: Installation[] } {
   const entities: EntityRecord[] = [];
@@ -206,95 +207,70 @@ export function buildEntities(): { entities: EntityRecord[]; installations: Inst
   const inst = (childId: string, parentId: string, slotId: string, installedAt: string, removedAt: string | null = null, evidenceIds: string[] = []) => {
     installations.push({ id: `INST-${String(instSeq++).padStart(4, "0")}`, childId, parentId, slotId, installedAt, removedAt, recordedAt: installedAt, evidenceIds });
   };
-
   for (const v of vehicleSpecs) {
-    const s = v.suffix;
-    const day = { "0002": "2026-08-20", "0005": "2026-09-10", "0006": "2026-09-07", "0007": "2026-09-09" }[s] ?? "2026-09-10";
-    const t = (hh: string) => `${day}T${hh}:00Z`;
+    const t = (hh: string) => `${v.builtDay}T${hh}:00Z`;
     const vehicleId = v.buildId;
-    const connReceipt = v.connectorLot === "DEMO-SUP-LOT-01" ? "EVID-SUP-RECEIPT-01" : "EVID-SUP-RECEIPT-02";
-    const bracketEvidence = v.bracketLot === "DEMO-MFG-LOT-00" ? "EVID-MFG-INSP-00" : "EVID-MFG-INSP-01";
-    const inVehicle: EntityRecord["locationState"] = "installed";
-
-    entities.push(rec(vehicleId, "vehicle", EV_DEMO.parts.vehicle, "1", v.locationState, inHouseOrigin(`ORG-VEH-${s}`, `DEMO-VEH-LOT-${s}`, `WO-VEH-${s}`, "final-assembly", EV_DEMO.teams.assembly, { partNumber: EV_DEMO.parts.vehicle, partRevision: "1" }), { entityId: vehicleId, buildId: v.buildId, vin: v.vin }));
-
-    // Charge-port path: purchased connector + in-house bracket -> in-house module -> vehicle
-    const conn = `CONN-${s}`;
-    const brkt = `BRKT-${s}`;
-    const mod = `CPM-${s}`;
-    entities.push(rec(conn, "component", EV_DEMO.parts.connector, "B", s === "0006" ? "quarantine" : inVehicle, supplierOrigin(`ORG-CONN-${s}`, EV_DEMO.suppliers.connector, v.connectorLot, { partNumber: EV_DEMO.parts.connector, partRevision: "B" }, [connReceipt]), null, EV_DEMO.suppliers.connector));
-    entities.push(rec(brkt, "component", EV_DEMO.parts.bracket, "A", inVehicle, inHouseOrigin(`ORG-BRKT-${s}`, v.bracketLot, v.bracketWorkOrder, EV_DEMO.processSteps.bracketForming, EV_DEMO.teams.inHouseManufacturing, { partNumber: EV_DEMO.parts.bracket, partRevision: "A" }, [bracketEvidence])));
-    entities.push(rec(mod, "subassembly", EV_DEMO.parts.module, "A", inVehicle, inHouseOrigin(`ORG-CPM-${s}`, `DEMO-ASM-LOT-01`, `WO-DEMO-0100`, EV_DEMO.processSteps.chargePortInstall, EV_DEMO.teams.assembly, { partNumber: EV_DEMO.parts.module, partRevision: "A" })));
-    inst(brkt, mod, "bracket", t("08:10"));
-    if (s === "0006") {
-      // Connector replaced after pin damage: historical containment for CONN-0006, current for CONN-0106.
-      inst(conn, mod, "connector", t("08:20"), "2026-09-08T14:00:00Z", ["EVID-CONN-PIN"]);
-      const conn2 = `CONN-0106`;
-      entities.push(rec(conn2, "component", EV_DEMO.parts.connector, "B", inVehicle, supplierOrigin(`ORG-CONN-0106`, EV_DEMO.suppliers.connector, "DEMO-SUP-LOT-02", { partNumber: EV_DEMO.parts.connector, partRevision: "B" }, ["EVID-SUP-RECEIPT-02"]), null, EV_DEMO.suppliers.connector));
-      inst(conn2, mod, "connector", "2026-09-08T14:10:00Z", null, ["EVID-CONN-VERIFY"]);
-    } else {
-      inst(conn, mod, "connector", t("08:20"));
+    entities.push({
+      id: vehicleId,
+      kind: "vehicle",
+      partNumber: EV_DEMO.parts.vehicle,
+      partRevision: "1",
+      serialNumber: vehicleId,
+      displayCode: vehicleId,
+      issuerId: "ORG-DEMO-PLANT",
+      locationState: v.locationState,
+      origin: { id: `ORG-${vehicleId}`, sourcingType: "in_house", producerOrganizationId: "ORG-DEMO-PLANT", partNumber: EV_DEMO.parts.vehicle, partRevision: "1", productionLotId: `LOT-DEMO-VEH-${v.suffix}`, supplierId: null, supplierBatchCode: null, siteId: EV_DEMO.siteId, manufacturingLotCode: `DEMO-VEH-LOT-${v.suffix}`, workOrderId: `WO-VEH-${v.suffix}`, manufacturingTeamId: T.assembly, processStepId: "final-assembly", evidenceIds: [] },
+      vehicle: { entityId: vehicleId, buildId: v.buildId, vin: v.vin },
+    });
+    // Parents first so installations reference existing ids.
+    const ordered = [...PARTS.filter((p) => !p.parent), ...PARTS.filter((p) => p.parent)];
+    for (const base of ordered) {
+      const slot: PartSlot = { ...base, ...(v.overrides[base.slot] ?? {}) } as PartSlot;
+      const id = entityIdFor(slot, v.suffix);
+      const unknown = v.unknownOrigin.includes(slot.slot);
+      const replaced = v.suffix === "0006" && slot.slot === "charge-connector";
+      entities.push({
+        id,
+        kind: slot.kind === "subassembly" ? "subassembly" : "component",
+        partNumber: slot.partNumber,
+        partRevision: slot.partRevision ?? null,
+        serialNumber: id,
+        displayCode: id,
+        issuerId: slot.sourcing === "supplier" ? (slot.supplierId ?? null) : unknown ? null : "ORG-DEMO-PLANT",
+        locationState: replaced ? "quarantine" : "installed",
+        origin: originFor(slot, id, unknown),
+        vehicle: null,
+      });
+      const parentId = slot.parent ? entityIdFor(PARTS.find((p) => p.slot === slot.parent)!, v.suffix) : vehicleId;
+      const hour = slot.parent ? "06:30" : slot.kind === "subassembly" ? "07:30" : "09:00";
+      if (replaced) {
+        inst(id, parentId, slot.slot, t("08:20"), "2026-09-08T14:00:00Z", ["EVID-CONN-PIN"]);
+        const conn2 = "CONN-0106";
+        const slot2 = { ...slot, supplierBatchCode: "DEMO-SUP-LOT-02" } as PartSlot;
+        entities.push({ id: conn2, kind: "component", partNumber: slot.partNumber, partRevision: slot.partRevision ?? null, serialNumber: conn2, displayCode: conn2, issuerId: slot.supplierId ?? null, locationState: "installed", origin: originFor(slot2, conn2, false), vehicle: null });
+        inst(conn2, parentId, slot.slot, "2026-09-08T14:10:00Z", null, ["EVID-CONN-VERIFY"]);
+      } else {
+        inst(id, parentId, slot.slot, t(hour));
+      }
     }
-    inst(mod, vehicleId, "charge-port", t("09:30"));
-
-    // HV battery pack (in-house assembled) containing purchased cell modules
-    const batt = `BATT-${s}`;
-    const cells = `CELL-${s}`;
-    entities.push(rec(batt, "subassembly", "BP-400", "C", inVehicle, inHouseOrigin(`ORG-BATT-${s}`, `DEMO-BATT-LOT-02`, `WO-BATT-0002`, "battery-pack-assembly", "TEAM-BATTERY", { partNumber: "BP-400", partRevision: "C" })));
-    entities.push(rec(cells, "component", "CELL-MOD-410", "2", inVehicle, supplierOrigin(`ORG-CELL-${s}`, "SUP-CELLS", "DEMO-CELL-LOT-07", { partNumber: "CELL-MOD-410", partRevision: "2" }), null, "SUP-CELLS"));
-    inst(cells, batt, "module-bay", t("06:00"));
-    inst(batt, vehicleId, "underbody", t("07:00"));
-
-    // Drive units (in-house), lamps/wheels/harness (supplier), door (in-house), windshield (unknown or supplier)
-    const fdu = `FDU-${s}`;
-    const rdu = `RDU-${s}`;
-    entities.push(rec(fdu, "subassembly", "DU-500", "B", inVehicle, inHouseOrigin(`ORG-FDU-${s}`, `DEMO-DU-LOT-03`, `WO-DU-0003`, "drive-unit-assembly", "TEAM-BATTERY", { partNumber: "DU-500", partRevision: "B" })));
-    entities.push(rec(rdu, "subassembly", "DU-500", "B", inVehicle, inHouseOrigin(`ORG-RDU-${s}`, `DEMO-DU-LOT-03`, `WO-DU-0003`, "drive-unit-assembly", "TEAM-BATTERY", { partNumber: "DU-500", partRevision: "B" })));
-    inst(fdu, vehicleId, "front-axle", t("07:20"));
-    inst(rdu, vehicleId, "rear-axle", t("07:25"));
-
-    const lamp = `LAMP-${s}`;
-    entities.push(rec(lamp, "component", "LMP-600", "A", inVehicle, supplierOrigin(`ORG-LAMP-${s}`, "SUP-LAMP", "DEMO-LAMP-LOT-03", { partNumber: "LMP-600", partRevision: "A" }), null, "SUP-LAMP"));
-    inst(lamp, vehicleId, "headlamp-left", t("09:00"));
-
-    const whlF = `WHL-${s}-F`;
-    const whlR = `WHL-${s}-R`;
-    entities.push(rec(whlF, "component", "WHL-700", null, inVehicle, supplierOrigin(`ORG-WHLF-${s}`, "SUP-WHEEL", "DEMO-WHL-LOT-11", { partNumber: "WHL-700" }), null, "SUP-WHEEL"));
-    entities.push(rec(whlR, "component", "WHL-700", null, inVehicle, supplierOrigin(`ORG-WHLR-${s}`, "SUP-WHEEL", "DEMO-WHL-LOT-11", { partNumber: "WHL-700" }), null, "SUP-WHEEL"));
-    inst(whlF, vehicleId, "wheel-front-left", t("10:00"));
-    inst(whlR, vehicleId, "wheel-rear-left", t("10:05"));
-
-    const hvc = `HVC-${s}`;
-    entities.push(rec(hvc, "component", "HV-950", "A", inVehicle, supplierOrigin(`ORG-HVC-${s}`, "SUP-HARNESS", "DEMO-HVC-LOT-05", { partNumber: "HV-950", partRevision: "A" }), null, "SUP-HARNESS"));
-    inst(hvc, vehicleId, "hv-harness", t("07:40"));
-
-    const door = `DOOR-${s}-F`;
-    entities.push(rec(door, "component", "DR-800", "A", inVehicle, inHouseOrigin(`ORG-DOOR-${s}`, `DEMO-DOOR-LOT-09`, `WO-DOOR-0009`, "door-stamping", "TEAM-BODY", { partNumber: "DR-800", partRevision: "A" })));
-    inst(door, vehicleId, "door-front-left", t("05:30"));
-
-    const gls = `GLS-${s}`;
-    entities.push(rec(gls, "component", "GLS-900", null, inVehicle, v.windshieldKnown ? supplierOrigin(`ORG-GLS-${s}`, "SUP-GLASS", "DEMO-GLS-LOT-02", { partNumber: "GLS-900" }) : unknownOrigin(`ORG-GLS-${s}`, { partNumber: "GLS-900" }), null, v.windshieldKnown ? "SUP-GLASS" : null));
-    inst(gls, vehicleId, "windshield", t("08:40"));
   }
   return { entities, installations };
 }
 
 // ---------------------------------------------------------------------------
-// Seeded issues (prior verified bracket fix, supplier-caused case, open cases)
+// Seeded issues
 // ---------------------------------------------------------------------------
 
-const T = EV_DEMO.teams;
-const S = EV_DEMO.stations;
-const P = EV_DEMO.processSteps;
+const issueBase = { origin: "manual" as const, evidenceIds: [] as string[], confirmedCauseId: null as string | null, currentFixRevisionId: null as string | null };
 
 export const issues: Issue[] = [
   {
+    ...issueBase,
     id: EV_DEMO.priorIssueId,
     version: 7,
     status: "closed",
     title: "Charge-port connector misaligned on DEMO-EV-002 (bracket out of tolerance)",
     description: "Charge-port door not flush; connector sits proud on the left side after module install.",
-    origin: "manual",
     detectedAt: "2026-08-21T09:15:00Z",
     reportingTeamId: T.finalInspection,
     assignedTeamId: T.inHouseManufacturing,
@@ -314,12 +290,12 @@ export const issues: Issue[] = [
     currentFixRevisionId: EV_DEMO.priorVerifiedFixId,
   },
   {
+    ...issueBase,
     id: "ISS-SUP-CONN-001",
     version: 6,
     status: "closed",
     title: "Connector pin damage on DEMO-EV-006 charge-port module",
     description: "Bent pin found on connector CONN-0006 before module installation.",
-    origin: "manual",
     detectedAt: "2026-09-07T08:25:00Z",
     reportingTeamId: T.assembly,
     assignedTeamId: T.supplierQuality,
@@ -339,18 +315,18 @@ export const issues: Issue[] = [
     currentFixRevisionId: "FIX-CONN-001-V1",
   },
   {
+    ...issueBase,
     id: "ISS-LAMP-002",
     version: 3,
     status: "in_progress",
     title: "Headlamp condensation on DEMO-EV-007 after rain test",
     description: "Condensation inside the left headlamp after the rain test; lens intact.",
-    origin: "manual",
     detectedAt: "2026-09-09T15:40:00Z",
     reportingTeamId: T.finalInspection,
     assignedTeamId: T.supplierQuality,
     detectionStationId: S.finalInspection,
     processStepId: P.finalInspection,
-    entityIds: ["LAMP-0007", "DEMO-EV-007"],
+    entityIds: ["LAMP-0007-L", "DEMO-EV-007"],
     partNumber: "LMP-600",
     partRevision: "A",
     linkedSupplierIds: ["SUP-LAMP"],
@@ -360,22 +336,20 @@ export const issues: Issue[] = [
     createdBy: "final-inspection-op-2",
     createdAt: "2026-09-09T15:45:00Z",
     updatedAt: "2026-09-10T09:00:00Z",
-    confirmedCauseId: null,
-    currentFixRevisionId: null,
   },
   {
+    ...issueBase,
     id: "ISS-DOOR-003",
     version: 2,
     status: "triaged",
-    title: "Front door gap out of spec on DEMO-EV-006",
+    title: "Front left door gap out of spec on DEMO-EV-006",
     description: "Front door gap 5.1 mm at B-pillar.",
-    origin: "manual",
     detectedAt: "2026-09-10T11:05:00Z",
     reportingTeamId: T.finalInspection,
     assignedTeamId: "TEAM-BODY",
     detectionStationId: S.finalInspection,
     processStepId: P.finalInspection,
-    entityIds: ["DOOR-0006-F", "DEMO-EV-006"],
+    entityIds: ["DOOR-0006-FL", "DEMO-EV-006"],
     partNumber: "DR-800",
     partRevision: "A",
     linkedSupplierIds: [],
@@ -385,16 +359,14 @@ export const issues: Issue[] = [
     createdBy: "final-inspection-op-1",
     createdAt: "2026-09-10T11:10:00Z",
     updatedAt: "2026-09-10T12:00:00Z",
-    confirmedCauseId: null,
-    currentFixRevisionId: null,
   },
   {
+    ...issueBase,
     id: "ISS-BATT-004",
     version: 1,
     status: "open",
     title: "Battery fastener torque not recorded on DEMO-EV-005",
     description: "Torque tool log missing an entry for fastener row 3 during battery marriage.",
-    origin: "manual",
     detectedAt: "2026-09-10T07:10:00Z",
     reportingTeamId: T.assembly,
     assignedTeamId: null,
@@ -410,76 +382,85 @@ export const issues: Issue[] = [
     createdBy: "assembly-op-5",
     createdAt: "2026-09-10T07:15:00Z",
     updatedAt: "2026-09-10T07:15:00Z",
-    confirmedCauseId: null,
-    currentFixRevisionId: null,
+  },
+  {
+    ...issueBase,
+    id: "ISS-DOOR-005",
+    version: 1,
+    status: "open",
+    title: "Front left door seal wind noise on DEMO-EV-006",
+    description: "Wind noise at 80 km/h from the upper seal of the front left door during road test.",
+    detectedAt: "2026-09-11T10:20:00Z",
+    reportingTeamId: T.finalInspection,
+    assignedTeamId: null,
+    detectionStationId: S.finalInspection,
+    processStepId: P.finalInspection,
+    entityIds: ["DOOR-0006-FL", "DEMO-EV-006"],
+    partNumber: "DR-800",
+    partRevision: "A",
+    linkedSupplierIds: [],
+    defectCode: "DOOR_SEAL_NOISE",
+    severity: "minor",
+    evidenceIds: ["EVID-DOOR-NOISE"],
+    createdBy: "final-inspection-op-2",
+    createdAt: "2026-09-11T10:25:00Z",
+    updatedAt: "2026-09-11T10:25:00Z",
+  },
+  {
+    ...issueBase,
+    id: "ISS-IGN-006",
+    version: 3,
+    status: "triaged",
+    title: "No wake on start button press on DEMO-EV-007",
+    description: "Pressing the start switch does not wake the vehicle: cluster dark, no contactor click. 12 V battery healthy.",
+    detectedAt: "2026-09-10T16:05:00Z",
+    reportingTeamId: T.finalInspection,
+    assignedTeamId: "TEAM-ELECTRONICS",
+    detectionStationId: "ST-ELECTRICAL-EOL",
+    processStepId: "electrical-eol",
+    entityIds: ["STSW-0007", "BCM-0007", "LVH-0007-C", "DEMO-EV-007"],
+    partNumber: "EL-SW-115",
+    partRevision: "A",
+    linkedSupplierIds: ["SUP-ELEC", "SUP-HARNESS"],
+    defectCode: "NO_WAKE_ON_START",
+    severity: "critical",
+    evidenceIds: ["EVID-IGN-OBS", "EVID-IGN-SCOPE"],
+    createdBy: "eol-tester-1",
+    createdAt: "2026-09-10T16:10:00Z",
+    updatedAt: "2026-09-11T08:30:00Z",
+  },
+  {
+    ...issueBase,
+    id: "ISS-TIRE-007",
+    version: 1,
+    status: "open",
+    title: "TPMS fault on front right wheel of DEMO-EV-005",
+    description: "Tire pressure warning for the front right wheel at rolling test; measured pressure in spec.",
+    detectedAt: "2026-09-11T14:00:00Z",
+    reportingTeamId: T.finalInspection,
+    assignedTeamId: null,
+    detectionStationId: S.finalInspection,
+    processStepId: P.finalInspection,
+    entityIds: ["WHL-0005-FR", EV_DEMO.vehicleBuildId],
+    partNumber: "WHL-700",
+    partRevision: null,
+    linkedSupplierIds: ["SUP-WHEEL"],
+    defectCode: "TPMS_FAULT",
+    severity: "minor",
+    evidenceIds: ["EVID-TIRE-OBS"],
+    createdBy: "final-inspection-op-1",
+    createdAt: "2026-09-11T14:05:00Z",
+    updatedAt: "2026-09-11T14:05:00Z",
   },
 ];
 
 export const causes: CauseAssessment[] = [
-  {
-    id: "CAUSE-PRIOR-1",
-    issueId: EV_DEMO.priorIssueId,
-    state: "rejected",
-    causeType: "supplier_component",
-    responsibleTeamId: null,
-    responsibleSupplierId: EV_DEMO.suppliers.connector,
-    causalStationId: null,
-    causalProcessStepId: null,
-    rationale: "Hypothesis: connector body out of spec. Rejected: connector measured within spec on the gauge; bracket flange was the deviation.",
-    evidenceIds: ["EVID-PRIOR-GAUGE"],
-    supersedesId: null,
-    assessedBy: "quality-eng-1",
-    assessedAt: "2026-08-22T10:00:00Z",
-    isCurrent: false,
-  },
-  {
-    id: "CAUSE-PRIOR-2",
-    issueId: EV_DEMO.priorIssueId,
-    state: "confirmed",
-    causeType: "in_house_manufacturing",
-    responsibleTeamId: T.inHouseManufacturing,
-    responsibleSupplierId: null,
-    causalStationId: S.bracketCell,
-    causalProcessStepId: P.bracketForming,
-    rationale: "Bracket flange 12.5 mm at end of shift on lot DEMO-MFG-LOT-00 (spec 12.0 +/- 0.3) shifts the connector left.",
-    evidenceIds: ["EVID-MFG-INSP-00", "EVID-PRIOR-GAUGE"],
-    supersedesId: "CAUSE-PRIOR-1",
-    assessedBy: "quality-eng-1",
-    assessedAt: "2026-08-22T14:30:00Z",
-    isCurrent: true,
-  },
-  {
-    id: "CAUSE-CONN-1",
-    issueId: "ISS-SUP-CONN-001",
-    state: "confirmed",
-    causeType: "supplier_component",
-    responsibleTeamId: null,
-    responsibleSupplierId: EV_DEMO.suppliers.connector,
-    causalStationId: null,
-    causalProcessStepId: null,
-    rationale: "Supplier confirmed a pin-insertion tooling fault on part of lot DEMO-SUP-LOT-01.",
-    evidenceIds: ["EVID-CONN-PIN", "EVID-CONN-SUPPLIER-8D"],
-    supersedesId: null,
-    assessedBy: "supplier-quality-1",
-    assessedAt: "2026-09-08T09:00:00Z",
-    isCurrent: true,
-  },
-  {
-    id: "CAUSE-LAMP-1",
-    issueId: "ISS-LAMP-002",
-    state: "hypothesis",
-    causeType: "supplier_component",
-    responsibleTeamId: null,
-    responsibleSupplierId: "SUP-LAMP",
-    causalStationId: null,
-    causalProcessStepId: null,
-    rationale: "Suspected lamp vent membrane defect. Not confirmed: lamp not yet returned for analysis.",
-    evidenceIds: ["EVID-LAMP-OBS"],
-    supersedesId: null,
-    assessedBy: "supplier-quality-1",
-    assessedAt: "2026-09-10T09:00:00Z",
-    isCurrent: false,
-  },
+  { id: "CAUSE-PRIOR-1", issueId: EV_DEMO.priorIssueId, state: "rejected", causeType: "supplier_component", responsibleTeamId: null, responsibleSupplierId: EV_DEMO.suppliers.connector, causalStationId: null, causalProcessStepId: null, rationale: "Hypothesis: connector body out of spec. Rejected: connector measured within spec on the gauge; bracket flange was the deviation.", evidenceIds: ["EVID-PRIOR-GAUGE"], supersedesId: null, assessedBy: "quality-eng-1", assessedAt: "2026-08-22T10:00:00Z", isCurrent: false },
+  { id: "CAUSE-PRIOR-2", issueId: EV_DEMO.priorIssueId, state: "confirmed", causeType: "in_house_manufacturing", responsibleTeamId: T.inHouseManufacturing, responsibleSupplierId: null, causalStationId: S.bracketCell, causalProcessStepId: P.bracketForming, rationale: "Bracket flange 12.5 mm at end of shift on lot DEMO-MFG-LOT-00 (spec 12.0 +/- 0.3) shifts the connector left.", evidenceIds: ["EVID-MFG-INSP-00", "EVID-PRIOR-GAUGE"], supersedesId: "CAUSE-PRIOR-1", assessedBy: "quality-eng-1", assessedAt: "2026-08-22T14:30:00Z", isCurrent: true },
+  { id: "CAUSE-CONN-1", issueId: "ISS-SUP-CONN-001", state: "confirmed", causeType: "supplier_component", responsibleTeamId: null, responsibleSupplierId: EV_DEMO.suppliers.connector, causalStationId: null, causalProcessStepId: null, rationale: "Supplier confirmed a pin-insertion tooling fault on part of lot DEMO-SUP-LOT-01.", evidenceIds: ["EVID-CONN-PIN", "EVID-CONN-SUPPLIER-8D"], supersedesId: null, assessedBy: "supplier-quality-1", assessedAt: "2026-09-08T09:00:00Z", isCurrent: true },
+  { id: "CAUSE-LAMP-1", issueId: "ISS-LAMP-002", state: "hypothesis", causeType: "supplier_component", responsibleTeamId: null, responsibleSupplierId: "SUP-LAMP", causalStationId: null, causalProcessStepId: null, rationale: "Suspected lamp vent membrane defect. Not confirmed: lamp not yet returned for analysis.", evidenceIds: ["EVID-LAMP-OBS"], supersedesId: null, assessedBy: "supplier-quality-1", assessedAt: "2026-09-10T09:00:00Z", isCurrent: false },
+  { id: "CAUSE-IGN-1", issueId: "ISS-IGN-006", state: "hypothesis", causeType: "supplier_component", responsibleTeamId: null, responsibleSupplierId: "SUP-ELEC", causalStationId: null, causalProcessStepId: null, rationale: "Start switch contact suspected. Weakened by the scope capture: switch contact measured OK at X-STSW-01.", evidenceIds: ["EVID-IGN-SCOPE"], supersedesId: null, assessedBy: "electronics-eng-1", assessedAt: "2026-09-11T08:00:00Z", isCurrent: false },
+  { id: "CAUSE-IGN-2", issueId: "ISS-IGN-006", state: "hypothesis", causeType: "assembly_process", responsibleTeamId: T.assembly, responsibleSupplierId: null, causalStationId: S.chargePortAssembly, causalProcessStepId: "final-assembly", rationale: "Start request wire W-011 not reaching BCM connector X-BCM-A pin 14: suspect connector not fully seated at IP install. To be confirmed by re-seating and re-test.", evidenceIds: ["EVID-IGN-SCOPE"], supersedesId: null, assessedBy: "electronics-eng-1", assessedAt: "2026-09-11T08:30:00Z", isCurrent: false },
 ];
 
 export const fixes: FixRevision[] = [
@@ -493,12 +474,7 @@ export const fixes: FixRevision[] = [
       { order: 2, instruction: "Re-form bracket flange per WI-BRKT-014 (placeholder work instruction); measure flange 12.0 +/- 0.3 mm." },
       { order: 3, instruction: "Re-install module; check connector alignment gauge on all four points." },
     ],
-    applicability: {
-      partNumber: EV_DEMO.parts.bracket,
-      partRevision: "A",
-      processStepId: P.bracketForming,
-      limitations: ["Verified on one synthetic vehicle (DEMO-EV-002)", "Applies to revision A brackets from the forming cell; other revisions need engineering review"],
-    },
+    applicability: { partNumber: EV_DEMO.parts.bracket, partRevision: "A", processStepId: P.bracketForming, limitations: ["Verified on one synthetic vehicle (DEMO-EV-002)", "Applies to revision A brackets from the forming cell; other revisions need engineering review"] },
     sourceFixRevisionId: null,
     workInstructionRef: "WI-BRKT-014 (placeholder)",
     evidenceIds: ["EVID-PRIOR-GAUGE"],
@@ -535,6 +511,7 @@ export const verifications: Verification[] = [
 export const comments: IssueComment[] = [
   { id: "CMT-PRIOR-1", issueId: EV_DEMO.priorIssueId, body: "Connector itself measured in spec. Checking bracket lot DEMO-MFG-LOT-00 first-article log.", evidenceIds: ["EVID-PRIOR-GAUGE"], authorId: "quality-eng-1", createdAt: "2026-08-22T09:30:00Z" },
   { id: "CMT-LAMP-1", issueId: "ISS-LAMP-002", body: "Lamp sent to supplier for analysis; keep as hypothesis until the report arrives.", evidenceIds: [], authorId: "supplier-quality-1", createdAt: "2026-09-10T09:05:00Z" },
+  { id: "CMT-IGN-1", issueId: "ISS-IGN-006", body: "Traced the start circuit C-START: F12 OK, switch OK, request not seen at the BCM. Next step: inspect X-BCM-A seating.", evidenceIds: ["EVID-IGN-SCOPE"], authorId: "electronics-eng-1", createdAt: "2026-09-11T08:35:00Z" },
 ];
 
 const audit = (id: string, issueId: string, kind: AuditEvent["kind"], actorId: string, at: string, summary: string, fromStatus: AuditEvent["fromStatus"] = null, toStatus: AuditEvent["toStatus"] = null, subjectId: string | null = null): AuditEvent => ({ id, issueId, kind, actorId, at, fromStatus, toStatus, summary, subjectId });
@@ -563,6 +540,12 @@ export const auditEvents: AuditEvent[] = [
   audit("AUD-D-1", "ISS-DOOR-003", "created", "final-inspection-op-1", "2026-09-10T11:10:00Z", "Issue created by Final Inspection", null, "open"),
   audit("AUD-D-2", "ISS-DOOR-003", "transition", "quality-eng-1", "2026-09-10T12:00:00Z", "Triaged", "open", "triaged"),
   audit("AUD-B-1", "ISS-BATT-004", "created", "assembly-op-5", "2026-09-10T07:15:00Z", "Issue created by Charge-port Assembly", null, "open"),
+  audit("AUD-D5-1", "ISS-DOOR-005", "created", "final-inspection-op-2", "2026-09-11T10:25:00Z", "Issue created by Final Inspection", null, "open"),
+  audit("AUD-I-1", "ISS-IGN-006", "created", "eol-tester-1", "2026-09-10T16:10:00Z", "Issue created at Electrical EOL", null, "open"),
+  audit("AUD-I-2", "ISS-IGN-006", "transition", "electronics-eng-1", "2026-09-11T07:50:00Z", "Triaged", "open", "triaged"),
+  audit("AUD-I-3", "ISS-IGN-006", "cause_recorded", "electronics-eng-1", "2026-09-11T08:00:00Z", "Supplier hypothesis: start switch", null, null, "CAUSE-IGN-1"),
+  audit("AUD-I-4", "ISS-IGN-006", "cause_recorded", "electronics-eng-1", "2026-09-11T08:30:00Z", "Assembly hypothesis: BCM connector seating", null, null, "CAUSE-IGN-2"),
+  audit("AUD-T-1", "ISS-TIRE-007", "created", "final-inspection-op-1", "2026-09-11T14:05:00Z", "Issue created by Final Inspection", null, "open"),
 ];
 
 /** Inspection cohorts for supplier rates. Only a complete cohort supports a rate; others are N/A. */

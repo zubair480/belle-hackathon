@@ -5,7 +5,8 @@
  * It is selected only by NEXT_PUBLIC_RECALL_UI_MOCKS=true and is never a fallback for a
  * failed live call. Sample data lives in data.ts.
  */
-import type { EntityContext, EntityRecord, Evidence, Installation } from "@/contracts/common";
+import type { EntityContext, EntityRecord, Evidence, Installation, ReviewIssue } from "@/contracts/common";
+import type { TraceRequest, TraceResult, TraceRow } from "@/contracts/recall";
 import {
   TRANSITIONS,
   type AuditEvent,
@@ -198,6 +199,10 @@ export class MockServer {
     const evidenceIds = new Set<string>([...(entity.origin?.evidenceIds ?? []), ...installations.flatMap((i) => i.evidenceIds)]);
     const limitations = ["Sample data (mock mode); one bounded charge-port path, not a full vehicle BOM", "Removal is not engineering clearance"];
     if (entity.origin?.sourcingType === "unknown") limitations.push("Origin not recorded: supplier/lot unknown; review required");
+    if (entity.kind === "vehicle") {
+      const shp = seed.shipments.find((x) => x.vehicleId === entity.id);
+      if (shp) limitations.push(`Shipped ${shp.shippedAt} to ${seed.customers.find((c) => c.id === shp.customerId)?.name ?? shp.customerId} (${shp.id})`);
+    }
     return clone({
       entity,
       currentParents,
@@ -395,6 +400,109 @@ export class MockServer {
         return issue;
       }),
     );
+  }
+
+  // ---- assembly trace (frozen TraceResult DTO; mock evaluation over the in-memory records) ----
+
+  runTrace(request: TraceRequest): TraceResult {
+    const { root, scope } = request;
+    const asOf = scope.configurationAsOf;
+    const active = (i: Installation) => i.installedAt <= asOf && (i.removedAt === null || i.removedAt > asOf);
+    const overlaps = (i: Installation) => i.installedAt <= asOf && (i.removedAt === null || i.removedAt > scope.historyFrom);
+    const all = [...this.store.entities.values()];
+    const rootMatch = (e: EntityRecord) => {
+      const o = e.origin;
+      if (e.kind === "vehicle" || !o) return false;
+      if (root.kind === "component_serial") return e.id === root.id;
+      if (root.kind === "supplier_batch") return o.sourcingType === "supplier" && (o.supplierBatchCode === root.id || o.productionLotId === root.id);
+      return o.sourcingType === "in_house" && (o.manufacturingLotCode === root.id || o.productionLotId === root.id);
+    };
+    const roots = all.filter(rootMatch);
+    const paths: TraceResult["paths"] = [];
+    const climb = (startId: string, pred: (i: Installation) => boolean): string | null => {
+      let cur = startId;
+      for (let hops = 0; hops < 6; hops++) {
+        const link = this.store.installations.find((i) => i.childId === cur && pred(i));
+        if (!link) return null;
+        paths.push({ relationshipId: link.id, fromId: link.childId, toId: link.parentId, kind: "INSTALLED_IN", validFrom: link.installedAt, validTo: link.removedAt, evidenceIds: link.evidenceIds });
+        const parent = this.store.entities.get(link.parentId);
+        if (!parent) return null;
+        if (parent.kind === "vehicle") return parent.id;
+        cur = parent.id;
+      }
+      return null;
+    };
+    const vehicleRows = new Map<string, TraceRow>();
+    const rowFor = (v: EntityRecord): TraceRow => {
+      const existing = vehicleRows.get(v.id);
+      if (existing) return existing;
+      const shp = seed.shipments.find((x) => x.vehicleId === v.id);
+      const row: TraceRow = { entityId: v.id, entityKind: "vehicle", partNumber: v.partNumber, serialNumber: v.serialNumber, buildId: v.vehicle?.buildId ?? v.id, vin: v.vehicle?.vin ?? null, locationState: v.locationState, customerId: shp?.customerId ?? null, shipmentLineIds: shp ? [shp.id] : [], currentContainment: false, historicalContainment: false, hasUnresolvedEvidence: false, engineeringReview: "not_recorded", evidenceIds: [], issueIds: [...this.store.issues.values()].filter((i) => i.entityIds.includes(v.id)).map((i) => i.id) };
+      vehicleRows.set(v.id, row);
+      return row;
+    };
+    const componentRows: TraceRow[] = [];
+    let loose = 0;
+    let quarantined = 0;
+    for (const c of roots) {
+      const rootId = root.kind === "component_serial" ? c.id : (c.origin?.productionLotId ?? root.id);
+      if (root.kind !== "component_serial") paths.push({ relationshipId: `REL-${rootId}-${c.id}`, fromId: rootId, toId: c.id, kind: root.kind === "supplier_batch" ? "BATCH_HAS_COMPONENT" : "LOT_PRODUCED_COMPONENT", validFrom: null, validTo: null, evidenceIds: c.origin?.evidenceIds ?? [] });
+      const cur = climb(c.id, active);
+      const hist = climb(c.id, overlaps);
+      if (c.locationState === "quarantine") quarantined += 1;
+      else if (!cur && !hist) loose += 1;
+      componentRows.push({ entityId: c.id, entityKind: c.kind === "subassembly" ? "subassembly" : "component", partNumber: c.partNumber, serialNumber: c.serialNumber, buildId: null, vin: null, locationState: c.locationState, customerId: null, shipmentLineIds: [], currentContainment: Boolean(cur), historicalContainment: Boolean(hist), hasUnresolvedEvidence: false, engineeringReview: cur ? "not_recorded" : hist ? "pending" : "not_recorded", evidenceIds: c.origin?.evidenceIds ?? [], issueIds: [...this.store.issues.values()].filter((i) => i.entityIds.includes(c.id)).map((i) => i.id) });
+      if (cur) rowFor(this.store.entities.get(cur)!).currentContainment = true;
+      if (hist) {
+        const r = rowFor(this.store.entities.get(hist)!);
+        r.historicalContainment = true;
+        if (!cur) r.engineeringReview = "pending";
+      }
+    }
+    // Unresolved: tracked part family with an unknown origin anywhere in scope.
+    const issues: ReviewIssue[] = [];
+    let unresolvedOnly = 0;
+    for (const e of all) {
+      if (e.kind === "vehicle" || e.partNumber !== scope.trackedPartNumber || e.origin?.sourcingType !== "unknown") continue;
+      const v = climb(e.id, active);
+      if (!v) continue;
+      const r = rowFor(this.store.entities.get(v)!);
+      r.hasUnresolvedEvidence = true;
+      if (!r.currentContainment) unresolvedOnly += 1;
+      issues.push({ id: `RI-${e.id}`, code: "UNKNOWN_ORIGIN", severity: "warning", message: `${e.id} (${e.partNumber}) has no recorded origin; cannot confirm or exclude root membership.`, entityIds: [e.id, v], evidenceIds: [] });
+    }
+    const vrows = [...vehicleRows.values()];
+    const current = vrows.filter((r) => r.currentContainment);
+    const customerIds = new Set(current.map((r) => r.customerId).filter((x): x is string => Boolean(x)));
+    const counts = {
+      currentOnsiteVehicleCount: current.filter((r) => r.locationState !== "shipped").length,
+      currentShippedVehicleCount: current.filter((r) => r.locationState === "shipped").length,
+      currentCustomerCount: customerIds.size,
+      looseCandidateComponentCount: loose,
+      quarantinedComponentCount: quarantined,
+      historicalOnlyVehicleCount: vrows.filter((r) => r.historicalContainment && !r.currentContainment).length,
+      unresolvedOnlyVehicleCount: unresolvedOnly,
+    };
+    const evidenceIds = new Set<string>([...componentRows.flatMap((r) => r.evidenceIds), ...paths.flatMap((p) => p.evidenceIds)]);
+    return clone({
+      contractVersion: "assembly-quality-v4",
+      runId: this.nextId("RUN"),
+      revisionId: request.revisionId,
+      root,
+      createdAt: this.now(),
+      engineVersion: "ui-mock-0.1",
+      dataHash: seed.pseudoHash(JSON.stringify(root) + asOf).slice(0, 32),
+      scope,
+      executionStatus: "completed",
+      dataCompleteness: issues.length ? "gaps_found" : "reviewed_scope",
+      counts,
+      rows: [...vrows, ...componentRows],
+      issues,
+      evidence: [...evidenceIds].map((id) => this.store.evidence.get(id)).filter((e): e is Evidence => Boolean(e)),
+      paths,
+      customers: seed.customers.filter((c) => vrows.some((r) => r.customerId === c.id)).map((c) => ({ id: c.id, name: c.name })),
+      ...(request.incidentId ? { incidentId: request.incidentId } : {}),
+    });
   }
 
   // ---- similar resolutions (deterministic, explainable) ----

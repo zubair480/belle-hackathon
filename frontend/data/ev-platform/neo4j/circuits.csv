@@ -1,0 +1,13 @@
+id,name,system,synonyms,description
+C-START,Start / wake (ignition),lv,ignition|start|wake|power on|won't start|no start|does not wake|key,"12 V start switch input to the BCM, wake request to the VCU, contactor close command to the HV junction box."
+C-LV-SUPPLY,12 V supply,lv,12v supply|low voltage supply|dc-dc|aux power,DC-DC converter charges the 12 V battery; the fuse box distributes 12 V to modules.
+C-HV-TRACTION,HV traction,hv,traction|drive power|hv|high voltage|motor power|orange cable,Pack to junction box to front and rear inverters and drive units.
+C-CHARGE,Charging,charging,charging|charge|charger|won't charge|not charging|inlet,Charge connector through the charge harness to the OBC and junction box; BMS supervises the pack.
+C-LIGHT-FRONT,Front lighting,lighting,headlights|headlamps|front lights|lighting,BCM drives both headlamps through the front LV harness.
+C-LIGHT-REAR,Rear lighting,lighting,tail lights|brake lights|rear lights,BCM drives both tail lamps through the rear LV harness.
+C-STEER,Steering,chassis,steering|power steering|epas|heavy steering,Fuse box supplies EPAS; VCU commands it over CAN; steering-wheel controls talk to the BCM over LIN.
+C-DOORS,Door locks and windows,body,door lock|window|locks|central locking,BCM to each door module through the cabin harness.
+C-SEATS,Seat heating and airbags,cabin,seat heater|seat|airbag,Fuse box to front seats through the cabin harness.
+C-THERMAL,Thermal,thermal,cooling|heating|heat pump|overheat,HV supply to the thermal module; VCU control over CAN.
+C-INFO,Infotainment and cluster,cabin,screen|display|infotainment|cluster,12 V to head unit and cluster; CAN between them and the VCU.
+C-CAN,Vehicle CAN bus,lv,can|can bus|network|communication,"Twisted pair between VCU, BCM, BMS, inverters, OBC, EPAS, thermal and displays."

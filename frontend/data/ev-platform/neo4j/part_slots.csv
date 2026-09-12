@@ -1,0 +1,57 @@
+slot,label,kind,parent,system,zone,side,prefix,sideSuffix,partNumber,partRevision,sourcing,supplierId,supplierBatchCode,manufacturingLotCode,workOrderId,processStepId,manufacturingTeamId,synonyms,spec
+charge-port-module,Charge-port module,subassembly,,charging,rear-quarter-left,L,CPM,,CP-MOD-300,A,in_house,,,DEMO-ASM-LOT-01,WO-DEMO-0100,chargeport-install,TEAM-ASSEMBLY,charge port|charging port|charge door|charger inlet|port,"{""inlet"":""CCS2 (demo)"",""mounting"":""4x M6 to rear quarter""}"
+charge-connector,Charge connector,component,charge-port-module,charging,rear-quarter-left,L,CONN,,CP-CONN-100,B,supplier,SUP-CONNECTOR,DEMO-SUP-LOT-01,,,,,connector|inlet connector|ccs connector|charge pins|charging connector,"{""ratedCurrent"":""500 A DC (demo)"",""pins"":9}"
+charge-bracket,Mounting bracket,component,charge-port-module,charging,rear-quarter-left,L,BRKT,,CP-BRKT-200,A,in_house,,,DEMO-MFG-LOT-01,WO-DEMO-0001,bracket-forming,TEAM-INHOUSE-MFG,bracket|port bracket|connector bracket,"{""material"":""Al 6061 stamped"",""flange"":""12.0 +/- 0.3 mm""}"
+charge-harness,Charge harness (inlet to OBC),component,,charging,underbody,L,CHH,,HV-960,A,supplier,SUP-HARNESS,DEMO-HVC-LOT-05,,,,,charge cable|inlet harness|charging harness,"{""gauge"":""50 mm2"",""voltageClass"":""HV""}"
+obc,On-board charger,component,,charging,front-bay,L,OBC,,PE-OBC-700,C,supplier,SUP-POWER,DEMO-PE-LOT-02,,,,,obc|onboard charger|ac charger,"{""power"":""11 kW AC (demo)""}"
+hv-junction,HV junction box,component,,hv,front-bay,C,HVJ,,HV-JB-500,B,in_house,,,DEMO-HVJ-LOT-04,WO-HVJ-0004,hv-box-assembly,TEAM-BATTERY,junction box|hv box|contactor box|pdu|power distribution,"{""contactors"":3,""fuses"":""400 A main""}"
+battery-pack,HV battery pack,subassembly,,hv,underbody,C,BATT,,BP-400,C,in_house,,,DEMO-BATT-LOT-02,WO-BATT-0002,battery-pack-assembly,TEAM-BATTERY,battery|pack|hv battery|traction battery|battery pack,"{""nominal"":""400 V, 77 kWh (demo)"",""modules"":8}"
+cell-modules,Cell modules,component,battery-pack,hv,underbody,C,CELL,,CELL-MOD-410,2,supplier,SUP-CELLS,DEMO-CELL-LOT-07,,,,,cells|cell module|battery cells|modules,"{""chemistry"":""NMC pouch (demo)"",""count"":8}"
+bms,Battery management system,component,battery-pack,hv,underbody,C,BMS,,EL-BMS-320,A,supplier,SUP-ELEC,DEMO-ELEC-LOT-09,,,,,bms|battery management|battery controller,"{""bus"":""CAN 500 kbit/s""}"
+front-drive-unit,Front drive unit,subassembly,,powertrain,front-bay,C,FDU,,DU-500,B,in_house,,,DEMO-DU-LOT-03,WO-DU-0003,drive-unit-assembly,TEAM-BATTERY,front motor|front drive|front engine|engine|motor|fdu|front axle motor,"{""peak"":""150 kW (demo)"",""reduction"":""9.0:1""}"
+rear-drive-unit,Rear drive unit,subassembly,,powertrain,rear,C,RDU,,DU-500,B,in_house,,,DEMO-DU-LOT-03,WO-DU-0003,drive-unit-assembly,TEAM-BATTERY,rear motor|rear drive|rear engine|rdu|rear axle motor,"{""peak"":""150 kW (demo)""}"
+inverter-front,Front inverter,component,,hv,front-bay,C,INV,F,PE-INV-600,B,supplier,SUP-POWER,DEMO-PE-LOT-02,,,,,front inverter|inverter|traction inverter,"{""type"":""SiC 3-phase (demo)""}"
+inverter-rear,Rear inverter,component,,hv,rear,C,INV,R,PE-INV-600,B,supplier,SUP-POWER,DEMO-PE-LOT-02,,,,,rear inverter,"{""type"":""SiC 3-phase (demo)""}"
+dcdc,DC-DC converter,component,,lv,front-bay,R,DCDC,,PE-DCDC-650,A,supplier,SUP-POWER,DEMO-PE-LOT-02,,,,,dcdc|dc-dc|converter|12v converter,"{""output"":""12 V / 2.5 kW (demo)""}"
+12v-battery,12 V battery,component,,lv,front-bay,L,LVB,,LV-BAT-120,A,supplier,SUP-BATT12,DEMO-LVB-LOT-01,,,,,12v|12 v battery|low voltage battery|aux battery|auxiliary battery|small battery,"{""type"":""LFP 12 V 40 Ah (demo)""}"
+fuse-box,Fuse and relay box,component,,lv,front-bay,R,FUSE,,EL-FB-210,A,supplier,SUP-ELEC,DEMO-ELEC-LOT-09,,,,,fuse box|fuses|relay box|fuse|junction,"{""fuses"":[""F12 start 10 A"",""F20 EPAS 60 A"",""F31 lighting 20 A""]}"
+hv-harness-front,"HV harness, front",component,,hv,underbody,C,HVC,F,HV-950,A,supplier,SUP-HARNESS,DEMO-HVC-LOT-05,,,,,hv harness|hv cable|orange cable|high voltage cable|hv wiring,"{""gauge"":""70 mm2"",""voltageClass"":""HV""}"
+hv-harness-rear,"HV harness, rear",component,,hv,underbody,C,HVC,R,HV-951,A,supplier,SUP-HARNESS,DEMO-HVC-LOT-05,,,,,rear hv harness|rear hv cable,"{""gauge"":""70 mm2"",""voltageClass"":""HV""}"
+lv-harness-front,"LV harness, front",component,,lv,front-bay,C,LVH,F,LV-H-810,B,supplier,SUP-HARNESS,DEMO-LVH-LOT-03,,,,,front harness|engine bay harness|front wiring|lv harness,"{""circuits"":42}"
+lv-harness-cabin,"LV harness, cabin",component,,lv,cabin-front,C,LVH,C,LV-H-820,B,supplier,SUP-HARNESS,DEMO-LVH-LOT-03,,,,,cabin harness|dash harness|interior wiring|body harness,"{""circuits"":68}"
+lv-harness-rear,"LV harness, rear",component,,lv,rear,C,LVH,R,LV-H-830,A,supplier,SUP-HARNESS,DEMO-LVH-LOT-03,,,,,rear harness|rear wiring|tail harness,"{""circuits"":24}"
+bcm,Body control module,component,,lv,cabin-front,L,BCM,,EL-BCM-300,B,supplier,SUP-ELEC,DEMO-ELEC-LOT-09,,,,,bcm|body controller|body module,"{""bus"":""CAN + LIN""}"
+vcu,Vehicle control unit,component,,lv,cabin-front,C,VCU,,EL-VCU-310,C,in_house,,,DEMO-VCU-LOT-02,WO-VCU-0002,controller-flash,TEAM-ELECTRONICS,vcu|vehicle controller|ecu|main controller|brain,"{""software"":""VCU-SW 1.4 (demo)""}"
+start-switch,Start/stop switch (ignition),component,,lv,cabin-front,L,STSW,,EL-SW-115,A,supplier,SUP-ELEC,DEMO-ELEC-LOT-09,,,,,ignition|start button|start switch|power button|ignition switch|key|start,"{""type"":""momentary push, 2 contacts""}"
+instrument-cluster,Instrument cluster,component,,cabin,cabin-front,L,ICL,,EL-IC-400,A,supplier,SUP-ELEC,DEMO-ELEC-LOT-09,,,,,cluster|dashboard display|gauges|instrument,"{""display"":""12.3 in (demo)""}"
+infotainment,Infotainment head unit,component,,cabin,cabin-front,C,IHU,,EL-IHU-420,A,supplier,SUP-ELEC,DEMO-ELEC-LOT-09,,,,,infotainment|screen|head unit|center screen|radio,"{""display"":""15 in (demo)""}"
+dashboard,Dashboard assembly,subassembly,,cabin,cabin-front,C,DASH,,IN-IP-900,A,in_house,,,DEMO-IP-LOT-01,WO-IP-0001,ip-subassembly,TEAM-ASSEMBLY,dash|dashboard|instrument panel|ip,{}
+steering-wheel,Steering wheel,component,,cabin,cabin-front,L,STW,,IN-SW-930,A,supplier,SUP-INTERIOR,DEMO-INT-LOT-04,,,,,steering wheel|wheel controls|steering,"{""airbag"":""driver (demo)""}"
+steering-column,Steering column,component,,chassis,cabin-front,L,STC,,CH-SC-940,A,supplier,SUP-STEER,DEMO-STR-LOT-02,,,,,column|steering column|steering shaft,"{""adjust"":""manual tilt/reach""}"
+epas,Electric power steering,component,,chassis,front-bay,C,EPAS,,CH-EPAS-950,B,supplier,SUP-STEER,DEMO-STR-LOT-02,,,,,epas|power steering|steering rack|rack|steering motor,"{""type"":""rack EPS 12 V""}"
+seat-FL,Driver seat,component,,cabin,cabin-front,FL,SEAT,FL,IN-SEAT-910,A,supplier,SUP-SEATS,DEMO-SEAT-LOT-06,,,,,driver seat|front left seat|seat|seats,"{""heated"":true,""airbag"":""side (demo)""}"
+seat-FR,Passenger seat,component,,cabin,cabin-front,FR,SEAT,FR,IN-SEAT-910,A,supplier,SUP-SEATS,DEMO-SEAT-LOT-06,,,,,passenger seat|front right seat,"{""heated"":true}"
+seat-RL,Rear left seat,component,,cabin,cabin-rear,RL,SEAT,RL,IN-SEAT-920,A,supplier,SUP-SEATS,DEMO-SEAT-LOT-06,,,,,rear left seat|rear seat|back seat,{}
+seat-RR,Rear right seat,component,,cabin,cabin-rear,RR,SEAT,RR,IN-SEAT-920,A,supplier,SUP-SEATS,DEMO-SEAT-LOT-06,,,,,rear right seat,{}
+center-console,Center console,component,,cabin,cabin-front,C,CCON,,IN-CC-915,A,supplier,SUP-INTERIOR,DEMO-INT-LOT-04,,,,,console|center console|armrest,{}
+door-FL,Front left door,component,,body,left-side,FL,DOOR,FL,DR-800,A,in_house,,,DEMO-DOOR-LOT-09,WO-DOOR-0009,door-stamping,TEAM-BODY,driver door|front left door|left front door|door,"{""gapSpec"":""4.0 +/- 0.5 mm""}"
+door-FR,Front right door,component,,body,right-side,FR,DOOR,FR,DR-801,A,in_house,,,DEMO-DOOR-LOT-09,WO-DOOR-0009,door-stamping,TEAM-BODY,passenger door|front right door|right front door,"{""gapSpec"":""4.0 +/- 0.5 mm""}"
+door-RL,Rear left door,component,,body,left-side,RL,DOOR,RL,DR-802,A,in_house,,,DEMO-DOOR-LOT-09,WO-DOOR-0009,door-stamping,TEAM-BODY,rear left door|left rear door,{}
+door-RR,Rear right door,component,,body,right-side,RR,DOOR,RR,DR-803,A,in_house,,,DEMO-DOOR-LOT-09,WO-DOOR-0009,door-stamping,TEAM-BODY,rear right door|right rear door,{}
+hood,Hood (frunk lid),component,,body,front,C,HOOD,,BD-HD-700,A,in_house,,,DEMO-BODY-LOT-05,WO-BODY-0005,door-stamping,TEAM-BODY,hood|bonnet|frunk|frunk lid,{}
+tailgate,Tailgate,component,,body,rear,C,TAIL,,BD-TG-710,A,in_house,,,DEMO-BODY-LOT-05,WO-BODY-0005,door-stamping,TEAM-BODY,tailgate|trunk|trunk lid|boot|hatch,{}
+windshield,Windshield,component,,body,front,C,GLS,F,GLS-900,,unknown,,,,,,,windshield|windscreen|front glass,"{""type"":""laminated""}"
+rear-glass,Rear glass,component,,body,rear,C,GLS,R,GLS-901,,supplier,SUP-GLASS,DEMO-GLS-LOT-02,,,,,rear glass|rear window|back glass,"{""type"":""tempered, heated""}"
+mirror-L,Left mirror,component,,body,left-side,L,MIR,L,BD-MIR-720,A,supplier,SUP-MIRROR,DEMO-MIR-LOT-01,,,,,left mirror|driver mirror|mirror|side mirror,"{""heated"":true,""camera"":false}"
+mirror-R,Right mirror,component,,body,right-side,R,MIR,R,BD-MIR-720,A,supplier,SUP-MIRROR,DEMO-MIR-LOT-01,,,,,right mirror|passenger mirror,"{""heated"":true}"
+headlamp-L,Left headlamp,component,,lighting,front,L,LAMP,L,LMP-600,A,supplier,SUP-LAMP,DEMO-LAMP-LOT-03,,,,,left headlamp|left headlight|headlamp|headlight|front light|lamp,"{""type"":""LED matrix (demo)""}"
+headlamp-R,Right headlamp,component,,lighting,front,R,LAMP,R,LMP-600,A,supplier,SUP-LAMP,DEMO-LAMP-LOT-03,,,,,right headlamp|right headlight,"{""type"":""LED matrix (demo)""}"
+taillamp-L,Left tail lamp,component,,lighting,rear,L,TLMP,L,LMP-650,A,supplier,SUP-LAMP,DEMO-LAMP-LOT-03,,,,,left tail lamp|left taillight|tail lamp|taillight|rear light|brake light,{}
+taillamp-R,Right tail lamp,component,,lighting,rear,R,TLMP,R,LMP-650,A,supplier,SUP-LAMP,DEMO-LAMP-LOT-03,,,,,right tail lamp|right taillight,{}
+bumper-front,Front bumper,component,,body,front,C,BMP,F,BD-BMP-730,A,supplier,SUP-PLASTICS,DEMO-PLA-LOT-02,,,,,front bumper|bumper|front fascia,{}
+bumper-rear,Rear bumper,component,,body,rear,C,BMP,R,BD-BMP-731,A,supplier,SUP-PLASTICS,DEMO-PLA-LOT-02,,,,,rear bumper|rear fascia,{}
+wheel-FL,Front left wheel and tire,component,,chassis,left-side,FL,WHL,FL,WHL-700,,supplier,SUP-WHEEL,DEMO-WHL-LOT-11,,,,,front left tire|front left tyre|front left wheel|left front tire|driver front tire|tire|tyre|wheel|tires|wheels,"{""size"":""235/45 R19 (demo)"",""torque"":""140 Nm""}"
+wheel-FR,Front right wheel and tire,component,,chassis,right-side,FR,WHL,FR,WHL-700,,supplier,SUP-WHEEL,DEMO-WHL-LOT-11,,,,,front right tire|front right tyre|front right wheel|right front tire|passenger front tire,"{""size"":""235/45 R19 (demo)""}"
+wheel-RL,Rear left wheel and tire,component,,chassis,left-side,RL,WHL,RL,WHL-700,,supplier,SUP-WHEEL,DEMO-WHL-LOT-11,,,,,rear left tire|rear left tyre|rear left wheel|left rear tire,"{""size"":""235/45 R19 (demo)""}"
+wheel-RR,Rear right wheel and tire,component,,chassis,right-side,RR,WHL,RR,WHL-700,,supplier,SUP-WHEEL,DEMO-WHL-LOT-11,,,,,rear right tire|rear right tyre|rear right wheel|right rear tire,"{""size"":""235/45 R19 (demo)""}"
+thermal-module,Thermal module (heat pump),subassembly,,thermal,front-bay,C,THM,,TH-HP-560,A,supplier,SUP-THERMAL,DEMO-THM-LOT-02,,,,,thermal|heat pump|cooling|coolant|hvac|chiller,"{""type"":""R744 heat pump (demo)""}"

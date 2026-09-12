@@ -1,21 +1,25 @@
 "use client";
 /**
- * RecallWorkspace: the EV assembly quality workspace shell. Vehicles (sketch explorer),
- * Issues, Resolutions and Team/Supplier Insights. Mock mode is announced in a persistent banner.
+ * RecallWorkspace: the EV assembly quality workspace shell. Vehicles (3D sketch explorer),
+ * Issues, Resolutions, Team/Supplier Insights and the assistant chat. Explorer state lives
+ * here so the agent's UI actions and the screens share it. Mock mode is announced visibly.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReferenceCatalog } from "@/contracts/issues";
 import { CONTRACT_VERSION } from "@/contracts/common";
 import "../../components/recall/recall.css";
+import { AgentChat } from "../../components/recall/AgentChat";
 import { IssueBoard } from "../../components/recall/IssueBoard";
 import { IssueDetailView, type IssueDetailTab } from "../../components/recall/IssueDetail";
 import { InsightsView } from "../../components/recall/InsightsView";
 import { NewIssueForm } from "../../components/recall/NewIssueForm";
 import { VehicleExplorer } from "../../components/recall/VehicleExplorer";
 import { Banner, ErrorBanner, Loading } from "../../components/recall/primitives";
+import type { AgentContext, UiAction } from "../../agent/types";
 import { getDefaultClient, type RecallClient } from "./api";
-import { WorkspaceContext, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
+import { WorkspaceContext, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
 import { makeLookup } from "./format";
+import { SKETCH_VEHICLES, slotForEntityId } from "./sketches/car3d";
 
 export type RecallWorkspaceProps = {
   /** Injected client (tests / integration). Defaults to env-selected live or mock client. */
@@ -23,9 +27,11 @@ export type RecallWorkspaceProps = {
   initialView?: WorkspaceView;
   /** Disables the sketch zoom tween (tests). */
   instantZoom?: boolean;
+  /** Start with the assistant panel open. */
+  chatOpen?: boolean;
 };
 
-type Route = { view: WorkspaceView; issueId: string | null; issueTab: IssueDetailTab; entityId: string | null };
+type Route = { view: WorkspaceView; issueId: string | null; issueTab: IssueDetailTab };
 
 const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "vehicles", label: "Vehicles" },
@@ -34,9 +40,13 @@ const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "insights", label: "Team & supplier insights" },
 ];
 
-export function RecallWorkspace({ client, initialView = "vehicles", instantZoom = false }: RecallWorkspaceProps) {
+const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
+
+export function RecallWorkspace({ client, initialView = "vehicles", instantZoom = false, chatOpen: chatOpenInitial = false }: RecallWorkspaceProps) {
   const c = useMemo(() => client ?? getDefaultClient(), [client]);
-  const [route, setRoute] = useState<Route>({ view: initialView, issueId: null, issueTab: "overview", entityId: null });
+  const [route, setRoute] = useState<Route>({ view: initialView, issueId: null, issueTab: "overview" });
+  const [explorer, setExplorerState] = useState<ExplorerState>(INITIAL_EXPLORER);
+  const [chatOpen, setChatOpen] = useState(chatOpenInitial);
   const [newIssue, setNewIssue] = useState<{ open: boolean; prefill?: NewIssuePrefill }>({ open: false });
   const [catalog, setCatalog] = useState<ReferenceCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<{ code: string; message: string } | null>(null);
@@ -55,19 +65,84 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
     };
   }, [c, catalogTick]);
 
-  const navigate = useCallback((view: WorkspaceView) => setRoute({ view, issueId: null, issueTab: "overview", entityId: null }), []);
-  const openIssue = useCallback((issueId: string, tab?: string) => setRoute({ view: "issues", issueId, issueTab: (tab as IssueDetailTab) ?? "overview", entityId: null }), []);
+  const setExplorer = useCallback((patch: Partial<ExplorerState> | ((s: ExplorerState) => Partial<ExplorerState>)) => {
+    setExplorerState((s) => ({ ...s, ...(typeof patch === "function" ? patch(s) : patch) }));
+  }, []);
+  const navigate = useCallback((view: WorkspaceView) => setRoute({ view, issueId: null, issueTab: "overview" }), []);
+  const openIssue = useCallback((issueId: string, tab?: string) => setRoute({ view: "issues", issueId, issueTab: (tab as IssueDetailTab) ?? "overview" }), []);
   const openNewIssue = useCallback((prefill?: NewIssuePrefill) => setNewIssue({ open: true, prefill }), []);
-  const openEntity = useCallback((entityId: string) => setRoute({ view: "vehicles", issueId: null, issueTab: "overview", entityId }), []);
+  const openEntity = useCallback(
+    (entityId: string) => {
+      const hit = slotForEntityId(entityId);
+      const vehicle = SKETCH_VEHICLES.find((v) => v.entityId === entityId || (hit && v.suffix === hit.suffix));
+      setRoute({ view: "vehicles", issueId: null, issueTab: "overview" });
+      setExplorer((s) => ({ vehicleBuildId: vehicle?.buildId ?? s.vehicleBuildId, selectedEntityId: vehicle && vehicle.entityId === entityId ? null : entityId }));
+    },
+    [setExplorer],
+  );
+
+  const applyUiActions = useCallback(
+    (actions: UiAction[]) => {
+      for (const a of actions) {
+        switch (a.type) {
+          case "select_vehicle":
+            setRoute({ view: "vehicles", issueId: null, issueTab: "overview" });
+            setExplorer({ vehicleBuildId: a.buildId, selectedEntityId: null, circuitId: null });
+            break;
+          case "focus_part":
+            setRoute({ view: "vehicles", issueId: null, issueTab: "overview" });
+            setExplorer((s) => {
+              const hit = slotForEntityId(a.entityId);
+              const v = hit ? SKETCH_VEHICLES.find((x) => x.suffix === hit.suffix) : null;
+              return { vehicleBuildId: v?.buildId ?? s.vehicleBuildId, selectedEntityId: a.entityId };
+            });
+            break;
+          case "mark":
+            setExplorer((s) => ({ markers: [...s.markers, { id: `M-${Date.now().toString(36)}-${s.markers.length + 1}`, entityId: a.entityId, slot: a.slot, wireId: a.wireId, note: a.note, source: "agent" }] }));
+            break;
+          case "clear_marks":
+            setExplorer({ markers: [] });
+            break;
+          case "highlight_circuit":
+            setRoute((r) => (r.view === "vehicles" ? r : { view: "vehicles", issueId: null, issueTab: "overview" }));
+            setExplorer({ circuitId: a.circuitId, wiring: true });
+            break;
+          case "show_wiring":
+            setExplorer({ wiring: a.on });
+            break;
+          case "camera":
+            setExplorer((s) => ({ cameraRequest: { preset: a.preset, seq: (s.cameraRequest?.seq ?? 0) + 1 } }));
+            break;
+          case "open_issue":
+            openIssue(a.issueId);
+            break;
+          case "open_new_issue":
+            setExplorerState((s) => {
+              const markerIds = s.markers.map((m) => m.entityId).filter((x): x is string => Boolean(x));
+              const wireIds = s.markers.map((m) => m.wireId).filter((x): x is string => Boolean(x));
+              setNewIssue({ open: true, prefill: { entityIds: [...new Set([...a.entityIds, ...markerIds])], title: a.title ?? undefined, contextNote: `${a.note}${wireIds.length ? ` Wires under suspicion: ${wireIds.join(", ")}.` : ""}` } });
+              return s;
+            });
+            break;
+          case "navigate":
+            navigate(a.view);
+            break;
+        }
+      }
+    },
+    [setExplorer, openIssue, navigate],
+  );
+
+  const agentContext = useCallback((): AgentContext => ({ vehicleBuildId: explorer.vehicleBuildId, selectedEntityId: explorer.selectedEntityId, view: route.view, openIssueId: route.issueId }), [explorer.vehicleBuildId, explorer.selectedEntityId, route.view, route.issueId]);
 
   const api: WorkspaceApi = useMemo(
-    () => ({ client: c, catalog, lookup: makeLookup(catalog), view: route.view, navigate, openIssue, openNewIssue, openEntity }),
-    [c, catalog, route.view, navigate, openIssue, openNewIssue, openEntity],
+    () => ({ client: c, catalog, lookup: makeLookup(catalog), view: route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen, setChatOpen }),
+    [c, catalog, route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen],
   );
 
   return (
     <WorkspaceContext.Provider value={api}>
-      <div className="rrx rrx-shell">
+      <div className={`rrx rrx-shell${chatOpen ? " rrx-with-chat" : ""}`}>
         <header className="rrx-topbar">
           <div className="rrx-brand">
             <strong>RecallRadius</strong>
@@ -81,6 +156,9 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             ))}
           </nav>
           <div className="rrx-topbar-right">
+            <button type="button" className={`rrx-btn rrx-btn--sm${chatOpen ? "" : " rrx-btn--ghost"}`} onClick={() => setChatOpen(!chatOpen)} aria-pressed={chatOpen} data-testid="toggle-chat">
+              Assistant
+            </button>
             <button type="button" className="rrx-btn rrx-btn--primary rrx-btn--sm" onClick={() => openNewIssue()} data-testid="topbar-new-issue">
               + New issue
             </button>
@@ -94,7 +172,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
           {c.mode === "mock" ? (
             <div style={{ marginBottom: 12 }}>
               <Banner kind="warning">
-                <strong>Sample data (mock mode).</strong> All vehicles, parts, teams, suppliers and issues on this screen are synthetic development data served from an in-memory mock. Nothing here is a real factory record. Set NEXT_PUBLIC_RECALL_UI_MOCKS=false for the integrated demo.
+                <strong>Sample data (mock mode).</strong> All vehicles, parts, wiring, teams, suppliers, customers and issues on this screen are synthetic development data served from an in-memory mock. Nothing here is a real factory record. Set NEXT_PUBLIC_RECALL_UI_MOCKS=false for the integrated demo.
               </Banner>
             </div>
           ) : null}
@@ -105,11 +183,12 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
           ) : null}
           {!catalog && !catalogError ? <Loading label="Loading reference catalog" /> : null}
 
-          {route.view === "vehicles" ? <VehicleExplorer focusEntityId={route.entityId} instantZoom={instantZoom} /> : null}
+          {route.view === "vehicles" ? <VehicleExplorer instantZoom={instantZoom} /> : null}
           {route.view === "issues" ? route.issueId ? <IssueDetailView issueId={route.issueId} initialTab={route.issueTab} onBack={() => navigate("issues")} /> : <IssueBoard mode="issues" /> : null}
           {route.view === "resolutions" ? <IssueBoard mode="resolutions" /> : null}
           {route.view === "insights" ? <InsightsView /> : null}
         </main>
+        {chatOpen ? <AgentChat /> : null}
 
         {newIssue.open ? (
           <div className="rrx-overlay" role="presentation">

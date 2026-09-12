@@ -1,0 +1,10 @@
+id,name
+charging,Charging
+hv,High-voltage traction
+lv,12 V / body electrical
+powertrain,Drive units
+thermal,Thermal
+body,Body and closures
+chassis,Chassis and wheels
+lighting,Lighting
+cabin,Cabin and controls

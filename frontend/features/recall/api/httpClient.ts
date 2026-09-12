@@ -20,6 +20,8 @@ import {
   type InsightsFilter,
   type IssueListFilter,
 } from "@/contracts/issues";
+import { ROUTES, TraceResultSchema } from "@/contracts/recall";
+import { AGENT_CHAT_ROUTE, AgentChatResponseSchema } from "../../../agent/types";
 import { clientFail, clientOk, type ClientResult, type RecallClient } from "./types";
 
 type Method = "GET" | "POST" | "PATCH";
@@ -42,13 +44,14 @@ async function call<T extends z.ZodTypeAny>(
   schema: T,
   body?: unknown,
   idempotencyKey?: string,
+  baseUrl = "",
 ): Promise<ClientResult<z.infer<T>>> {
   let res: Response;
   try {
     const headers: Record<string, string> = { accept: "application/json" };
     if (body !== undefined) headers["content-type"] = "application/json";
     if (idempotencyKey) headers[IDEMPOTENCY_HEADER] = idempotencyKey;
-    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
+    res = await fetch(baseUrl + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
   } catch (e) {
     return clientFail("NETWORK", `Backend unavailable: ${e instanceof Error ? e.message : "request failed"}`);
   }
@@ -69,24 +72,28 @@ async function call<T extends z.ZodTypeAny>(
   return clientOk(envelope.data);
 }
 
-export function createHttpClient(): RecallClient {
+/** `baseUrl` is only set server-side (the agent route calls the app's own routes); browsers use relative paths. */
+export function createHttpClient(baseUrl = ""): RecallClient {
+  const b = baseUrl;
   return {
     mode: "live",
     modeLabel: "Live API (mocks disabled)",
-    getCatalog: () => call("GET", ISSUE_ROUTES.catalog.path, ReferenceCatalogSchema),
+    getCatalog: () => call("GET", ISSUE_ROUTES.catalog.path, ReferenceCatalogSchema, undefined, undefined, b),
     getEntityContext: (entityId, configurationAsOf) =>
-      call("GET", ISSUE_ROUTES.entityContext.path(entityId) + toQuery({ configurationAsOf }), EntityContextSchema),
-    createIssue: (command) => call("POST", ISSUE_ROUTES.issueCreate.path, IssueSchema, command, command.idempotencyKey),
-    listIssues: (filter: Partial<IssueListFilter>) => call("GET", ISSUE_ROUTES.issueList.path + toQuery(filter), IssuePageSchema),
-    getIssue: (id) => call("GET", ISSUE_ROUTES.issueGet.path(id), IssueDetailSchema),
-    updateIssue: (id, update) => call("PATCH", ISSUE_ROUTES.issueUpdate.path(id), IssueSchema, update),
-    addComment: (id, input) => call("POST", ISSUE_ROUTES.issueComment.path(id), IssueCommentSchema, input, input.idempotencyKey),
-    recordCause: (id, input) => call("POST", ISSUE_ROUTES.issueCause.path(id), CauseAssessmentSchema, input, input.idempotencyKey),
-    createFix: (id, input) => call("POST", ISSUE_ROUTES.issueFix.path(id), FixRevisionSchema, input, input.idempotencyKey),
+      call("GET", ISSUE_ROUTES.entityContext.path(entityId) + toQuery({ configurationAsOf }), EntityContextSchema, undefined, undefined, b),
+    createIssue: (command) => call("POST", ISSUE_ROUTES.issueCreate.path, IssueSchema, command, command.idempotencyKey, b),
+    listIssues: (filter: Partial<IssueListFilter>) => call("GET", ISSUE_ROUTES.issueList.path + toQuery(filter), IssuePageSchema, undefined, undefined, b),
+    getIssue: (id) => call("GET", ISSUE_ROUTES.issueGet.path(id), IssueDetailSchema, undefined, undefined, b),
+    updateIssue: (id, update) => call("PATCH", ISSUE_ROUTES.issueUpdate.path(id), IssueSchema, update, undefined, b),
+    addComment: (id, input) => call("POST", ISSUE_ROUTES.issueComment.path(id), IssueCommentSchema, input, input.idempotencyKey, b),
+    recordCause: (id, input) => call("POST", ISSUE_ROUTES.issueCause.path(id), CauseAssessmentSchema, input, input.idempotencyKey, b),
+    createFix: (id, input) => call("POST", ISSUE_ROUTES.issueFix.path(id), FixRevisionSchema, input, input.idempotencyKey, b),
     recordVerification: (id, input) =>
-      call("POST", ISSUE_ROUTES.issueVerification.path(id), VerificationSchema, input, input.idempotencyKey),
-    transition: (id, command) => call("POST", ISSUE_ROUTES.issueTransition.path(id), IssueSchema, command, command.idempotencyKey),
-    findSimilarResolutions: (id) => call("GET", ISSUE_ROUTES.issueSimilar.path(id), SimilarResolutionsSchema),
-    getInsights: (filter: InsightsFilter) => call("GET", ISSUE_ROUTES.insights.path + toQuery(filter), InsightsSchema),
+      call("POST", ISSUE_ROUTES.issueVerification.path(id), VerificationSchema, input, input.idempotencyKey, b),
+    transition: (id, command) => call("POST", ISSUE_ROUTES.issueTransition.path(id), IssueSchema, command, command.idempotencyKey, b),
+    findSimilarResolutions: (id) => call("GET", ISSUE_ROUTES.issueSimilar.path(id), SimilarResolutionsSchema, undefined, undefined, b),
+    getInsights: (filter: InsightsFilter) => call("GET", ISSUE_ROUTES.insights.path + toQuery(filter), InsightsSchema, undefined, undefined, b),
+    runTrace: (incidentId, request) => call("POST", ROUTES.traceCreate.path(incidentId), TraceResultSchema, request, undefined, b),
+    agentChat: (request) => call("POST", AGENT_CHAT_ROUTE, AgentChatResponseSchema, request, undefined, b),
   };
 }

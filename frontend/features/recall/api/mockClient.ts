@@ -55,6 +55,8 @@ export function createMockClient(options: MockClientOptions = {}): { client: Rec
     transition: (id, c) => run("transition", () => server.transition(id, c)),
     findSimilarResolutions: (id) => run("findSimilarResolutions", () => server.findSimilarResolutions(id)),
     getInsights: (f) => run("getInsights", () => server.getInsights(f)),
+    runTrace: (incidentId, request) => run("runTrace", () => server.runTrace({ ...request, incidentId })),
+    agentChat: async () => clientFail("AI_UNAVAILABLE", "Mock mode runs the deterministic stub planner in the browser; there is no server agent route to call."),
   };
   return { client, controls };
 }
