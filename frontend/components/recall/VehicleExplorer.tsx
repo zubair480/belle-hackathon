@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
 import { useWorkspace, type CameraPreset } from "../../features/recall/context";
-import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, SYSTEMS, WIRES, ZONES, bodyLines, describeWire, entityIdFor, layerForEntityId, project, slotById, slotForEntityId, wiresForSlot, type SketchVehicle, type ViewLayer } from "../../features/recall/sketches/car3d";
+import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, SYSTEMS, WIRES, ZONES, bodyLines, describeWire, entityIdFor, isExteriorSlot, project, slotById, slotForEntityId, wiresForSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
 import { PartPanel, type PartLoad } from "./PartPanel";
 import { Banner } from "./primitives";
 import { VehicleSketch3D, type HotspotInfo, type HoverDetail, type HoverTarget } from "./VehicleSketch3D";
@@ -42,6 +42,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   useEffect(() => {
     let cancelled = false;
     const ids = [vehicle.entityId, ...PARTS.map((p) => entityIdFor(p, vehicle.suffix))];
+    // Every part is loaded so an interior part selected via an issue or the assistant still shows its record.
     setContexts(Object.fromEntries(ids.map((id) => [id, { status: "loading", data: null, error: null } as PartLoad])));
     Promise.all(
       ids.map(async (id) => {
@@ -81,7 +82,21 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   const hoverDetails = (t: HoverTarget): HoverDetail => {
     if (t.wireId) {
       const w = WIRES.find((x) => x.id === t.wireId);
-      return w ? describeWire(w) : null;
+      if (!w) return null;
+      const d = describeWire(w);
+      const fromSlot = slotById(w.from);
+      const toSlot = slotById(w.to);
+      const ends = [fromSlot, toSlot].filter((x): x is NonNullable<typeof x> => Boolean(x)).map((x) => entityIdFor(x, vehicle.suffix));
+      const endIssues = issues.filter((i) => i.status !== "closed" && i.entityIds.some((id) => ends.includes(id)));
+      return {
+        title: d.title,
+        lines: [
+          ...d.lines,
+          `On this vehicle: ${ends.join(" → ")}`,
+          endIssues.length ? `Open issues at the ends: ${endIssues.map((i) => i.id).join(", ")}` : "No open issues on the parts it joins",
+          "Click to highlight its circuit · Mark mode to flag this wire",
+        ],
+      };
     }
     if (!t.entityId) return null;
     const hit = slotForEntityId(t.entityId);
@@ -129,13 +144,12 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               suffix={vehicle.suffix}
               info={info}
               selectedEntityId={ex.selectedEntityId}
-              onSelect={(id) => ws.setExplorer((s) => ({ selectedEntityId: id, layer: id ? (layerForEntityId(id) ?? s.layer) : s.layer }))}
+              onSelect={(id) => ws.setExplorer({ selectedEntityId: id })}
               sourcingFilter={filter}
               markers={ex.markers}
               circuitId={ex.circuitId}
               wiring={ex.wiring}
               markMode={ex.markMode}
-              layer={ex.layer}
               onMark={addMarker}
               onWireSelect={(wireId) => {
                 const w = WIRES.find((x) => x.id === wireId);
@@ -145,19 +159,23 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
                 ws.setExplorer({ wiring: true, circuitId: w.circuitId });
               }}
               hoverDetails={hoverDetails}
+              onWireHover={(wireId) => {
+                if (!wireId) return;
+                const w = WIRES.find((x) => x.id === wireId);
+                if (!w) return;
+                const d = describeWire(w);
+                setWireInfo(`${d.title} · ${d.lines.join(" · ")}`);
+              }}
               cameraRequest={ex.cameraRequest}
               instant={instantZoom}
             />
             <div className="rrx-stage-hud">
-              <div className="rrx-seg" role="radiogroup" aria-label="View layer">
-                {(["outside", "inside"] as ViewLayer[]).map((l) => (
-                  <button key={l} type="button" role="radio" aria-checked={ex.layer === l} className="rrx-seg-btn" onClick={() => ws.setExplorer((s) => ({ layer: l, selectedEntityId: s.selectedEntityId && layerForEntityId(s.selectedEntityId) !== l ? null : s.selectedEntityId }))} data-testid={`layer-${l}`}>
-                    {l === "outside" ? "Outside" : "Inside"}
-                  </button>
-                ))}
-              </div>
-              <span className="rrx-badge rrx-badge--muted">{vehicle.modelName} · 3D · {ex.layer === "outside" ? "body and exterior parts" : "cabin, electrical and powertrain"}</span>
-              {selectedSlot ? <span className="rrx-badge rrx-badge--accent">Zoomed: {selectedSlot.label} · attached wires shown · hover for details</span> : <span className="rrx-muted rrx-small">Drag to rotate · wheel to zoom · tap a part to inspect · hover for details</span>}
+              <span className="rrx-badge rrx-badge--muted">{vehicle.modelName} · 3D · exterior parts</span>
+              {selectedSlot ? (
+                isExteriorSlot(selectedSlot.slot) ? <span className="rrx-badge rrx-badge--accent">Zoomed: {selectedSlot.label} · attached wires shown · hover for details</span> : <span className="rrx-badge rrx-badge--warning">{selectedSlot.label}: interior part, recorded but not drawn on the exterior sketch</span>
+              ) : (
+                <span className="rrx-muted rrx-small">Drag to rotate · wheel to zoom · tap a part to inspect · hover for details</span>
+              )}
             </div>
             <div className="rrx-stage-hud-right" role="group" aria-label="Sketch controls">
               {(Object.keys(CAMERA_PRESETS) as CameraPreset[]).map((p) => (
@@ -207,7 +225,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
             </div>
           ) : null}
           <p className="rrx-muted rrx-small" style={{ marginTop: 8 }}>
-            Wireframe is illustrative geometry for the synthetic platform; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded backend data. Left/right follow the driver's seat on the left.
+            Wireframe is illustrative geometry; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded data. Left/right follow the driver's seat on the left.
           </p>
           {issuesError ? <Banner kind="error">Issue list unavailable for this vehicle: {issuesError}</Banner> : null}
         </div>

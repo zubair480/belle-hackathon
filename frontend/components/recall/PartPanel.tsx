@@ -9,7 +9,7 @@ import type { Issue } from "@/contracts/issues";
 import type { ClientError } from "../../features/recall/api/types";
 import { useWorkspace } from "../../features/recall/context";
 import { ATTRIBUTION, SOURCING_LABEL, fmtDate } from "../../features/recall/format";
-import { CIRCUITS, PARTS, SYSTEMS, ZONES, entityIdFor, layerForEntityId, slotById, wiresForSlot, type PartSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
+import { CIRCUITS, PARTS, SYSTEMS, ZONES, entityIdFor, isExteriorSlot, slotById, slotForEntityId, wiresForSlot, type PartSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
 import { Empty, ErrorBanner, KV, Loading, SeverityBadge, SourcingBadge, StatusBadge } from "./primitives";
 
 export type PartLoad = { status: "loading" | "ready" | "error"; data: EntityContext | null; error: ClientError | null };
@@ -33,7 +33,7 @@ const SIDE_LABEL: Record<string, string> = { L: "left", R: "right", C: "centre",
 export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter }: PartPanelProps) {
   const ws = useWorkspace();
   const ex = ws.explorer;
-  const parts = PARTS.map((slot) => ({ slot, id: entityIdFor(slot, vehicle.suffix) }));
+  const parts = PARTS.filter((slot) => isExteriorSlot(slot.slot)).map((slot) => ({ slot, id: entityIdFor(slot, vehicle.suffix) }));
   const vehicleLoad = contexts[vehicle.entityId];
   const sourcingOf = (id: string): SourcingType | "unrecorded" => {
     const c = contexts[id];
@@ -46,15 +46,20 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
   const recordedTotal = counts.supplier + counts.in_house + counts.unknown;
   const issuesFor = (id: string) => issues.filter((i) => i.entityIds.includes(id));
   const openIssues = issues.filter((i) => i.status !== "closed");
-  const selected = parts.find((p) => p.id === ex.selectedEntityId) ?? null;
+  const selected = (() => {
+    if (!ex.selectedEntityId) return null;
+    const hit = slotForEntityId(ex.selectedEntityId);
+    return hit && hit.suffix === vehicle.suffix ? { slot: hit.slot, id: ex.selectedEntityId } : null;
+  })();
   const selectedLoad = ex.selectedEntityId ? contexts[ex.selectedEntityId] : undefined;
-  const select = (id: string | null) => ws.setExplorer((s) => ({ selectedEntityId: id, layer: id ? (layerForEntityId(id) ?? s.layer) : s.layer }));
+  const select = (id: string | null) => ws.setExplorer({ selectedEntityId: id });
   const markerEntityIds = ex.markers.map((m) => m.entityId).filter((x): x is string => Boolean(x));
   const markerWireIds = ex.markers.map((m) => m.wireId).filter((x): x is string => Boolean(x));
 
   const reportFromMarkers = () => {
     const ids = [...new Set([...markerEntityIds, vehicle.entityId])];
-    ws.openNewIssue({ entityIds: ids, contextNote: `Marked on the sketch of ${vehicle.buildId}: ${ex.markers.map((m) => m.entityId ?? m.wireId).join(", ")}${markerWireIds.length ? `. Wires under suspicion: ${markerWireIds.join(", ")}` : ""}` });
+    const zones = ex.markers.filter((m) => m.zoneLabel).map((m) => `${m.zoneLabel} (${m.entityId})`);
+    ws.openNewIssue({ entityIds: ids, contextNote: `Marked on the sketch of ${vehicle.buildId}: ${ex.markers.map((m) => m.entityId ?? m.wireId).join(", ")}${zones.length ? `. Suspected locations: ${zones.join("; ")}` : ""}${markerWireIds.length ? `. Wires under suspicion: ${markerWireIds.join(", ")}` : ""}` });
   };
 
   return (
@@ -67,7 +72,6 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
               {vehicle.modelName} · {vehicle.platform} · {vehicle.style}
             </div>
           </div>
-          <span className="rrx-badge rrx-badge--muted">Sample vehicle</span>
         </div>
         {vehicleLoad?.status === "loading" ? <Loading label="Loading vehicle record" /> : null}
         {vehicleLoad?.status === "error" && vehicleLoad.error ? <ErrorBanner error={vehicleLoad.error} /> : null}
@@ -104,7 +108,10 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
             {ex.markers.map((m, i) => (
               <li key={m.id} onClick={() => (m.entityId ? select(m.entityId) : undefined)}>
                 <span className="rrx-badge rrx-badge--blocking">#{i + 1}</span>
-                <span className="rrx-part-name">{m.entityId ? (slotById(m.slot ?? "")?.label ?? m.entityId) : `Wire ${m.wireId}`}</span>
+                <span className="rrx-part-name">
+                  {m.entityId ? (slotById(m.slot ?? "")?.label ?? m.entityId) : `Wire ${m.wireId}`}
+                  {m.zoneLabel ? <div className="rrx-small" style={{ color: "var(--rr-blocking)" }}>{m.zoneLabel}</div> : null}
+                </span>
                 <span className="rrx-part-id rrx-mono">{m.entityId ?? m.wireId}</span>
                 <span className="rrx-muted rrx-small">{m.source === "agent" ? "agent" : "you"}</span>
               </li>
@@ -134,6 +141,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
             <span className="rrx-badge rrx-badge--muted">{ZONES[selected.slot.zone] ?? selected.slot.zone}</span>
             <span className="rrx-badge rrx-badge--muted">{SIDE_LABEL[selected.slot.side] ?? selected.slot.side} side</span>
             {selected.slot.parent ? <span className="rrx-muted rrx-small">inside {slotById(selected.slot.parent)?.label}</span> : null}
+            {!isExteriorSlot(selected.slot.slot) ? <span className="rrx-badge rrx-badge--warning">Interior part: recorded, not drawn on the exterior sketch</span> : null}
           </div>
           {selectedLoad?.status === "loading" || !selectedLoad ? <Loading label="Loading part record" /> : null}
           {selectedLoad?.status === "error" && selectedLoad.error ? (
@@ -174,7 +182,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
 
       <section className="rrx-card rrx-panel-section">
         <div className="rrx-card-head">
-          <h3>Recorded parts on this sketch</h3>
+          <h3>Exterior parts on this sketch</h3>
           <span className="rrx-muted rrx-small">{recordedTotal} recorded{counts.unrecorded ? `, ${counts.unrecorded} not in backend` : ""}</span>
         </div>
         <div className="rrx-sourcing-bar" aria-hidden="true">

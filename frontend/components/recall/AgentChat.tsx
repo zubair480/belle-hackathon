@@ -15,6 +15,7 @@ import { Banner, ErrorBanner } from "./primitives";
 type ChatEntry = AgentMessage & { toolCalls?: ToolCallRecord[]; provider?: AgentChatResponse["provider"]; warnings?: string[] };
 
 const SUGGESTIONS = [
+  "The charge port is misaligned, where should I look?",
   "The right front tire has an issue",
   "Ignition does not respond on DEMO-EV-007",
   "Who did we supply with parts from this connector's batch?",
@@ -31,7 +32,8 @@ export function AgentChat() {
   const [error, setError] = useState<ClientError | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const local = ws.client.mode === "mock";
+  /** Mock mode runs the stub planner in the browser unless NEXT_PUBLIC_RECALL_AGENT=server routes chat to /api/agent/chat (e.g. to test the Qoder planner). */
+  const local = ws.client.mode === "mock" && process.env.NEXT_PUBLIC_RECALL_AGENT !== "server";
 
   useEffect(() => {
     scroller.current?.scrollTo?.({ top: scroller.current.scrollHeight });
@@ -66,7 +68,7 @@ export function AgentChat() {
       <div className="rrx-chat-head">
         <div>
           <strong>Assistant</strong>
-          <div className="rrx-muted rrx-small">{local ? "Deterministic stub planner (no model) · tools run against the mock" : "Server agent · /api/agent/chat"}</div>
+          <div className="rrx-muted rrx-small">{local ? "Built-in assistant" : "Server agent"}</div>
         </div>
         <button type="button" className="rrx-btn rrx-btn--sm rrx-btn--ghost" onClick={() => ws.setChatOpen(false)} aria-label="Close assistant">
           ×

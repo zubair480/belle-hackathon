@@ -19,7 +19,7 @@ import type { AgentContext, UiAction } from "../../agent/types";
 import { getDefaultClient, type RecallClient } from "./api";
 import { WorkspaceContext, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
 import { makeLookup } from "./format";
-import { SKETCH_VEHICLES, layerForEntityId, slotForEntityId } from "./sketches/car3d";
+import { SKETCH_VEHICLES, slotForEntityId } from "./sketches/car3d";
 
 export type RecallWorkspaceProps = {
   /** Injected client (tests / integration). Defaults to env-selected live or mock client. */
@@ -40,7 +40,10 @@ const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "insights", label: "Team & supplier insights" },
 ];
 
-const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, layer: "outside", cameraRequest: null };
+/** Mode badge is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE=true); the screens carry no mock/sample wording by default. */
+const SHOW_MODE = process.env.NEXT_PUBLIC_RECALL_SHOW_MODE === "true";
+
+const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
 
 export function RecallWorkspace({ client, initialView = "vehicles", instantZoom = false, chatOpen: chatOpenInitial = false }: RecallWorkspaceProps) {
   const c = useMemo(() => client ?? getDefaultClient(), [client]);
@@ -76,7 +79,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
       const hit = slotForEntityId(entityId);
       const vehicle = SKETCH_VEHICLES.find((v) => v.entityId === entityId || (hit && v.suffix === hit.suffix));
       setRoute({ view: "vehicles", issueId: null, issueTab: "overview" });
-      setExplorer((s) => ({ vehicleBuildId: vehicle?.buildId ?? s.vehicleBuildId, selectedEntityId: vehicle && vehicle.entityId === entityId ? null : entityId, layer: layerForEntityId(entityId) ?? s.layer }));
+      setExplorer((s) => ({ vehicleBuildId: vehicle?.buildId ?? s.vehicleBuildId, selectedEntityId: vehicle && vehicle.entityId === entityId ? null : entityId }));
     },
     [setExplorer],
   );
@@ -94,11 +97,11 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             setExplorer((s) => {
               const hit = slotForEntityId(a.entityId);
               const v = hit ? SKETCH_VEHICLES.find((x) => x.suffix === hit.suffix) : null;
-              return { vehicleBuildId: v?.buildId ?? s.vehicleBuildId, selectedEntityId: a.entityId, layer: layerForEntityId(a.entityId) ?? s.layer };
+              return { vehicleBuildId: v?.buildId ?? s.vehicleBuildId, selectedEntityId: a.entityId };
             });
             break;
           case "mark":
-            setExplorer((s) => ({ markers: [...s.markers, { id: `M-${Date.now().toString(36)}-${s.markers.length + 1}`, entityId: a.entityId, slot: a.slot, wireId: a.wireId, note: a.note, source: "agent" }] }));
+            setExplorer((s) => ({ markers: [...s.markers, { id: `M-${Date.now().toString(36)}-${s.markers.length + 1}`, entityId: a.entityId, slot: a.slot, wireId: a.wireId, note: a.note, source: "agent", zoneId: a.zoneId ?? null, zoneLabel: a.zoneLabel ?? null }] }));
             break;
           case "clear_marks":
             setExplorer({ markers: [] });
@@ -120,7 +123,8 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             setExplorerState((s) => {
               const markerIds = s.markers.map((m) => m.entityId).filter((x): x is string => Boolean(x));
               const wireIds = s.markers.map((m) => m.wireId).filter((x): x is string => Boolean(x));
-              setNewIssue({ open: true, prefill: { entityIds: [...new Set([...a.entityIds, ...markerIds])], title: a.title ?? undefined, contextNote: `${a.note}${wireIds.length ? ` Wires under suspicion: ${wireIds.join(", ")}.` : ""}` } });
+              const zones = s.markers.filter((m) => m.zoneLabel).map((m) => `${m.zoneLabel} (${m.entityId})`);
+              setNewIssue({ open: true, prefill: { entityIds: [...new Set([...a.entityIds, ...markerIds])], title: a.title ?? undefined, contextNote: `${a.note}${zones.length ? ` Suspected locations: ${zones.join("; ")}.` : ""}${wireIds.length ? ` Wires under suspicion: ${wireIds.join(", ")}.` : ""}` } });
               return s;
             });
             break;
@@ -162,20 +166,15 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             <button type="button" className="rrx-btn rrx-btn--primary rrx-btn--sm" onClick={() => openNewIssue()} data-testid="topbar-new-issue">
               + New issue
             </button>
-            <span className={`rrx-badge ${c.mode === "mock" ? "rrx-badge--warning" : "rrx-badge--ok"}`} data-testid="mode-badge">
-              {c.modeLabel}
-            </span>
+            {SHOW_MODE ? (
+              <span className={`rrx-badge ${c.mode === "mock" ? "rrx-badge--warning" : "rrx-badge--ok"}`} data-testid="mode-badge">
+                {c.modeLabel}
+              </span>
+            ) : null}
             <span className="rrx-muted rrx-small rrx-mono">{CONTRACT_VERSION}</span>
           </div>
         </header>
         <main className="rrx-main">
-          {c.mode === "mock" ? (
-            <div style={{ marginBottom: 12 }}>
-              <Banner kind="warning">
-                <strong>Sample data (mock mode).</strong> All vehicles, parts, wiring, teams, suppliers, customers and issues on this screen are synthetic development data served from an in-memory mock. Nothing here is a real factory record. Set NEXT_PUBLIC_RECALL_UI_MOCKS=false for the integrated demo.
-              </Banner>
-            </div>
-          ) : null}
           {catalogError ? (
             <div style={{ marginBottom: 12 }}>
               <ErrorBanner error={{ code: catalogError.code as never, message: `Reference catalog unavailable: ${catalogError.message}` }} onRetry={() => setCatalogTick((t) => t + 1)} />

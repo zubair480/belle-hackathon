@@ -10,7 +10,7 @@ export const AGENT_CHAT_ROUTE = "/api/agent/chat" as const;
 export const UiActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("select_vehicle"), buildId: z.string() }),
   z.object({ type: z.literal("focus_part"), entityId: z.string(), slot: z.string().nullable() }),
-  z.object({ type: z.literal("mark"), entityId: z.string().nullable(), slot: z.string().nullable(), wireId: z.string().nullable(), note: z.string() }),
+  z.object({ type: z.literal("mark"), entityId: z.string().nullable(), slot: z.string().nullable(), wireId: z.string().nullable(), note: z.string(), zoneId: z.string().nullable().default(null), zoneLabel: z.string().nullable().default(null) }),
   z.object({ type: z.literal("clear_marks") }),
   z.object({ type: z.literal("highlight_circuit"), circuitId: z.string().nullable() }),
   z.object({ type: z.literal("show_wiring"), on: z.boolean() }),

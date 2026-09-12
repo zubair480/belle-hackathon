@@ -197,7 +197,7 @@ export class MockServer {
       }
     }
     const evidenceIds = new Set<string>([...(entity.origin?.evidenceIds ?? []), ...installations.flatMap((i) => i.evidenceIds)]);
-    const limitations = ["Sample data (mock mode); one bounded charge-port path, not a full vehicle BOM", "Removal is not engineering clearance"];
+    const limitations = ["Removal is not engineering clearance"];
     if (entity.origin?.sourcingType === "unknown") limitations.push("Origin not recorded: supplier/lot unknown; review required");
     if (entity.kind === "vehicle") {
       const shp = seed.shipments.find((x) => x.vehicleId === entity.id);
@@ -560,7 +560,7 @@ export class MockServer {
       results.push({ sourceIssueId: src.id, sourceIssueTitle: src.title, sourceFixRevisionId: fix.id, fixSummary: fix.summary, matchReasons: reasons, applicabilityWarnings: warnings, verificationId: passed?.id ?? "NONE", verifiedAt: passed?.verifiedAt ?? fix.createdAt, evidenceIds: [...fix.evidenceIds, ...(passed?.evidenceIds ?? [])], rank: (passed ? 0 : 100) + (10 - Math.min(score, 9)) });
     }
     results.sort((a, b) => a.rank - b.rank);
-    return clone({ issueId, results, queryExplanation: `Deterministic match on defect code/family, part number/revision, process step and confirmed cause type; verified fixes rank first. Mock evaluation over ${this.store.fixes.length} recorded fixes (graph query at integration).` });
+    return clone({ issueId, results, queryExplanation: `Deterministic match on defect code/family, part number/revision, process step and confirmed cause type; verified fixes rank first. Evaluated over ${this.store.fixes.length} recorded fixes.` });
   }
 
   // ---- insights ----
@@ -615,7 +615,7 @@ export class MockServer {
     const reusedFixCount = this.store.fixes.filter((f) => f.sourceFixRevisionId && items.some((i) => i.id === f.issueId)).length;
     const reopenedIssueCount = new Set(this.store.audit.filter((a) => a.kind === "transition" && a.toStatus === "in_progress" && a.fromStatus === "closed" && items.some((i) => i.id === a.issueId)).map((a) => a.issueId)).size;
     const notes = [
-      "Sample data (mock mode): counts are distinct issue ids from the synthetic seed, not measured plant performance.",
+      "Counts are distinct issue ids, not defective units.",
       "Supplier rate = distinct confirmed-affected units / inspected units in a complete cohort; N/A when the cohort is missing or incomplete.",
       ...Object.values(seed.supplierCohorts).map((x) => x.note),
     ];
