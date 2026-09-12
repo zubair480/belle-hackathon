@@ -124,3 +124,31 @@ Unrun / unverified:
 - Idempotency and in-flight guards are per server process.
 - No authentication or tenant isolation beyond the server-configured demo context.
 - Public NHTSA evidence caching is Codey's lane; the contract carries provenance fields only.
+
+## Integration branch state (updated later on 2026-09-12)
+
+- `codex/final-integration` created from `main` (`defabb7`) with the API lane merged; pushed.
+  No conflicts. Teammate branches `codex/codey-data-graph` and `codex/ali-ui-pitch` do not exist
+  on the remote yet, so `graphServices` is not wired and `RecallWorkspace` is not mounted.
+- `tests/integration/acceptance-runner.mts` (`npm run acceptance -- --base <url>`) drives the
+  required acceptance evidence over HTTP against a running server. It exits with code 2 unless the
+  server reports real graph services, or `--allow-double` is passed for a labelled dry run.
+  Re-running with `--issue <id>` after a server restart proves persistence. `--revision <id>`
+  selects the accepted EV fixture revision for the two trace steps.
+- Dry run against the double + stub on the dev server: 18/20 passed. The two failures are the
+  supplier-lot and manufacturing-lot trace steps, which need Codey's EV fixture revision. This
+  dry run is development evidence only, not integration evidence.
+- Blocker for real Neo4j checks on this machine: no `NEO4J_*` credentials; Docker Desktop was
+  started but its engine did not come up within the session; no local Neo4j install found.
+  Options: provide Aura credentials in `.env.local`, or start Docker Desktop manually and run
+  `docker run -d --name recallradius-neo4j -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/<password> neo4j:5`.
+- `docs/SUBMISSION_DRAFT.md` holds the prepared form text and a claims checklist; each claim is
+  marked unverified or double-only until the real run happens.
+
+Final merge steps once SHAs arrive: merge both branches into `codex/final-integration`; in
+`src/server/application/wiring.ts` add `import { graphServices } from "@/server/graph"` and
+register it for mode `graph`; in `src/app/page.tsx` render `RecallWorkspace`; replace the dynamic
+import in `tests/integration/neo4j.integration.test.ts` with a static one; set
+`RECALL_SERVICES=graph`, `NEXT_PUBLIC_RECALL_UI_MOCKS=false`, `RECALL_AI_PROVIDER=none` (or a
+real key); run `npm run typecheck`, `npm run build`, `npm test`, `npm run test:integration`, then
+`npm run acceptance -- --base http://localhost:3000` twice with a server restart in between.

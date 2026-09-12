@@ -6,6 +6,10 @@ Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessment
 
 **Status: foundation plus the published `assembly-quality-v4` source contract.** The frozen schemas live in `src/contracts/common.ts` (envelope, errors, evidence, provenance, entities), `src/contracts/issues.ts` (issue workflow, catalogs, insights, agent tools, `IssueServices`) and `src/contracts/recall.ts` (assembly trace, imports, `TraceServices`, `DomainServices`). Codey and Ali bind to these; the application implementation lands in the lane branches and is merged at the end. Start with [project context](docs/PROJECT_CONTEXT.md).
 
+## Integration status
+
+`codex/final-integration` exists with the API lane merged. Codey's graph services and Ali's UI are not on the remote yet, so the real Neo4j acceptance run has not happened; `npm run acceptance -- --base <url>` is the runner that will produce it (see `docs/handoffs/ZUBAIR.md`). Nothing below claims Neo4j persistence.
+
 ## Zubair lane status (codex/zubair-api-integration)
 
 All v4 routes below are implemented as thin adapters over dependency-injected handlers and run
