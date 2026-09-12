@@ -2,7 +2,7 @@
 
 - `SLIDES.md`: five-slide outline with speaker notes and the visual for each slide.
 - `SCRIPT_3MIN.md` and `SCRIPT_90S.md`: demo scripts. Three minutes is a preparation target, not a verified limit.
-- `screenshots/`: captured on September 12, 2026 from the dev server in **mock mode** (`NEXT_PUBLIC_RECALL_UI_MOCKS=true`, branch `codex/ali-ui-pitch`, viewport 1440x900, headless Chromium). Every screen carries the "Sample data (mock mode)" banner. Recapture from the integrated build with mocks disabled before submitting.
+- `screenshots/`: captured on September 12, 2026 from the dev server in **mock mode** (12-17 with the deterministic stub planner, no model) (`NEXT_PUBLIC_RECALL_UI_MOCKS=true`, branch `codex/ali-ui-pitch`, viewport 1440x900, headless Chromium). Every screen carries the "Sample data (mock mode)" banner. Recapture from the integrated build with mocks disabled before submitting.
 
 | File | Shows |
 | --- | --- |
@@ -17,5 +17,11 @@
 | `09-proposed-fix.png` | Proposed fix saved; Close disabled until this issue's own verification passes |
 | `10-insights.png` | Team and supplier insights with role-separated counts and N/A rates |
 | `11-drilldown.png` | Metric drilldown listing the issues and evidence behind a count |
+| `12-3d-vehicles.png` | 3D wireframe explorer (iso view), 56 recorded parts grouped by sourcing, open-issue markers |
+| `13-3d-chargeport-zoom.png` | Zoom onto the charge-port module; connector and bracket children revealed, provenance rail |
+| `14-3d-wiring-top.png` | Top view with the wiring overlay (HV orange, 12 V blue, signal green) |
+| `15-chat-ignition-circuit.png` | Assistant: "Ignition does not respond on DEMO-EV-007" switches vehicle, highlights the start circuit, zooms to the start switch, lists the open issue |
+| `16-chat-impact-customers.png` | Assistant: connector batch impact, vehicles on site / shipped and the customers that received them |
+| `17-chat-markers.png` | Assistant: markers placed on bracket and connector, ready for "Open issue for marked items" |
 
 Do not add customers, savings or accuracy claims. The judge kit in `docs/JUDGE_SUBMISSION_KIT.md` holds the 200-word description draft; Zubair submits.

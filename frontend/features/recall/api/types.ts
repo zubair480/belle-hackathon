@@ -26,6 +26,8 @@ import type {
   VerificationInput,
 } from "@/contracts/issues";
 import type { EntityContext } from "@/contracts/common";
+import type { TraceRequest, TraceResult } from "@/contracts/recall";
+import type { AgentChatRequest, AgentChatResponse } from "../../../agent/types";
 
 /** `NETWORK` is client-side only: the request never produced a valid envelope. */
 export type ClientErrorCode = ErrorCode | "NETWORK";
@@ -51,6 +53,10 @@ export interface RecallClient {
   transition(issueId: string, command: TransitionCommand): Promise<ClientResult<Issue>>;
   findSimilarResolutions(issueId: string): Promise<ClientResult<SimilarResolutions>>;
   getInsights(filter: InsightsFilter): Promise<ClientResult<Insights>>;
+  /** Assembly trace (frozen trace contract): which vehicles/customers contain parts from a batch, lot or serial. */
+  runTrace(incidentId: string, request: TraceRequest): Promise<ClientResult<TraceResult>>;
+  /** Server-side agent turn (live mode only; the mock runs the stub planner in the browser). */
+  agentChat(request: AgentChatRequest): Promise<ClientResult<AgentChatResponse>>;
 }
 
 export const clientFail = (code: ClientErrorCode, message: string, details?: unknown): ClientResult<never> => ({

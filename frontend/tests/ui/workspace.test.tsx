@@ -55,15 +55,15 @@ describe("vehicle explorer", () => {
 
     const sketch = screen.getByTestId("vehicle-sketch");
     expect(sketch).toHaveAttribute("data-zoomed", "false");
-    fireEvent.click(screen.getByTestId("hotspot-chargePort"));
+    fireEvent.click(screen.getByTestId("hotspot-charge-port-module"));
     await waitFor(() => expect(sketch).toHaveAttribute("data-zoomed", "true"));
-    expect(screen.getByTestId("detail-chargePort")).toHaveAttribute("data-visible", "true");
+    expect(screen.getByTestId("hotspot-charge-connector")).toBeInTheDocument();
     const detail = screen.getByTestId("part-detail");
     expect(within(detail).getByText("Charge-port module")).toBeInTheDocument();
     await waitFor(() => expect(within(detail).getByText("Made in-house")).toBeInTheDocument());
     expect(within(detail).getByText(/producer, not a confirmed cause/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId("hotspot-connector"));
+    fireEvent.click(screen.getByTestId("hotspot-charge-connector"));
     await waitFor(() => expect(within(screen.getByTestId("part-detail")).getByText("Bought from supplier")).toBeInTheDocument());
     const conn = screen.getByTestId("part-detail");
     expect(within(conn).getByText("DEMO-SUP-LOT-01")).toBeInTheDocument();
@@ -71,20 +71,20 @@ describe("vehicle explorer", () => {
     expect(within(conn).getByText(/no VIN yet/)).toBeInTheDocument();
     expect(within(conn).getByText(/EVID-SUP-RECEIPT-01/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId("hotspot-bracket"));
+    fireEvent.click(screen.getByTestId("hotspot-charge-bracket"));
     const brkt = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(brkt).getByText("DEMO-MFG-LOT-01")).toBeInTheDocument());
     expect(within(brkt).getByText("WO-DEMO-0001")).toBeInTheDocument();
-    expect(within(brkt).getByText(/Bracket forming/)).toBeInTheDocument();
+    expect(within(brkt).getAllByText(/Bracket forming/).length).toBeGreaterThan(0);
   });
 
   it("marks an unrecorded part honestly and shows replacement history on the crossover", async () => {
     mount("vehicles");
     fireEvent.click(screen.getByRole("tab", { name: /DEMO-EV-006/ }));
     await waitFor(() => expect(screen.getByText(/DEMOVIN0000000006/)).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId("hotspot-chargePort"));
-    await waitFor(() => expect(screen.getByTestId("detail-chargePort")).toHaveAttribute("data-visible", "true"));
-    fireEvent.click(screen.getByTestId("hotspot-connector"));
+    fireEvent.click(screen.getByTestId("hotspot-charge-port-module"));
+    await waitFor(() => expect(screen.getByTestId("hotspot-charge-connector")).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId("hotspot-charge-connector"));
     // CONN-0006 was removed and replaced; the sketch slot maps to the original serial, so history must show.
     const panel = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(panel).getByText(/Historical containment/)).toBeInTheDocument());
@@ -94,7 +94,7 @@ describe("vehicle explorer", () => {
 
   it("prefills a new issue from the selected part", async () => {
     mount("vehicles");
-    fireEvent.click(screen.getByTestId("hotspot-chargePort"));
+    fireEvent.click(screen.getByTestId("hotspot-charge-port-module"));
     await waitFor(() => expect(within(screen.getByTestId("part-detail")).getByText("Made in-house")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /Report issue on this part/ }));
     const form = await screen.findByTestId("new-issue-form");
@@ -303,13 +303,13 @@ describe("insights", () => {
     mount("insights");
     const teams = await screen.findByTestId("team-table");
     const row = within(teams).getByText("Final Inspection").closest("tr")!;
-    expect(row).toHaveTextContent("3");
+    expect(row).toHaveTextContent("6");
     expect(screen.getByTestId("rate-SUP-LAMP")).toHaveTextContent("N/A");
     expect(screen.getByTestId(`rate-${EV_DEMO.suppliers.connector}`)).toHaveTextContent("%");
     fireEvent.click(screen.getByTestId("metric-reported-by-final-inspection"));
     const dialog = await screen.findByTestId("drilldown");
     expect(dialog).toHaveTextContent("Reported by Final Inspection");
-    await waitFor(() => expect(within(dialog).getAllByText(/Evidence:/)).toHaveLength(3));
+    await waitFor(() => expect(within(dialog).getAllByText(/Evidence:/)).toHaveLength(6));
     expect(dialog).toHaveTextContent(EV_DEMO.priorIssueId);
   });
 });

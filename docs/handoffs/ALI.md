@@ -2,6 +2,8 @@
 
 **Layout:** the whole UI lane lives under `/frontend` (`frontend/components/recall`, `frontend/features/recall`, `frontend/tests/ui`). `src/features/recall/index.ts` is a one-line re-export shim so the agreed mount `import { RecallWorkspace } from "@/features/recall"` keeps working. Two root-config edits were needed and are listed under "Shared config changes requested through Zubair".
 
+**Update (later on 2026-09-12, uncommitted at Ali's request):** 3D sketch, agent harness (Qoder Agent SDK + stub planner), chat panel, platform parts/wiring dataset for Neo4j, and expanded mock data. See "Agent harness and 3D sketch" below. Branch head `fe5900a` does not contain this work yet.
+
 Contract version: `assembly-quality-v4` (as published on `main` at 71e4773).
 Base commit: `main` @ 71e4773 (foundation dfdaae5 plus the v4 source contract).
 Branch: `codex/ali-ui-pitch`. Code commit: `fcc8b25`. The branch head at push time (this handoff commit) is the SHA to merge; Zubair receives it in the team message.
@@ -23,6 +25,23 @@ Note on the branch layout: `origin/codex/zubair-api-integration` @ 1f92bb8 still
 | Insights | `InsightsView.tsx` | Filters: date, defect type, part family/number, process area, station, team role, supplier, status, severity. Team table (reported / assigned open / confirmed cause), supplier table (linked / confirmed / distinct units / cohort / rate or N/A), detection-station, causal-process, cause-type and defect-family buckets. Every count opens a drilldown of the issues and their evidence. |
 | Styling | `frontend/components/recall/recall.css` | Scoped under `.rrx`; re-maps the shared tokens to the dark theme. Zubair's `globals.css` untouched. |
 | Mount | `src/app/page.tsx` | Replaced the placeholder body with `<RecallWorkspace />` (the edit the placeholder comment expects). `src/app/layout.tsx` still says "food co-packers" in `metadata.description`; Zubair's file, please update. |
+
+## Agent harness and 3D sketch (uncommitted update)
+
+| Area | Files | Notes |
+| --- | --- | --- |
+| 3D sketch | `frontend/features/recall/sketches/car3d.ts`, `frontend/components/recall/VehicleSketch3D.tsx` | Orthographic wireframe projected in SVG (no dependency). Three body styles, 56 placed part slots (front bay, HV, cabin incl. steering/seats/start switch, doors, lamps, wheels), left/right distinguished by camera side and depth dimming. Drag to rotate, wheel to zoom, presets iso/left/right/front/rear/top, tap-to-zoom, children (connector, bracket, cells, BMS) appear when the parent is selected. Markers (circles) on parts or wires; wiring overlay coloured HV/LV/signal with per-circuit highlight. |
+| Platform dataset | `frontend/data/ev-platform/` | `parts.json` (56 slots with synonyms, sourcing template, spec), `wiring.json` (12 circuits, 42 connectors, 45 wires), `export-neo4j.mjs` -> `neo4j/*.csv` + `import.cypher`, README with the graph model and example Cypher. For Codey to load; the UI reads the same JSON. |
+| Agent harness | `frontend/agent/tools.ts` | 12 tools: find_part, focus_part, list_issues_for_part, trace_circuit, wires_of_part, impact_of_part (assembly trace -> vehicles and customers), mark, open_issue, draft_issue, similar_resolutions, set_camera, select_vehicle. Data tools call the typed client; UI tools queue `UiAction`s that the browser applies. The agent never saves, assigns, closes or confirms anything. |
+| Planners | `frontend/agent/stubPlanner.ts`, `frontend/agent/server/qoderPlanner.ts`, `frontend/agent/server/chatHandler.ts`, `src/app/api/agent/chat/route.ts` | Stub = deterministic keyword intent (no model), labelled in the UI, runs in the browser in mock mode and on the server by default. Qoder = `@qoder-ai/qoder-agent-sdk` `query()` with the tools wrapped by `tool()`/`createSdkMcpServer()`, `allowedTools` restricted to `mcp__recall__*`, `tools: []` to exclude file/shell tools, `permissionMode: dontAsk`. SDK loaded dynamically; missing package or token -> `AI_UNAVAILABLE`, never a silent fallback. |
+| Chat UI | `frontend/components/recall/AgentChat.tsx` | Docked panel; suggestions; tool chips per reply; provider badge; UI actions applied to the workspace (zoom, vehicle switch, wiring highlight, markers, open issue, prefilled New Issue draft). |
+| Mock data | `frontend/features/recall/api/mock/data.ts`, `server.ts` | Six vehicles instantiated from the catalog (DEMO-EV-002..007; 005/006/007 sketched), customers and shipments, `runTrace` over the frozen `TraceResult` DTO, issues on the front right tire (TPMS), a two-issue door (DOOR-0006-FL), and a no-wake ignition case (ISS-IGN-006) with two hypotheses. |
+
+Environment variable names (server): `RECALL_AGENT_PROVIDER` (`stub` | `qoder`), `QODER_PERSONAL_ACCESS_TOKEN`, `QODER_MODEL` (default `auto`), `RECALL_AGENT_MAX_TURNS` (default 8), `RECALL_APP_BASE_URL` (default: request origin), `RECALL_AGENT_CWD`. Please add them to `.env.example` (Zubair's file). No credential is read in the browser.
+
+Qoder facts verified on 2026-09-12 from docs.qoder.com: package `@qoder-ai/qoder-agent-sdk`, PAT from qoder.com/account/integrations in `QODER_PERSONAL_ACCESS_TOKEN`, `query()` streams `SDKMessage`s, custom tools via `tool(name, description, zodShape, handler)` + `createSdkMcpServer({name, tools})`, allowlist `mcp__<server>__<tool>`. Not verified: the exact `SDKMessage` field names (the planner reads `type`/`message.content`/`session_id` defensively) and whether `tools: []` disables built-in tools (docs say the option is an allowlist). A first live run with a PAT is needed; report the observed message shapes back and I will tighten the parser.
+
+Additional tests (`frontend/tests/ui/agent.test.tsx`, 10): side/synonym search, stub planner turns (tire -> focus + issues; ignition -> vehicle switch + circuit highlight + open issue; connector batch -> customers; marks + issue draft without saving; invalid tool input), and rendered chat integration (zoom on tire, wiring highlight with circuit select, agent markers into the New Issue form, two issues on one door, mark mode + camera presets). Total suite: 42 passed. `POST /api/agent/chat` was also exercised on the dev server with curl (stub provider): valid envelope, tool calls and UI actions returned; issue tools report nothing because `/api/issues` does not exist yet on this branch.
 
 ## Setup and commands
 
@@ -62,7 +81,9 @@ Not tested: any real HTTP route, Neo4j persistence, or the integrated run with m
 7. **Reference catalog.** The UI needs `GET /api/catalog` at first load; the form is blocked with a visible error when it fails. The mock catalog adds suppliers/teams/stations beyond `EV_DEMO` (SUP-CELLS, SUP-LAMP, SUP-WHEEL, SUP-HARNESS, SUP-GLASS, TEAM-BODY, TEAM-BATTERY, TEAM-QUALITY-ENG, ST-INCOMING, ST-BATTERY-MARRIAGE, ST-BODY-SHOP and matching process steps/defect codes). Codey can seed them or the extra sketch parts will show "Unknown origin"/"not in backend".
 8. **Shipment lines.** `EntityContext` has no shipment records; the assembly path ends at the vehicle's `locationState` ("shipped (shipment record)"). If a shipment DTO is added to the detail, the UI can show it.
 9. **Drilldown fetching.** Metric drilldown calls `GET /api/issues/:id` for up to 20 ids in parallel. If that is too heavy for the real service, an `ids` filter on `GET /api/issues` would replace it.
-10. **Landing view.** Per Ali's request the app opens on the Vehicles sketch explorer with the issue workflow one tap away (New issue in the top bar and on every part); no upload wizard or alert inbox. `initialView="issues"` is available if the team prefers the board as the landing page.
+10. **Agent chat route.** `POST /api/agent/chat` is additive (not in the frozen contract): request `{messages, context, sessionId}`, response `{reply, toolCalls, uiActions, provider, sessionId, warnings}` (schemas in `frontend/agent/types.ts`). The server tools call the app's own frozen routes over HTTP with `RECALL_APP_BASE_URL`; when Zubair's routes exist they work unchanged. The contract's `agentTool` route (`AGENT_TOOLS`) is untouched.
+11. **Platform slots vs entities.** The 3D sketch and search index are keyed by design slot; `entityIdFor(slot, suffix)` gives `prefix-<suffix>[-side]`. Codey's EV seed only needs the charge-port ids from `EV_DEMO` for the P0 story; any other slot without a record shows "not in backend". The dataset README shows the `INSTANCE_OF_SLOT` link to run after his entity seed.
+12. **Landing view.** Per Ali's request the app opens on the Vehicles sketch explorer with the issue workflow one tap away (New issue in the top bar and on every part); no upload wizard or alert inbox. `initialView="issues"` is available if the team prefers the board as the landing page.
 
 ## Shared config changes requested through Zubair
 
@@ -77,7 +98,9 @@ No dependency or alias changes; frontend files import contracts via the existing
 ## Remaining work and limits
 
 - The live client has not been exercised against real routes; the first integrated run may surface envelope mismatches, which the client reports as `NETWORK` with the Zod issue list.
-- Sketches are illustrative side profiles; only the charge-port and battery hotspots have sub-sketches. Zoom uses a viewBox tween (620 ms); `instantZoom` disables it for tests.
+- The 3D wireframe is illustrative geometry; wire paths are drawn between part positions, not measured routing. Camera tween 650 ms; `instantZoom` disables it for tests. Far-side parts are dimmed, not hidden.
+- The Qoder planner has not been run with a real PAT in this session; the stub planner and the route were.
+- Live mode loads 57 entity records per vehicle in parallel for the sketch; if that is too heavy for the real service, a batch endpoint would replace it.
 - Comments cannot select existing evidence ids yet (they can attach a new note); cause assessments can.
 - No CAD/photo drawing. No agent/AI panel in the UI (the `agent*` routes are unused).
 - Screenshots were taken in mock mode and must be recaptured from the integrated build.

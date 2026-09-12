@@ -1,0 +1,46 @@
+id,circuitId,from,fromConnector,to,toConnector,harness,voltageClass,gauge,color,signal
+W-001,C-LV-SUPPLY,12v-battery,X-LVB-01,fuse-box,X-FB-01,lv-harness-front,LV,16 mm2,red,B+ main feed
+W-002,C-LV-SUPPLY,dcdc,X-DCDC-LV,12v-battery,X-LVB-01,lv-harness-front,LV,16 mm2,red,DC-DC charge output
+W-003,C-LV-SUPPLY,hv-junction,X-HVJ-DCDC,dcdc,X-DCDC-HV,hv-harness-front,HV,10 mm2,orange,HV+ / HV- to DC-DC
+W-010,C-START,fuse-box,X-FB-F12,start-switch,X-STSW-01,lv-harness-cabin,LV,0.75 mm2,yellow/black,F12 switched supply
+W-011,C-START,start-switch,X-STSW-01,bcm,X-BCM-A,lv-harness-cabin,signal,0.5 mm2,yellow,Start request (active low)
+W-012,C-START,bcm,X-BCM-A,vcu,X-VCU-01,lv-harness-cabin,signal,0.5 mm2,yellow/green,Wake line
+W-013,C-START,vcu,X-VCU-01,hv-junction,X-HVJ-LV,lv-harness-front,signal,0.5 mm2,green,Contactor close command
+W-014,C-START,fuse-box,X-FB-01,bcm,X-BCM-A,lv-harness-cabin,LV,2.5 mm2,red/white,BCM permanent supply
+W-015,C-START,fuse-box,X-FB-01,vcu,X-VCU-01,lv-harness-cabin,LV,1.5 mm2,red/blue,VCU permanent supply
+W-020,C-HV-TRACTION,battery-pack,X-BATT-HV,hv-junction,X-HVJ-PACK,hv-harness-front,HV,70 mm2,orange,Pack HV+ / HV-
+W-021,C-HV-TRACTION,hv-junction,X-HVJ-INVF,inverter-front,X-INVF-HV,hv-harness-front,HV,50 mm2,orange,Front inverter DC link
+W-022,C-HV-TRACTION,inverter-front,X-INVF-3PH,front-drive-unit,X-FDU-3PH,,HV,3 x 35 mm2,orange,U/V/W phases
+W-023,C-HV-TRACTION,hv-junction,X-HVJ-INVR,inverter-rear,X-INVR-HV,hv-harness-rear,HV,50 mm2,orange,Rear inverter DC link
+W-024,C-HV-TRACTION,inverter-rear,X-INVR-3PH,rear-drive-unit,X-RDU-3PH,,HV,3 x 35 mm2,orange,U/V/W phases
+W-030,C-CHARGE,charge-connector,X-CONN-HV,charge-harness,,charge-harness,HV,50 mm2,orange,DC+ / DC- from inlet
+W-031,C-CHARGE,charge-harness,,obc,X-OBC-AC,charge-harness,HV,10 mm2,orange,AC L1/N to OBC
+W-032,C-CHARGE,obc,X-OBC-DC,hv-junction,X-HVJ-OBC,hv-harness-front,HV,10 mm2,orange,OBC DC output
+W-033,C-CHARGE,charge-harness,,hv-junction,X-HVJ-OBC,hv-harness-front,HV,50 mm2,orange,DC fast-charge path
+W-034,C-CHARGE,charge-connector,X-CONN-CP,obc,X-OBC-AC,charge-harness,signal,0.5 mm2,white,CP / PP pilot
+W-035,C-CHARGE,bms,,battery-pack,X-BATT-LV,,signal,0.35 mm2,grey,Cell voltage / temperature sense
+W-040,C-CAN,vcu,X-VCU-01,bcm,X-BCM-A,lv-harness-cabin,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-041,C-CAN,vcu,X-VCU-01,bms,,lv-harness-front,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-042,C-CAN,vcu,X-VCU-01,inverter-front,X-INVF-HV,lv-harness-front,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-043,C-CAN,vcu,X-VCU-01,inverter-rear,X-INVR-HV,lv-harness-rear,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-044,C-CAN,vcu,X-VCU-01,obc,X-OBC-AC,lv-harness-front,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-045,C-CAN,vcu,X-VCU-01,epas,X-EPAS-PWR,lv-harness-front,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-046,C-CAN,vcu,X-VCU-01,thermal-module,X-THM-HV,lv-harness-front,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-047,C-CAN,bcm,X-BCM-A,instrument-cluster,X-ICL-01,lv-harness-cabin,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-048,C-CAN,instrument-cluster,X-ICL-01,infotainment,X-IHU-01,lv-harness-cabin,signal,2 x 0.35 mm2,twisted green/white,CAN-H / CAN-L
+W-050,C-LIGHT-FRONT,fuse-box,X-FB-F31,bcm,X-BCM-B,lv-harness-cabin,LV,2.5 mm2,red/yellow,F31 lighting supply
+W-051,C-LIGHT-FRONT,bcm,X-BCM-B,headlamp-L,X-LAMP-L,lv-harness-front,LV,1.5 mm2,white/black,Left low beam
+W-052,C-LIGHT-FRONT,bcm,X-BCM-B,headlamp-R,X-LAMP-R,lv-harness-front,LV,1.5 mm2,white/red,Right low beam
+W-055,C-LIGHT-REAR,bcm,X-BCM-B,taillamp-L,X-TLMP-L,lv-harness-rear,LV,1.0 mm2,brown/black,Left tail / brake
+W-056,C-LIGHT-REAR,bcm,X-BCM-B,taillamp-R,X-TLMP-R,lv-harness-rear,LV,1.0 mm2,brown/red,Right tail / brake
+W-060,C-STEER,fuse-box,X-FB-F20,epas,X-EPAS-PWR,lv-harness-front,LV,10 mm2,red/black,F20 EPAS supply
+W-061,C-STEER,steering-wheel,X-STW-LIN,bcm,X-BCM-C,lv-harness-cabin,signal,0.35 mm2,violet,LIN wheel controls (via clockspring)
+W-070,C-DOORS,bcm,X-BCM-C,door-FL,,lv-harness-cabin,LV,1.5 mm2,blue,Lock / window motor
+W-071,C-DOORS,bcm,X-BCM-C,door-FR,,lv-harness-cabin,LV,1.5 mm2,blue/white,Lock / window motor
+W-072,C-DOORS,bcm,X-BCM-C,door-RL,,lv-harness-rear,LV,1.5 mm2,blue/black,Lock / window motor
+W-073,C-DOORS,bcm,X-BCM-C,door-RR,,lv-harness-rear,LV,1.5 mm2,blue/red,Lock / window motor
+W-080,C-SEATS,fuse-box,X-FB-F40,seat-FL,,lv-harness-cabin,LV,2.5 mm2,orange/black,Seat heater + airbag loop
+W-081,C-SEATS,fuse-box,X-FB-F40,seat-FR,,lv-harness-cabin,LV,2.5 mm2,orange/white,Seat heater + airbag loop
+W-090,C-THERMAL,hv-junction,X-HVJ-THM,thermal-module,X-THM-HV,hv-harness-front,HV,6 mm2,orange,HV heater / compressor
+W-100,C-INFO,fuse-box,X-FB-F45,infotainment,X-IHU-01,lv-harness-cabin,LV,1.5 mm2,red/green,F45 head unit supply
+W-101,C-INFO,fuse-box,X-FB-F45,instrument-cluster,X-ICL-01,lv-harness-cabin,LV,1.0 mm2,red/grey,Cluster supply

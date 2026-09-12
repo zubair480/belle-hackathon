@@ -1,0 +1,43 @@
+id,slot,name
+X-LVB-01,12v-battery,12 V battery positive terminal
+X-FB-01,fuse-box,Fuse box main input
+X-FB-F12,fuse-box,Fuse F12 start (10 A)
+X-FB-F20,fuse-box,Fuse F20 EPAS (60 A)
+X-FB-F31,fuse-box,Fuse F31 lighting (20 A)
+X-FB-F40,fuse-box,Fuse F40 seats (30 A)
+X-FB-F45,fuse-box,Fuse F45 infotainment (15 A)
+X-STSW-01,start-switch,Start switch 2-pin
+X-BCM-A,bcm,"BCM connector A (power, inputs)"
+X-BCM-B,bcm,BCM connector B (lighting outputs)
+X-BCM-C,bcm,"BCM connector C (doors, LIN)"
+X-VCU-01,vcu,VCU main connector
+X-HVJ-LV,hv-junction,Junction box LV control
+X-HVJ-PACK,hv-junction,Junction box pack input
+X-HVJ-INVF,hv-junction,Junction box front inverter output
+X-HVJ-INVR,hv-junction,Junction box rear inverter output
+X-HVJ-OBC,hv-junction,Junction box OBC input
+X-HVJ-DCDC,hv-junction,Junction box DC-DC output
+X-HVJ-THM,hv-junction,Junction box thermal output
+X-BATT-HV,battery-pack,Pack HV service connector
+X-BATT-LV,battery-pack,Pack LV / BMS connector
+X-CONN-HV,charge-connector,Inlet DC pins
+X-CONN-CP,charge-connector,Inlet CP/PP pilot
+X-OBC-AC,obc,OBC AC input
+X-OBC-DC,obc,OBC DC output
+X-INVF-HV,inverter-front,Front inverter HV input
+X-INVF-3PH,inverter-front,Front inverter 3-phase output
+X-INVR-HV,inverter-rear,Rear inverter HV input
+X-INVR-3PH,inverter-rear,Rear inverter 3-phase output
+X-FDU-3PH,front-drive-unit,Front motor 3-phase
+X-RDU-3PH,rear-drive-unit,Rear motor 3-phase
+X-DCDC-HV,dcdc,DC-DC HV input
+X-DCDC-LV,dcdc,DC-DC 12 V output
+X-EPAS-PWR,epas,EPAS power
+X-LAMP-L,headlamp-L,Left headlamp
+X-LAMP-R,headlamp-R,Right headlamp
+X-TLMP-L,taillamp-L,Left tail lamp
+X-TLMP-R,taillamp-R,Right tail lamp
+X-THM-HV,thermal-module,Thermal HV heater input
+X-ICL-01,instrument-cluster,Cluster main
+X-IHU-01,infotainment,Head unit main
+X-STW-LIN,steering-wheel,Wheel controls LIN

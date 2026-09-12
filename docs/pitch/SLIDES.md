@@ -13,7 +13,7 @@ Prepared by Ali for Zubair to submit. Track A Builder, plus the separate Neo4j b
 - Problem: an issue found on the line touches a purchased connector and an internally made bracket. The receipt, the manufacturing lot, the earlier fix and the verification live in different records and different teams. The team that found the defect often gets blamed for it.
 - What we are not claiming: no measured savings, no customers, no market-size figure. Manufacturing traceability exists in MES products; we test a narrower advantage.
 
-Visual: `screenshots/01-vehicles.png` (three sketched models, parts grouped by "Bought from supplier / Made in-house / Unknown origin").
+Visual: `screenshots/12-3d-vehicles.png` (3D wireframe, parts grouped by "Bought from supplier / Made in-house / Unknown origin"); older 2D capture in `01-vehicles.png`.
 
 ---
 
@@ -26,7 +26,9 @@ Visual: `screenshots/01-vehicles.png` (three sketched models, parts grouped by "
 - The saved record shows four separate labels: reported by, currently assigned to, detected at station / process owner, confirmed causal team. Build ID works before a VIN exists.
 - Backend failure keeps the draft and the idempotency key; it never shows fake success.
 
-Visual: `screenshots/02-chargeport-zoom.png`, `screenshots/05-new-issue-form.png`, `screenshots/06-issue-detail.png`.
+Visual: `screenshots/13-3d-chargeport-zoom.png`, `screenshots/05-new-issue-form.png`, `screenshots/06-issue-detail.png`.
+
+Assistant (harness on the Qoder Agent SDK): "Ignition does not respond on DEMO-EV-007" switches the sketch to that vehicle, highlights the start circuit and its six wires with connectors, zooms to the start switch and lists the open no-wake issue. "Who did we supply with parts from this connector batch?" runs the assembly trace and names the fleet and dealer that received vehicles from the same batch. "Circle the bracket and the connector" places markers that flow into the New Issue draft. In the recorded demo the deterministic stub planner ran; say so unless the Qoder planner was exercised with a token. Visual: `screenshots/15-chat-ignition-circuit.png`, `16-chat-impact-customers.png`, `17-chat-markers.png`.
 
 ---
 
@@ -42,7 +44,7 @@ Relationship questions the workspace asks the server (contract `assembly-quality
 
 Rules the server enforces: status lifecycle, `expectedVersion` on edits, idempotency keys, closure only with a passed verification of the applied fix. Hypotheses never enter confirmed-cause counts.
 
-Cypher and persistence are Codey's lane; paste the actual queries from `docs/handoffs/CODEY.md` here before submitting. Do not show this slide as "Neo4j-backed" until the integrated run with mocks disabled has passed.
+The platform wiring design (56 part slots, 12 circuits, 45 wires) ships as a Neo4j import in `frontend/data/ev-platform/neo4j/` with example Cypher in its README. Cypher and persistence are Codey's lane; paste the actual queries from `docs/handoffs/CODEY.md` here before submitting. Do not show this slide as "Neo4j-backed" until the integrated run with mocks disabled has passed.
 
 Visual: the relationship diagram from `docs/TECHNICAL_BLUEPRINT.md` (supplier batch -> connector serial; work order -> lot -> bracket serial; both -> module -> EV build; evidence supports).
 
