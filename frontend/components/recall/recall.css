@@ -243,3 +243,13 @@
 .rrx-chip--tool { border-color: var(--rr-accent); color: var(--rr-accent); background: transparent; }
 .rrx-chip--tool-error { border-color: var(--rr-blocking); color: var(--rr-blocking); }
 @media (max-width: 1100px) { .rrx-with-chat .rrx-main { margin-right: 0; } .rrx-chat { width: 100%; } }
+
+/* ---- sketch tooltip and zoom disclosure ---- */
+.rrx-sketch-wrap { position: relative; }
+.rrx-tip { position: absolute; z-index: 4; pointer-events: none; max-width: 340px; background: rgba(8, 8, 12, 0.94); border: 1px solid var(--rr-border-strong); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.4; color: var(--rr-text); box-shadow: 0 8px 24px rgba(0,0,0,.6); animation: rrx-fade .12s ease; }
+.rrx-tip strong { display: block; margin-bottom: 4px; }
+.rrx-tip--wire { border-color: #fb923c; }
+.rrx-tip--wire strong { color: #fb923c; }
+.rrx-tip--part strong { color: var(--rr-accent); }
+.rrx-part-edge--near { stroke: rgba(255,255,255,0.75); stroke-width: 1.4; }
+.rrx-wire--hover { stroke-width: 3.4; opacity: 1 !important; }
