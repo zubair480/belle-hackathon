@@ -6,6 +6,45 @@ Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessment
 
 **Status: foundation plus the published `assembly-quality-v4` source contract.** The frozen schemas live in `src/contracts/common.ts` (envelope, errors, evidence, provenance, entities), `src/contracts/issues.ts` (issue workflow, catalogs, insights, agent tools, `IssueServices`) and `src/contracts/recall.ts` (assembly trace, imports, `TraceServices`, `DomainServices`). Codey and Ali bind to these; the application implementation lands in the lane branches and is merged at the end. Start with [project context](docs/PROJECT_CONTEXT.md).
 
+## Zubair lane status (codex/zubair-api-integration)
+
+All v4 routes below are implemented as thin adapters over dependency-injected handlers and run
+end to end against an explicit, labeled in-memory service double (`RECALL_SERVICES=double`).
+Codey's Neo4j services replace the double at final merge; a failing real service is never
+swapped for the double.
+
+| Area | Routes |
+| --- | --- |
+| Catalogs and entities | `GET /api/catalog`, `POST /api/catalog/:kind`, `GET /api/entities/:id` |
+| Issues | `POST/GET /api/issues`, `GET/PATCH /api/issues/:id`, `POST .../comments|causes|fixes|verifications|transitions`, `GET .../similar-resolutions`, `GET /api/issues/export` |
+| Insights | `GET /api/insights` (team roles separated, supplier linked vs confirmed, rates N/A without a complete cohort) |
+| Optional AI | `POST /api/agent/draft-issue`, `POST /api/agent/issues/:id/explain-resolutions`, `POST /api/agent/tools`, `POST /api/alerts/extract` |
+| Assembly trace (P1) | imports preview/accept, late evidence, traces create/get/compare/export |
+
+Verified locally on 2026-09-12 (double + stub, no database, no live model): manual issue created
+with no import or AI and reloaded; both origin paths shown (connector bought from supplier, bracket
+made in-house, vehicle by build id with null VIN); stale PATCH rejected; reviewed
+in-house-manufacturing cause recorded with Final Inspection still the reporter and the connector
+supplier not confirmed; prior verified bracket fix retrieved with reasons; reuse created a new
+proposal and left the original untouched; closure blocked before verification; failed verification
+kept the issue open; passed verification closed it; the resolution was found from a later similar
+issue; CSV export and bounded agent tools behaved. These are API checks against the double, not
+Neo4j persistence proof. Details and unverified items: `docs/handoffs/ZUBAIR.md`.
+
+Local run without Neo4j:
+
+```bash
+printf 'RECALL_WORKSPACE_ID=synthetic-ev-assembler
+RECALL_DEMO_ACTOR_ID=qa-reviewer-demo
+RECALL_SERVICES=double
+RECALL_AI_PROVIDER=stub
+' > .env.local
+```
+
+```bash
+npm run dev
+```
+
 ## Start here
 
 Read the current [EV assembly scope](docs/EV_ASSEMBLY_SCOPE.md). We are building for a whole-vehicle EV assembler that buys some parts and manufactures others in-house. The demo follows one charge-port assembly; it does not claim full vehicle BOM coverage. EV is our chosen industry, not an organizer-mandated theme.

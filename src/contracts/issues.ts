@@ -534,6 +534,7 @@ export const ISSUE_ROUTES = {
   entityContext: { method: "GET", path: (entityId: string) => `/api/entities/${enc(entityId)}` },
   issueCreate: { method: "POST", path: "/api/issues" },
   issueList: { method: "GET", path: "/api/issues" },
+  issuesExport: { method: "GET", path: "/api/issues/export" },
   issueGet: { method: "GET", path: (id: string) => `/api/issues/${enc(id)}` },
   issueUpdate: { method: "PATCH", path: (id: string) => `/api/issues/${enc(id)}` },
   issueComment: { method: "POST", path: (id: string) => `/api/issues/${enc(id)}/comments` },
@@ -555,6 +556,7 @@ export const ISSUE_ROUTES = {
  *   entityContext           ?configurationAsOf=       -> EntityContext
  *   issueCreate             CreateIssueCommand        -> Issue (201; replay of same key+payload returns 200)
  *   issueList               IssueListFilter as query  -> IssuePage
+ *   issuesExport            IssueListFilter as query  -> text/csv (ApiResponse JSON only on error)
  *   issueGet                -                         -> IssueDetail
  *   issueUpdate             IssueUpdate               -> Issue
  *   issueComment            IssueCommentInput         -> IssueComment (201)
