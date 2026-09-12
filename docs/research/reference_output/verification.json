@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "check_count": 22,
+  "checks": [
+    "Initial onsite candidate stock is 160 kg",
+    "Initial shipped quantity is 120 kg",
+    "Initial outbound scope contains 3 unique lines and consignees",
+    "Diamond path counts F-C stock and shipment exactly once",
+    "Container membership does not create a material path",
+    "Unknown origin yields 40 kg onsite and 60 kg shipped for review",
+    "Disposed 10 kg remains outside onsite quantities",
+    "Late evidence changes onsite scope to 190 kg",
+    "Late evidence changes shipped scope to 180 kg and 4 consignees",
+    "Late evidence resolves origin gap, without changing control lot status",
+    "Late evidence preserves baseline data and result",
+    "Revisions have different data hashes",
+    "Exact repeated event does not change trace quantities",
+    "Conflicting duplicate event ID is rejected",
+    "Absent input lot is rejected",
+    "Over-shipment causing negative stock is rejected",
+    "Unsupported unit is rejected",
+    "Unexplained mass imbalance is rejected in this closed-process fixture",
+    "Consumption before production is rejected",
+    "Material cycle is rejected",
+    "Duplicate shipment line is rejected",
+    "Known path and origin gap can coexist"
+  ],
+  "limitations": "Python reference implementation, integer kg, one tenant/site, complete synthetic cohort. No Neo4j, runtime AI, real customer, jurisdiction, security, general unit conversion, hazard or performance validation."
+}

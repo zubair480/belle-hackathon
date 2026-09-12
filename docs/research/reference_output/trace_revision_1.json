@@ -1,0 +1,68 @@
+{
+  "revision": 1,
+  "data_sha256": "b19a2da035e703bbe8f3df8a82aa722853b0285265f3020985267a224c1165e7",
+  "engine_version": "research-reference-1",
+  "root": "T17",
+  "scope": "All fixture lots, one site, September 1-10, 2026; no cross-contact assessment",
+  "known_path_lots": [
+    "B101",
+    "F-A",
+    "F-B",
+    "F-C",
+    "R101",
+    "T17",
+    "WASTE101",
+    "WIP101"
+  ],
+  "known_path": {
+    "onsite_kg": 160,
+    "onsite_positions_kg": {
+      "F-A": 20,
+      "F-B": 20,
+      "F-C": 50,
+      "T17": 60,
+      "WIP101": 10
+    },
+    "shipped_kg": 120,
+    "shipment_line_ids": [
+      "SL-A",
+      "SL-B",
+      "SL-C"
+    ],
+    "consignees": [
+      "EastFoods",
+      "NorthMart",
+      "WestKitchen"
+    ],
+    "finished_lots": [
+      "F-A",
+      "F-B",
+      "F-C"
+    ]
+  },
+  "unresolved_only": {
+    "onsite_kg": 40,
+    "onsite_positions_kg": {
+      "F-E": 40
+    },
+    "shipped_kg": 60,
+    "shipment_line_ids": [
+      "SL-E"
+    ],
+    "consignees": [
+      "DeltaFoods"
+    ],
+    "finished_lots": [
+      "F-E"
+    ]
+  },
+  "origin_gap_lots": [
+    "F-E",
+    "R-UNK"
+  ],
+  "no_recorded_path_finished_lots": [
+    "F-D"
+  ],
+  "already_disposed_kg": 10,
+  "notice": "Synthetic material genealogy only. No recorded path is not food safety clearance."
+}

@@ -1,0 +1,189 @@
+{
+  "workspace_id": "synthetic-co-packer",
+  "revision": 1,
+  "scope": "All fixture lots, one site, September 1-10, 2026; no cross-contact assessment",
+  "unit": "kg",
+  "kinds": {
+    "T17": "ingredient",
+    "T18": "ingredient",
+    "BASE-A": "ingredient",
+    "BASE-B": "ingredient",
+    "BASE-C": "ingredient",
+    "BASE-D": "ingredient",
+    "BASE-E": "ingredient",
+    "CLEAN-R": "ingredient",
+    "R-UNK": "rework",
+    "F-A": "finished",
+    "F-B": "finished",
+    "F-C": "finished",
+    "F-D": "finished",
+    "F-E": "finished",
+    "B101": "bulk",
+    "R101": "rework",
+    "WASTE101": "waste",
+    "WIP101": "work_in_progress"
+  },
+  "opening": {
+    "T17": 100,
+    "T18": 100,
+    "BASE-A": 80,
+    "BASE-B": 40,
+    "BASE-C": 70,
+    "BASE-D": 90,
+    "BASE-E": 80,
+    "CLEAN-R": 10,
+    "R-UNK": 20
+  },
+  "events": [
+    {
+      "id": "E1",
+      "kind": "MIX",
+      "event_time": "2026-09-01T10:00:00Z",
+      "recorded_at": "2026-09-10T12:00:00Z",
+      "inputs": {
+        "T17": 20,
+        "BASE-A": 80
+      },
+      "outputs": {
+        "B101": 100
+      },
+      "unit": "kg",
+      "evidence": "SYNTHETIC-BATCH-SHEET-E1"
+    },
+    {
+      "id": "E2",
+      "kind": "SPLIT",
+      "event_time": "2026-09-02T10:00:00Z",
+      "recorded_at": "2026-09-10T12:00:00Z",
+      "inputs": {
+        "B101": 100
+      },
+      "outputs": {
+        "F-A": 60,
+        "R101": 20,
+        "WASTE101": 10,
+        "WIP101": 10
+      },
+      "unit": "kg",
+      "evidence": "SYNTHETIC-BATCH-SHEET-E2"
+    },
+    {
+      "id": "E3",
+      "kind": "MIX",
+      "event_time": "2026-09-03T10:00:00Z",
+      "recorded_at": "2026-09-10T12:00:00Z",
+      "inputs": {
+        "T17": 10,
+        "BASE-B": 40
+      },
+      "outputs": {
+        "F-B": 50
+      },
+      "unit": "kg",
+      "evidence": "SYNTHETIC-BATCH-SHEET-E3"
+    },
+    {
+      "id": "E4",
+      "kind": "REWORK",
+      "event_time": "2026-09-04T10:00:00Z",
+      "recorded_at": "2026-09-10T12:00:00Z",
+      "inputs": {
+        "R101": 20,
+        "T17": 10,
+        "BASE-C": 70
+      },
+      "outputs": {
+        "F-C": 100
+      },
+      "unit": "kg",
+      "evidence": "SYNTHETIC-BATCH-SHEET-E4"
+    },
+    {
+      "id": "E5",
+      "kind": "MIX",
+      "event_time": "2026-09-04T10:00:00Z",
+      "recorded_at": "2026-09-10T12:00:00Z",
+      "inputs": {
+        "T18": 10,
+        "BASE-D": 90
+      },
+      "outputs": {
+        "F-D": 100
+      },
+      "unit": "kg",
+      "evidence": "SYNTHETIC-BATCH-SHEET-E5"
+    },
+    {
+      "id": "E6",
+      "kind": "REWORK",
+      "event_time": "2026-09-06T10:00:00Z",
+      "recorded_at": "2026-09-10T12:00:00Z",
+      "inputs": {
+        "R-UNK": 20,
+        "BASE-E": 80
+      },
+      "outputs": {
+        "F-E": 100
+      },
+      "unit": "kg",
+      "evidence": "SYNTHETIC-BATCH-SHEET-E6"
+    }
+  ],
+  "shipments": [
+    {
+      "id": "SL-A",
+      "lot": "F-A",
+      "qty": 40,
+      "customer": "NorthMart",
+      "brand": "Harbor"
+    },
+    {
+      "id": "SL-B",
+      "lot": "F-B",
+      "qty": 30,
+      "customer": "EastFoods",
+      "brand": "Trail"
+    },
+    {
+      "id": "SL-C",
+      "lot": "F-C",
+      "qty": 50,
+      "customer": "WestKitchen",
+      "brand": "Cedar"
+    },
+    {
+      "id": "SL-D",
+      "lot": "F-D",
+      "qty": 70,
+      "customer": "ControlFoods",
+      "brand": "Control"
+    },
+    {
+      "id": "SL-E",
+      "lot": "F-E",
+      "qty": 60,
+      "customer": "DeltaFoods",
+      "brand": "Dune"
+    }
+  ],
+  "disposals": [
+    {
+      "id": "D1",
+      "lot": "WASTE101",
+      "qty": 10
+    }
+  ],
+  "containers": [
+    {
+      "id": "P9",
+      "lots": [
+        "F-C",
+        "F-D"
+      ]
+    }
+  ],
+  "unknown_origins": [
+    "R-UNK"
+  ],
+  "provisional_opening_note": "R-UNK 20 kg balances its recorded consumption. Its receipt and origin are unproven, not an accepted material link."
+}

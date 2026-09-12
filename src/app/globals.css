@@ -1,0 +1,29 @@
+/* Shared app styling. Ali's components reuse these tokens; keep restrained and desktop-first. */
+:root {
+  --rr-bg: #f6f7f9;
+  --rr-surface: #ffffff;
+  --rr-border: #d9dde3;
+  --rr-text: #1b1f24;
+  --rr-muted: #5b6470;
+  --rr-accent: #1f5f8b;
+  --rr-warning: #9a6700;
+  --rr-blocking: #a40e26;
+  --rr-ok: #1a7f37;
+  --rr-radius: 6px;
+  --rr-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --rr-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--rr-bg); color: var(--rr-text); font-family: var(--rr-font); font-size: 14px; line-height: 1.45; }
+a { color: var(--rr-accent); }
+code, pre { font-family: var(--rr-mono); font-size: 13px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rr-border); vertical-align: top; }
+th { color: var(--rr-muted); font-weight: 600; }
+.rr-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.rr-card { background: var(--rr-surface); border: 1px solid var(--rr-border); border-radius: var(--rr-radius); padding: 16px; }
+.rr-muted { color: var(--rr-muted); }
+.rr-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rr-border); font-size: 12px; }
+.rr-badge--warning { border-color: var(--rr-warning); color: var(--rr-warning); }
+.rr-badge--blocking { border-color: var(--rr-blocking); color: var(--rr-blocking); }
+.rr-badge--ok { border-color: var(--rr-ok); color: var(--rr-ok); }
