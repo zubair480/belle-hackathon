@@ -13,8 +13,51 @@ warehouse hold. Absence of a recorded path is not a safety clearance.
 Built for the B.E.L.L.E / Qoder / Neo4j hackathon on 2026-09-12 by Zubair (foundation, API, AI,
 integration), Codey (data, Neo4j graph, tracing engine) and Ali (UI, pitch).
 
-**Status:** foundation only. Nothing below "Foundation" is implemented yet; see `docs/handoffs/`
-for what each lane actually delivered and which checks were executed.
+**Status:** foundation plus Zubair's API/AI lane (branch `codex/zubair-api-integration`). The
+routes run end-to-end against an explicit in-memory service double; the real Neo4j services and
+the RecallWorkspace UI arrive from Codey's and Ali's branches at final merge. See
+`docs/handoffs/` for what each lane actually delivered and which checks were executed.
+
+## API lane (Zubair)
+
+All routes from the contract are implemented as thin adapters over framework-agnostic handlers in
+`src/server/application/handlers.ts`, which receive the domain services by injection.
+
+| Route | Handler behaviour |
+| --- | --- |
+| `POST /api/imports/preview` | validates `ImportInput` (four controlled file names, bounded sizes) -> `previewImport` |
+| `POST /api/imports/:id/accept` | validates id + `expectedBaseRevisionId`; in-flight duplicate guard -> `acceptImport` (201) |
+| `POST /api/demo/late-evidence/preview` | prepared fixture correction -> `previewLateEvidence` |
+| `POST /api/alerts/extract` | configured provider only; strict schema + span verification; returns an unconfirmed draft |
+| `POST /api/incidents/:id/traces` | validates `TraceRequest`, sets `incidentId`, duplicate guard -> `runTrace` (201) |
+| `GET /api/traces/:id` | `getTrace`, re-validated against the contract before it leaves the server |
+| `GET /api/traces/:id/compare?other=` | `compareTraces`; rejects missing `other` and self-comparison |
+| `GET /api/traces/:id/export` | CSV from the stored run: quoted cells, formula-neutralized, categories, "no hold applied" |
+| `GET /api/health` | wiring report (mode, provider, whether Neo4j/AI credentials are set); no secrets |
+
+Every failure uses the single `ApiResponse` error envelope with a frozen `ErrorCode` and its HTTP
+status. Oversized bodies get `PAYLOAD_TOO_LARGE`, hung services get `TIMEOUT` after
+`RECALL_SERVICE_TIMEOUT_MS`, and messages that look like credentials are replaced.
+
+Service wiring is explicit (`src/server/application/wiring.ts`): `RECALL_SERVICES=graph` expects
+Codey's `graphServices`; `RECALL_SERVICES=double` registers the in-memory double built from the
+reference fixtures. A failing real service is never replaced by the double.
+
+Runtime AI is one replaceable provider chosen by `RECALL_AI_PROVIDER`: `none` (manual entry only,
+default), `stub` (labeled regex stub for UI development), or `anthropic` (Claude API through the
+official SDK with structured output, requires `RECALL_AI_API_KEY`). The model sees the pasted alert
+as untrusted data, has no tools, and its output is discarded unless it validates and every evidence
+span matches the source text. Confirmation to a known lot is a separate human action.
+
+Local run without Neo4j:
+
+```bash
+printf 'RECALL_WORKSPACE_ID=synthetic-co-packer\nRECALL_DEMO_ACTOR_ID=qa-reviewer-demo\nRECALL_SERVICES=double\nRECALL_AI_PROVIDER=stub\n' > .env.local
+```
+
+```bash
+npm run dev
+```
 
 ## Foundation (this commit)
 
