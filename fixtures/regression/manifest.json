@@ -1,0 +1,7 @@
+{
+  "kind": "legacy_robotics_regression_adapter",
+  "workspaceId": "synthetic-robot-assembler",
+  "source": "docs/reference/assembly/assembly_reference_output/fixture_revision_1.json",
+  "adapter": "src/server/data/regression.ts",
+  "purpose": "Regression-only adapter for the published robotics trace oracle. This fixture is not EV factory data."
+}
