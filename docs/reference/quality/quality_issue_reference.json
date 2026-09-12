@@ -1,0 +1,1015 @@
+{
+  "contractVersion": "assembly-quality-v3",
+  "notes": [
+    "All issues, causes, tests and supplier rates are synthetic.",
+    "An existing closed issue demonstrates reusable knowledge; the actual CRUD/lifecycle application is not implemented by this fixture."
+  ],
+  "teams": [
+    {
+      "id": "TEAM-INCOMING-QA",
+      "name": "Incoming Quality"
+    },
+    {
+      "id": "TEAM-FINAL-TEST",
+      "name": "Final Test"
+    },
+    {
+      "id": "TEAM-MECHANICAL",
+      "name": "Mechanical Assembly"
+    },
+    {
+      "id": "TEAM-SUPPLIER-QUALITY",
+      "name": "Supplier Quality"
+    }
+  ],
+  "suppliers": [
+    {
+      "id": "SUP-A",
+      "name": "Demo Motion Components"
+    },
+    {
+      "id": "SUP-B",
+      "name": "Demo Encoder Works"
+    }
+  ],
+  "stations": [
+    {
+      "id": "ST-INCOMING",
+      "name": "Incoming inspection"
+    },
+    {
+      "id": "ST-JOINT-ASSEMBLY",
+      "name": "Joint assembly"
+    },
+    {
+      "id": "ST-FINAL-TEST",
+      "name": "Final test"
+    }
+  ],
+  "issues": [
+    {
+      "id": "ISS-A1",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic ENCODER_DROPOUT observation on E001",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "E001"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-A"
+      ],
+      "defectCode": "ENCODER_DROPOUT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-A1"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-A2",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic CONNECTOR_DEFECT observation on E001",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "E001"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-A"
+      ],
+      "defectCode": "CONNECTOR_DEFECT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-A2"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-A3",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic ENCODER_DROPOUT observation on E002",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "E002"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-A"
+      ],
+      "defectCode": "ENCODER_DROPOUT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-A3"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-A4",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic CONNECTOR_DEFECT observation on E003",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "E003"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-A"
+      ],
+      "defectCode": "CONNECTOR_DEFECT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-A4"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-B1",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic ENCODER_DROPOUT observation on B201",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "B201"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-B"
+      ],
+      "defectCode": "ENCODER_DROPOUT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-B1"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-B2",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic ENCODER_DROPOUT observation on B202",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "B202"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-B"
+      ],
+      "defectCode": "ENCODER_DROPOUT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-B2"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-UNCONFIRMED",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Synthetic ENCODER_DROPOUT observation on E900",
+      "description": "A fictional incoming-component observation for the demo.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T10:00:00Z",
+      "reportingTeamId": "TEAM-INCOMING-QA",
+      "assignedTeamId": "TEAM-SUPPLIER-QUALITY",
+      "detectionStationId": "ST-INCOMING",
+      "processStepId": "incoming-inspection",
+      "entityIds": [
+        "E900"
+      ],
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "linkedSupplierIds": [
+        "SUP-A"
+      ],
+      "defectCode": "ENCODER_DROPOUT",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ISS-UNCONFIRMED"
+      ],
+      "createdBy": "demo-reporter",
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-10T12:00:00Z"
+    },
+    {
+      "id": "ISS-ASM-01",
+      "version": 5,
+      "status": "closed",
+      "title": "Joint fastening issue on J004",
+      "description": "Synthetic inspection finding for a mechanical joint.",
+      "origin": "manual",
+      "detectedAt": "2026-09-10T09:00:00Z",
+      "reportingTeamId": "TEAM-FINAL-TEST",
+      "assignedTeamId": "TEAM-MECHANICAL",
+      "detectionStationId": "ST-FINAL-TEST",
+      "processStepId": "joint-fastening",
+      "entityIds": [
+        "J004",
+        "R003"
+      ],
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "linkedSupplierIds": [
+        "SUP-A"
+      ],
+      "defectCode": "TORQUE_LOW",
+      "severity": "major",
+      "evidenceIds": [
+        "EVID-ASM-OBS"
+      ],
+      "createdBy": "demo-test-operator",
+      "createdAt": "2026-09-10T09:00:00Z",
+      "updatedAt": "2026-09-10T16:00:00Z"
+    }
+  ],
+  "causeAssessments": [
+    {
+      "id": "CAUSE-ISS-A1",
+      "issueId": "ISS-A1",
+      "state": "confirmed",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-A",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-A1"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ISS-A2",
+      "issueId": "ISS-A2",
+      "state": "confirmed",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-A",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-A2"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ISS-A3",
+      "issueId": "ISS-A3",
+      "state": "confirmed",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-A",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-A3"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ISS-A4",
+      "issueId": "ISS-A4",
+      "state": "confirmed",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-A",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-A4"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ISS-B1",
+      "issueId": "ISS-B1",
+      "state": "confirmed",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-B",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-B1"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ISS-B2",
+      "issueId": "ISS-B2",
+      "state": "confirmed",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-B",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-B2"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ISS-UNCONFIRMED",
+      "issueId": "ISS-UNCONFIRMED",
+      "state": "hypothesis",
+      "causeType": "supplier_component",
+      "responsibleTeamId": null,
+      "responsibleSupplierId": "SUP-A",
+      "causalStationId": null,
+      "rationale": "Synthetic supplier attribution; no actual supplier finding.",
+      "evidenceIds": [
+        "EVID-ISS-UNCONFIRMED"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T12:00:00Z",
+      "supersedesId": null
+    },
+    {
+      "id": "CAUSE-ASM-01",
+      "issueId": "ISS-ASM-01",
+      "state": "confirmed",
+      "causeType": "assembly_process",
+      "responsibleTeamId": "TEAM-MECHANICAL",
+      "responsibleSupplierId": null,
+      "causalStationId": "ST-JOINT-ASSEMBLY",
+      "rationale": "Demo record: an assembly-process deviation was confirmed.",
+      "evidenceIds": [
+        "EVID-ASM-CAUSE"
+      ],
+      "assessedBy": "demo-quality-reviewer",
+      "assessedAt": "2026-09-10T11:00:00Z",
+      "supersedesId": null
+    }
+  ],
+  "fixRevisions": [
+    {
+      "id": "FIX-ASM-01-V1",
+      "issueId": "ISS-ASM-01",
+      "version": 1,
+      "summary": "Apply the approved correction in WI-JOINT-07 revision 2 and verify the joint.",
+      "steps": [
+        {
+          "order": 1,
+          "instruction": "Confirm applicability of the approved work instruction to this joint revision."
+        },
+        {
+          "order": 2,
+          "instruction": "Apply the approved correction and document execution."
+        },
+        {
+          "order": 3,
+          "instruction": "Record the required inspection and verification evidence."
+        }
+      ],
+      "applicability": {
+        "partNumber": "JOINT-10",
+        "partRevision": "B",
+        "processStepId": "joint-fastening",
+        "limitations": [
+          "Synthetic example; no real torque values or engineering procedure supplied."
+        ]
+      },
+      "state": "verified",
+      "sourceFixRevisionId": null,
+      "evidenceIds": [
+        "EVID-ASM-FIX"
+      ]
+    }
+  ],
+  "verifications": [
+    {
+      "id": "VERIFY-ASM-01",
+      "issueId": "ISS-ASM-01",
+      "fixRevisionId": "FIX-ASM-01-V1",
+      "outcome": "pass",
+      "method": "Synthetic verification against demo work-instruction criteria",
+      "resultNotes": "Fixture result is PASS. No real hardware was inspected.",
+      "evidenceIds": [
+        "EVID-ASM-VERIFY"
+      ],
+      "verifiedBy": "demo-quality-reviewer",
+      "verifiedAt": "2026-09-10T16:00:00Z"
+    }
+  ],
+  "additionalBatches": [
+    {
+      "id": "QUALITY-SUPA-OTHER",
+      "supplierId": "SUP-A",
+      "partNumber": "ENC-42",
+      "externalCode": "Q-A-OTHER"
+    },
+    {
+      "id": "QUALITY-SUPB-OTHER",
+      "supplierId": "SUP-B",
+      "partNumber": "ENC-42",
+      "externalCode": "Q-B-OTHER"
+    }
+  ],
+  "additionalEntities": [
+    {
+      "id": "A010",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A010",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A011",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A011",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A012",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A012",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A013",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A013",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A014",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A014",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A015",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A015",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A016",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A016",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A017",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A017",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A018",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A018",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A019",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A019",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "A020",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "A020",
+      "issuerId": "SUP-A",
+      "batchId": "QUALITY-SUPA-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B201",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B201",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B202",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B202",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B203",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B203",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B204",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B204",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B205",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B205",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B206",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B206",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B207",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B207",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B208",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B208",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B209",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B209",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    },
+    {
+      "id": "B210",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "B210",
+      "issuerId": "SUP-B",
+      "batchId": "QUALITY-SUPB-OTHER",
+      "locationState": "onsite"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EVID-ASM-CAUSE",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ASM-CAUSE",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ASM-FIX",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ASM-FIX",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ASM-OBS",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ASM-OBS",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ASM-VERIFY",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ASM-VERIFY",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-A1",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-A1",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-A2",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-A2",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-A3",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-A3",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-A4",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-A4",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-B1",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-B1",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-B2",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-B2",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    },
+    {
+      "id": "EVID-ISS-UNCONFIRMED",
+      "sourceName": "Synthetic quality record",
+      "locator": "EVID-ISS-UNCONFIRMED",
+      "text": "Fictional fixture evidence only; replace with actual evidence in a pilot."
+    }
+  ],
+  "inspectionCohort": {
+    "start": "2026-09-01T00:00:00Z",
+    "endExclusive": "2026-09-11T00:00:00Z",
+    "observationCutoff": "2026-09-12T12:00:00Z",
+    "complete": true,
+    "records": [
+      {
+        "id": "INS-E001",
+        "entityId": "E001",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E002",
+        "entityId": "E002",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E003",
+        "entityId": "E003",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E004",
+        "entityId": "E004",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E005",
+        "entityId": "E005",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E006",
+        "entityId": "E006",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E101",
+        "entityId": "E101",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E102",
+        "entityId": "E102",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-E900",
+        "entityId": "E900",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A010",
+        "entityId": "A010",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A011",
+        "entityId": "A011",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A012",
+        "entityId": "A012",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A013",
+        "entityId": "A013",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A014",
+        "entityId": "A014",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A015",
+        "entityId": "A015",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A016",
+        "entityId": "A016",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A017",
+        "entityId": "A017",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A018",
+        "entityId": "A018",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A019",
+        "entityId": "A019",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-A020",
+        "entityId": "A020",
+        "supplierId": "SUP-A",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B201",
+        "entityId": "B201",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B202",
+        "entityId": "B202",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B203",
+        "entityId": "B203",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B204",
+        "entityId": "B204",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B205",
+        "entityId": "B205",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B206",
+        "entityId": "B206",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B207",
+        "entityId": "B207",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B208",
+        "entityId": "B208",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B209",
+        "entityId": "B209",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      },
+      {
+        "id": "INS-B210",
+        "entityId": "B210",
+        "supplierId": "SUP-B",
+        "partNumber": "ENC-42",
+        "inspectedAt": "2026-09-09T10:00:00Z"
+      }
+    ]
+  },
+  "manualDemoInput": {
+    "title": "Joint fastening issue on J005",
+    "description": "Operator marks the joint after an inspection finding.",
+    "origin": "manual",
+    "detectedAt": "2026-09-12T10:00:00Z",
+    "reportingTeamId": "TEAM-FINAL-TEST",
+    "assignedTeamId": "TEAM-MECHANICAL",
+    "detectionStationId": "ST-FINAL-TEST",
+    "processStepId": "joint-fastening",
+    "entityIds": [
+      "J005",
+      "R005"
+    ],
+    "partNumber": "JOINT-10",
+    "partRevision": "B",
+    "linkedSupplierIds": [
+      "SUP-A"
+    ],
+    "defectCode": "TORQUE_LOW",
+    "severity": "major",
+    "evidenceIds": []
+  },
+  "expected": {
+    "SUP-A": {
+      "confirmedIssueCount": 4,
+      "distinctAffectedInspectedUnits": 3,
+      "inspectedUnits": 20,
+      "rate": 0.15
+    },
+    "SUP-B": {
+      "confirmedIssueCount": 2,
+      "distinctAffectedInspectedUnits": 2,
+      "inspectedUnits": 10,
+      "rate": 0.2
+    },
+    "similarFixForManualDemo": "FIX-ASM-01-V1",
+    "closedAssemblyIssueReportingTeam": "TEAM-FINAL-TEST",
+    "closedAssemblyIssueCausingTeam": "TEAM-MECHANICAL"
+  }
+}

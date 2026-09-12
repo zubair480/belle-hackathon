@@ -1,123 +1,68 @@
 # RecallRadius
 
-Recall investigation workspace for food co-packers. Given a reviewer-confirmed suspect ingredient
-lot and an explicit scope, RecallRadius follows recorded material relationships (input lot ->
-material event -> output lot) through mixing, split batches and rework to candidate inventory holds
-and outbound customer shipments. It shows the evidence behind every row, keeps missing records
-visible as unresolved scope, and preserves each result as an immutable run so a late record produces
-a new, comparable answer instead of silently rewriting the old one.
+An internal issue and learning workspace for **robotic and physical assembly manufacturing**. Report a problem, mark the affected part or process, assign investigation, retrieve a relevant verified fix, verify the new application, and preserve the knowledge for the next issue.
 
-QA retains authority over holds, notices and recalls. A displayed candidate hold is not an applied
-warehouse hold. Absence of a recorded path is not a safety clearance.
+Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessments, fix versions and evidence. Team and supplier insights distinguish reporting, ownership and confirmed cause, with drilldown to the records behind each metric.
 
-Built for the B.E.L.L.E / Qoder / Neo4j hackathon on 2026-09-12 by Zubair (foundation, API, AI,
-integration), Codey (data, Neo4j graph, tracing engine) and Ali (UI, pitch).
+**Status: foundation plus updated planning/reference files.** The application source still needs migration from the earlier lot-based contract to `assembly-quality-v3`. Start with [project context](docs/PROJECT_CONTEXT.md); this documentation update does not claim the new workflow is implemented.
 
-**Status:** foundation only. Nothing below "Foundation" is implemented yet; see `docs/handoffs/`
-for what each lane actually delivered and which checks were executed.
+## Start here
 
-## Foundation (this commit)
+Read the [shared prompt](docs/prompts/SHARED_PROMPT.md), then your role prompt:
 
-| Piece | Location |
-| --- | --- |
-| Pinned manifest + lockfile | `package.json`, `package-lock.json` (npm, exact versions) |
-| Frozen shared contract | `src/contracts/recall.ts` (Zod schemas, TS types, routes, error codes, limits, `DomainServices`) |
-| App shell | `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css` |
-| Research + judge docs | `docs/SHARED_CONTRACT.md`, `docs/TECHNICAL_BLUEPRINT.md`, `docs/JUDGE_SUBMISSION_KIT.md`, `docs/research/RESEARCH_REPORT.md` |
-| Reference fixture (source of truth for quantities) | `docs/research/reference_case.py`, `docs/research/reference_output/*` |
-| Lane prompts | `docs/prompts/*_PROMPT.md` |
-| Contract smoke test | `tests/api/contract.test.ts` |
-| Env variable names | `.env.example` |
+| Person | Prompt | Responsibility |
+| --- | --- | --- |
+| Codey/Cody | [Codey prompt](docs/prompts/CODEY_PROMPT.md) | Data integration, Neo4j, issue/fix persistence, graph queries and analytics |
+| Ali | [Ali prompt](docs/prompts/ALI_PROMPT.md) | Frontend, typed API client, pitch and demo |
+| Zubair | [Zubair prompt](docs/prompts/ZUBAIR_PROMPT.md) | Shared contracts, APIs, optional AI, integration and final tests |
 
-Pinned versions: Next 16.3.5, React 19.3.0, TypeScript 5.9.3, Zod 4.6.2, neo4j-driver 6.2.0,
-Vitest 4.1.11 (+ jsdom / Testing Library for UI tests). Deployment provider is deliberately
-undecided.
+Use the [shared contract](docs/SHARED_CONTRACT.md), [technical brief](docs/TECHNICAL_BLUEPRINT.md) and [judge kit](docs/JUDGE_SUBMISSION_KIT.md). Zubair owns source-contract migration and publishes the exact agreed interface state before parallel feature work depends on it.
 
-## Setup
+## Working together
 
-Requires Node 20.9+ (developed on Node 24) and npm.
+All three use this repository. Branches: `codex/codey-data-graph`, `codex/ali-ui-pitch`, and `codex/zubair-api-integration`. Feature branches are merged **at the end** in `codex/final-integration`. Each person preserves teammates' work, uses the shared contract and supplies a tested handoff in `docs/handoffs/`.
+
+Codey supplies domain services; Ali exports `RecallWorkspace`; Zubair connects the HTTP routes and mounts the UI. Reuse existing error-envelope/injection patterns while migrating DTOs. Label mocks explicitly and disable them for final real-service tests.
+
+## Existing foundation and setup
+
+The repository already contains a Next.js/TypeScript scaffold, pinned `package.json`/`package-lock.json`, Zod, Neo4j's JavaScript driver and Vitest setup. Reuse them. Requires Node 20.9+ and npm.
 
 ```bash
 npm ci
-```
-
-```bash
 cp .env.example .env.local
-```
-
-```bash
 npm run dev
 ```
 
-Other commands:
+Useful existing commands:
 
-| Command | Purpose |
-| --- | --- |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | all Vitest suites under `tests/**` |
-| `npm run test:api` / `test:data` / `test:ui` / `test:integration` | one lane's suite |
-| `npm run build` | production build |
-| `npm run reference:python` | re-run the Python reference case (writes `docs/research/reference_output/`) |
+```bash
+npm run typecheck
+npm test
+npm run build
+```
 
-UI tests that need a DOM add `// @vitest-environment jsdom` at the top of the file.
+Lane suites: `npm run test:api`, `test:data`, `test:ui`, and `test:integration`. Their current tests are not proof of the v3 application. `npm run reference:python` still points to the legacy fixture until Zubair migrates that script.
 
-## Team working agreement
+Active synthetic oracles:
 
-Branches are cut from the foundation commit on `main` (SHA in `docs/handoffs/ZUBAIR.md` and the
-team message). Feature branches are merged only at the end, by Zubair, in `codex/final-integration`.
+```bash
+python docs/reference/quality/build_quality_fixture.py
+python docs/reference/assembly/assembly_reference_case.py
+```
 
-| Owner | Branch | Owned paths |
-| --- | --- | --- |
-| Codey | `codex/codey-data-graph` | `src/server/data/**`, `src/server/graph/**`, `scripts/neo4j/**`, `fixtures/**`, `tests/data/**`, `docs/handoffs/CODEY.md` |
-| Ali | `codex/ali-ui-pitch` | `src/components/recall/**`, `src/features/recall/**`, `tests/ui/**`, `docs/pitch/**`, `docs/handoffs/ALI.md` |
-| Zubair | `codex/zubair-api-integration` | `src/app/**`, `src/contracts/**`, `src/server/ai/**`, `src/server/application/**`, `tests/api/**`, `tests/integration/**`, root config, README, `docs/handoffs/ZUBAIR.md` |
+No application credentials are included. The existing demo identity/mocks are development scaffolding, not production authentication.
 
-Integration points:
+## Demo and hackathon
 
-- Codey exports an object satisfying `DomainServices` (from `src/contracts/recall.ts`) as
-  `graphServices` from `src/server/graph/index.ts`. Expected failures are thrown as `DomainError`
-  with a frozen `ErrorCode`. `runTrace` persists before returning.
-- Ali exports `RecallWorkspace` from `src/features/recall/index.ts` and talks to the API only through
-  the `ROUTES` table and `ApiResponse` envelope. Mock mode is the visible, explicit
-  `NEXT_PUBLIC_RECALL_UI_MOCKS=true` setting. Ali may mount `RecallWorkspace` in `src/app/page.tsx`
-  on his branch for local development; Zubair takes that edit at merge.
-- Zubair's routes call the services through an injected `DomainServices` instance. During lane
-  development the routes run against a typed in-memory double selected only by the explicit
-  `RECALL_SERVICES=double` setting. A failing real service is never replaced by the double.
-- Requests for contract changes go through Zubair, who publishes the exact text to both teammates
-  and records it in each handoff.
+The primary demo is **manual issue -> assignment -> prior verified fix -> new verification and closure -> reusable knowledge -> team/supplier insight**. The first user is an operator, manufacturing quality manager or production engineer at a hardware/robotic assembler.
 
-Reference quantities are identical in every lane and come from `docs/research/reference_output`.
-Codey may copy the fixture files into `fixtures/` for the importer; do not change lots or amounts.
+Target Track A (Developers) and the separate Neo4j bonus. Perform and document actual Qoder development and meaningful Neo4j queries. Optional AI structures a report or explains retrieved evidence; it does not establish causes or approve corrective actions. Deployment tooling is deferred.
 
-## Demo identity (not authentication)
+The supporting assembly fixture demonstrates replacement history, missing component origins and unit-count deduplication. Quality reference data demonstrates why four issues across three affected units is different from four defective units, and why rates require matching inspection volumes.
 
-The server derives `workspaceId` and `actorId` from `RECALL_WORKSPACE_ID` and
-`RECALL_DEMO_ACTOR_ID`. Browsers cannot supply them. This is a documented synthetic demo context
-for one local workspace; it is not production authentication, tenant isolation or authorization.
+## Scope and truthfulness
 
-## Expected demo outcomes
+Manual issues do not require datasets or external alerts. Users can record annotations and evidence in the app. Keep reporting and assigned teams separate from confirmed causal teams, and linked suppliers separate from confirmed faults. A reused fix needs verification in the new case; removed components remain in appropriate history.
 
-From the executed Python reference (`docs/research/reference_output/verification.json`, 22 checks).
-These are the acceptance targets for the real application; they are not application test results
-until `docs/handoffs/` says the application produced them.
-
-| Output | Revision 1 | Revision 2 |
-| --- | --- | --- |
-| Known-path onsite stock | 160 kg | 190 kg |
-| Known-path outbound shipments | 120 kg | 180 kg |
-| Distinct direct consignees | 3 | 4 |
-| Finished lots with a path | F-A, F-B, F-C | F-A, F-B, F-C, F-E |
-| Unresolved-only finished stock | F-E: 40 kg onsite, 60 kg shipped | none |
-| Already disposed | 10 kg | 10 kg |
-| F-D (shares pallet P9 with F-C only) | no recorded material path | no recorded material path |
-
-Revision 2 consumes the 10 kg WIP101 and adds 40 kg F-E, so onsite rises by 30 kg, not 40. The
-revision 1 run is preserved unchanged.
-
-## Scope limits
-
-Kilograms only, one site, one synthetic workspace, controlled CSV formats. No cross-contact
-assessment, OCR, ERP connectors, autonomous notices or EPCIS conformance. Runtime AI is one
-optional supplier-alert extraction proposal that a reviewer must confirm; it never accepts graph
-relationships, issues recalls, changes holds or runs Cypher.
+Twenty-three Python assembly reference checks and the quality fixture validation passed during preparation. Actual UI/API/Neo4j tests, buyer demand and measured operational benefits remain work for the team. Legacy files under `docs/research/` are historical; the active examples are under `docs/reference/`.

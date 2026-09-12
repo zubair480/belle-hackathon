@@ -1,0 +1,45 @@
+{
+  "contractVersion": "assembly-quality-v3",
+  "revisionId": "assembly-r2",
+  "dataHash": "640e4c5108a7e5e8aaeea25c829ad58a762eefb7ef8d5069825ee32bb0f09d73",
+  "currentRobotIds": [
+    "R001",
+    "R002",
+    "R003",
+    "R005"
+  ],
+  "currentShippedRobotIds": [
+    "R001",
+    "R002",
+    "R005"
+  ],
+  "currentCustomerIds": [
+    "CUST-A",
+    "CUST-B",
+    "CUST-C"
+  ],
+  "historicalOnlyRobotIds": [
+    "R006"
+  ],
+  "unresolvedOnlyRobotIds": [],
+  "originGapRobotIds": [],
+  "noRecordedLinkRobotIds": [
+    "R004"
+  ],
+  "looseCandidateComponentIds": [
+    "E005"
+  ],
+  "quarantinedComponentIds": [
+    "E006"
+  ],
+  "counts": {
+    "currentOnsiteRobotCount": 1,
+    "currentShippedRobotCount": 3,
+    "currentCustomerCount": 3,
+    "looseCandidateComponentCount": 1,
+    "quarantinedComponentCount": 1,
+    "historicalOnlyRobotCount": 1,
+    "unresolvedOnlyRobotCount": 0
+  },
+  "note": "Current means recorded containment; removal does not constitute engineering clearance."
+}

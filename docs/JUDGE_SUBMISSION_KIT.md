@@ -1,110 +1,54 @@
-# RecallRadius judge submission kit
+# RecallRadius judge kit - robotic assembly
 
-Prepared September 12, 2026 for the B.E.L.L.E / Qoder / Neo4j hackathon. This is preparation, not a submitted entry. The research reference harness is complete; an actual Qoder-built Neo4j application is still required before making those implementation claims.
+Active scope: `assembly-quality-v3`. The primary story is internal issue creation, verified resolution reuse and team/supplier insights for robotic or physical assembly. This is preparation; nothing has been submitted by this update. Synthetic reference checks are not proof of a working application.
 
-## Entry and submission
+## Pitch
 
-Recommended entry: **Track A - Developers (Builder)** and the separate **Neo4j bonus**. The product centers on a working graph application. Track B is a Qoder Desktop Agent workflow track and would require a different demonstration.
+RecallRadius helps robotic and hardware assembly teams report production issues, reuse verified fixes and identify recurring process or supplier problems from connected evidence.
 
-Official sources: [organizer deck](https://www.canva.com/design/DAHUt_zVr_4/As1pUraRGt4HDH2EvCtBwA/view#11) and [live submission form](https://docs.google.com/forms/d/e/1FAIpQLSeFEB5HWuUGIKssCZD68Hl9ufNaU4abz-_hRJGbYMhlxt1jEQ/viewform), both inspected in Chrome during this research conversation.
+The buyer hypothesis is a manufacturing quality or operations leader at a robotic-arm assembler or hardware contract manufacturer. Operators can report issues directly in the app; imports and supplier bulletins are additional sources. The product connects an issue to its part/assembly, reporting and responsible teams, reviewed cause, fix and verification.
 
-| Item | What to prepare |
-| --- | --- |
-| Name and email | Your actual entrant details |
-| Project title | RecallRadius |
-| Description | Up to 200 words; use a truthful version of the draft below |
-| Qoder use | Answer Yes only after real Qoder development work has been done |
-| Track | A - Developers (Builder) |
-| Neo4j use | Answer Yes only after the running application actually uses Neo4j |
-| LinkedIn / X URL | A real public project post; required in the form and for prizes |
-| GitHub URL | Optional field; recommended for README, code and demo links |
+## Hackathon fit
 
-No dedicated video, slide or hosted-app field appeared in the form. Link these from the README. The deck lists 5:00 p.m. submission, 5:00-6:30 p.m. judging and 6:45 p.m. winners on September 12. It does not specify individual pitch length. The scripts below are preparation targets.
+Recommend Track A - Developers (Builder), plus the separate Neo4j bonus. Actual issue-to-part-to-process relationships and verified fix retrieval justify the graph; assembly traversal supplies additional context. Capture genuine Qoder development contributions. Optional AI structures reports or explains graph-retrieved fixes, while reviewed records and deterministic rules govern the workflow.
 
-No maximum tool count was found. Use Qoder and Neo4j substantively, with one optional runtime extraction API. An ordinary application does not need every bonus example such as GraphRAG, agent memory or MCP. A deployment platform can be chosen later.
+The Builder rubric weights Qoder/AI use and execution at 25% each, innovation at 20%, and impact and story at 15% each. Demonstrate a working manual issue lifecycle before adding breadth. Neo4j is a separate bonus rather than a third track. The proposed team/supplier analytics must remain evidence-linked product features, not unsupported AI judgments.
 
-## One-line pitch
-
-RecallRadius helps food co-packers trace a suspect ingredient through rework into customer shipments, exposing missing records before QA decides what to hold or investigate.
+Sources carried forward from the verified event materials: [organizer deck](https://www.canva.com/design/DAHUt_zVr_4/As1pUraRGt4HDH2EvCtBwA/view#11) and [submission form](https://docs.google.com/forms/d/e/1FAIpQLSeFEB5HWuUGIKssCZD68Hl9ufNaU4abz-_hRJGbYMhlxt1jEQ/viewform). The form asks for a description up to 200 words, track and sponsor-use answers, contact details and a social-post link; GitHub is optional. Link the demo/recording from the repository README. Recheck the live instructions before submitting.
 
 ## Description draft
 
-Use this prospective description while the product is being built. Before submission, revise it to accurately describe the features that actually work; do not convert unfinished plans into completed claims.
-
 <!-- DESCRIPTION_START -->
-RecallRadius is a proposed recall investigation workspace for food co-packers producing multiple customer brands. It traces a suspect ingredient through mixing, split batches and rework to identify candidate inventory holds and customer shipments for QA review.
+RecallRadius is a proposed issue and learning workspace for robotic and hardware assembly teams. Operators can report problems inside the app, mark affected parts or process locations, assign investigation and record verified resolutions.
 
-The planned application uses Neo4j for material genealogy and Qoder IDE for development. AI proposes structured fields from supplier alerts; reviewed records and deterministic queries govern the trace. Every finding should expose its source evidence, while missing origins remain visible as unresolved scope.
+The planned application uses Neo4j to connect issues, component serials, assembly relationships, teams, suppliers, causes, fixes and evidence. When a similar problem appears, it retrieves applicable verified fixes and explains their history. Reuse creates a new proposal that still needs verification in the current case.
 
-Our synthetic demonstration follows one ingredient into three finished lots. A recovered rework record adds a fourth customer to the investigation, while preserving the earlier result. A product sharing only a pallet does not gain a material path.
+Our demo follows a manually reported joint-fastening issue through assignment, a prior verified resolution, corrective work and closure. The resulting knowledge remains available to the next team. Dashboards distinguish the team that detected a defect from its confirmed cause, and supplier links from confirmed supplier faults.
 
-The initial buyer is a co-packer's operations or quality leader. A paid pilot would test whether recurring record reconciliation and mock-recall preparation save enough staff time to justify adoption. RecallRadius supports investigation; QA retains authority over recall decisions, notices and stock disposition.
+Qoder supports development; optional AI structures reports or explains retrieved evidence. The next proof is a bounded pilot measuring investigation effort, repeated issues and verified fix reuse. Engineering teams retain authority over disposition and operational actions.
 <!-- DESCRIPTION_END -->
 
-The form has a 200-word limit. The draft is below that limit; count the edited final version again. If the application is complete, replace prospective language with precise demonstrated behavior and add actual usage evidence in the README.
+Revise prospective wording only after those features actually work. The existing reference script alone does not prove Qoder/Neo4j application use.
 
-## Three-minute demonstration
+## Three-minute demo
 
-| Time | Show | Say |
-| --- | --- | --- |
-| 0:00-0:20 | Supplier alert and selected T17 identity | "A co-packer receives a supplier warning. That ingredient went into several brands, and some production was reworked. QA needs to know which records and shipments to investigate." |
-| 0:20-1:05 | Confirmed alert fields, result table | "This accepted data revision shows 160 kg onsite and 120 kg shipped across three direct customers. These are investigation candidates, with evidence behind each row." |
-| 1:05-1:45 | Expand F-C path; open the unresolved queue | "F-C receives this ingredient directly and through rework. We count its stock and shipment once. Another batch has a missing origin; we leave it unresolved instead of treating it as clear." |
-| 1:45-2:30 | Accept late record and compare runs | "This recovered batch sheet connects that missing origin. Outbound scope grows to four customers and 180 kg. Onsite scope becomes 190 kg because the old WIP was consumed. The earlier run is preserved. Sharing a pallet still does not create an ingredient path for the control lot." |
-| 2:30-3:00 | Graph query, Qoder evidence and buyer card | "Neo4j follows actual material relationships. Qoder helped build and test the application. The buyer is a co-packer's QA or operations leader; our next proof is a paid historical-data pilot measuring total time saved." |
+| Time | Show and explain |
+| --- | --- |
+| 0:00-0:20 | Operator finds a joint-fastening issue. Show that an issue can be entered directly, without an import or supplier alert. |
+| 0:20-0:55 | Create/save the issue, mark J005/R005 and assign Mechanical Assembly. Final Test remains the reporting team. |
+| 0:55-1:35 | Retrieve a compatible verified fix with its source issue, part revision and evidence. Reuse it as a new proposal. |
+| 1:35-2:10 | Show recorded corrective work and a passed verification before closure. Reopen the saved record to show durable history. |
+| 2:10-2:40 | Retrieve the fix for a later issue and drill into team/supplier counts. Explain reporting versus confirmed cause and counts versus rates. |
+| 2:40-3:00 | Show the real Neo4j relationships, actual Qoder contribution and next paid-pilot hypothesis. |
 
-The statements about Qoder, Neo4j and the running application are valid only after you implement and verify them. The current Python harness alone does not establish sponsor use.
+Three minutes is a preparation target, not a verified individual pitch limit. Also prepare a 90-second version focused on manual issue creation, verified fix reuse and one evidence-linked insight. The assembly replacement/late-certificate scenario is an optional deeper technical demonstration after the primary flow works.
 
-## Ninety-second fallback
+## Five-slide outline
 
-Spend 15 seconds on the co-packer's supplier-alert story, 25 on the initial table and one rework path, 30 on the late-record change and unresolved queue, and 20 on the real Qoder/Neo4j contribution and paid-pilot hypothesis. Skip graph animations and generic AI chat.
+1. Buyer and problem: recurring assembly issues and fixes lost across teams and records.
+2. Product: manually reported issue -> assigned investigation -> verified fix -> reusable knowledge.
+3. Engineering: Neo4j links issues, serials, process steps, cause assessments and evidence; rules govern closure and reuse.
+4. Demonstration: verified resolution reuse and team/supplier analytics with drilldown and honest attribution.
+5. Next proof: a one-site pilot with a named reviewer and measured investigation effort, recurrence and fix reuse.
 
-Keep an offline recording and reproducible fixture available. Clearly label a recording as a recording, and any simulation as a simulation. Do not present a seed script as a live importer or a precomputed answer as a live database trace.
-
-## Rubric evidence to capture
-
-| Criterion | Weight | Concrete proof |
-| --- | --- | --- |
-| Qoder / AI use | 25% | Two or three accepted Qoder development tasks; one reviewed extraction flow if built |
-| Execution | 25% | Working import/review/trace path; real database tests; fallback and error states |
-| Innovation | 20% | Evidence gaps plus reproducible scope changes across split/reworked lots |
-| Impact | 15% | Named buyer and a bounded paid pilot with measurable operational outcomes |
-| Story | 15% | Supplier warning, missing record, new customer scope, preserved earlier answer |
-| Neo4j bonus | Separate | Actual many-to-many lineage traversal with event witnesses and changed results |
-
-The numerical rubric is from the organizer deck. The suggested proof items are recommendations, not extra official requirements.
-
-## README outline
-
-1. Product problem, buyer and one-line pitch.
-2. Run instructions, environment variable names and seeded synthetic case.
-3. Working demo link and short backup recording, if available.
-4. Event/lot diagram and explanation of material traversal versus pallet membership.
-5. Reference expectations and actual application test results, distinguished from Python-only results.
-6. Qoder contribution with specific accepted changes and Neo4j query evidence.
-7. Scope: evidence-driven candidates, unresolved records, QA authority and unimplemented features.
-8. Pilot proposal and primary research links.
-
-Never commit secrets or real customer production records. All fixture names and quantities in the prepared demo are synthetic.
-
-## Likely judge questions
-
-**Why Neo4j?** Actual inputs and outputs create changing many-to-many relationships. The demonstration requires several hops, shared descendants, event witnesses and an explainable change when a missing link arrives. SQL could implement this too; the reason to use a graph is a direct, inspectable model of the problem.
-
-**Is this already available?** Lot traceability and recall tools already exist, including Wherefour and FoodLogiQ. The proposed difference is a constrained overlay for reconciling incomplete records across systems and preserving uncertainty and changes. Customer pilots must prove that advantage.
-
-**Why would anyone subscribe before a recall?** Recurring import reconciliation, brand traceability requests and mock-drill preparation. Emergency-only usage is a weak subscription proposition. Measure the frequency and total effort before setting the subscription price.
-
-**What happens when records are missing?** Relevant lots stay in an unresolved queue. A missing link cannot be interpreted as proof of safety. The user sees the investigation boundary and the records needed to resolve it.
-
-**Does a shared pallet spread the trace?** It does not establish material incorporation. Possible cross-contact is a separate QA assessment and can broaden an incident's scope. The product does not certify the control lot as safe.
-
-**Can AI invent a link?** Its output is a proposal with source evidence. Accepted identities and manufacturing relationships require review and validation. Deterministic traversal uses those accepted records.
-
-**What is verified today?** The research and synthetic Python reference case, with 22 passing checks. Update this answer after actual Qoder development, Neo4j integration and application testing; report only what has been executed.
-
-## Proposed paid-pilot offer
-
-Test $1,500 for four weeks at one facility, two agreed export formats and five historical challenge cases, with a designated customer QA reviewer. Deliver an import mapping, exceptions, reproducible trace reports and a measured mock-drill comparison. Quote specialist review separately if needed. These are proposed terms, not an accepted sale or established market price.
-
-Measure onboarding hours, mapping reuse, missing-record detection, reviewer-confirmed shipment scope, quantity reconciliation and full task time. Do not claim avoided recalls, prevented illnesses, guaranteed compliance, unique market ownership or unmeasured speed.
+Manufacturing traceability already exists in MES products. Do not claim an empty market, guaranteed compliance, prevented failures or measured savings. Test the narrower advantage of reconciling fragmented records and exposing uncertainty. Pricing and demand need new validation for this industry.

@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "checkCount": 23,
+  "checks": [
+    "Initial current robots are R001 R002 R003",
+    "Initial current shipped scope is two robots and two customers",
+    "Two suspect encoders in R002 count as one robot",
+    "One onsite current robot is separate from one loose component",
+    "Already quarantined E006 is separate",
+    "Replacement removes R006 from current containment, preserves history",
+    "Unknown batch origin leaves R005 unresolved",
+    "Shared crate does not implicate R004",
+    "Late origin record adds R005 to current robot scope",
+    "Late record expands shipped units and customers to three",
+    "Late record resolves the one origin gap",
+    "Late record preserves replacement history and control",
+    "Prior fixture and result remain unchanged",
+    "Revisions have different hashes",
+    "Identical installation repeated is idempotent",
+    "Conflicting installation identifier is rejected",
+    "Missing component reference is rejected",
+    "A serialized component cannot occupy two parents simultaneously",
+    "Replacement slot occupancy cannot overlap",
+    "Disjoint installation intervals do not invent historical robot exposure",
+    "Duplicate synthetic shipment line is rejected",
+    "Duplicate issuer part serial identity is rejected",
+    "Current suspect containment and origin gaps can coexist"
+  ],
+  "limitations": "Synthetic Python reference only. No Neo4j, API/UI, real robot, damage model, full BOM, regulatory or performance validation."
+}

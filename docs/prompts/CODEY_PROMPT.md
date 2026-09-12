@@ -1,51 +1,54 @@
-You are my senior data engineer and Neo4j engineer. I am Codey, building RecallRadius with Ali and Zubair in a one-day hackathon. Implement my assigned work, with useful tests and a clear handoff.
+You are my senior data and Neo4j engineer. I am Codey/Cody, building RecallRadius with Ali and Zubair for a one-day hackathon. Implement my lane with working persistence, meaningful tests and a handoff for our final merge.
 
-SHARED REPOSITORY: https://github.com/zubair480/belle-hackathon . All three teammates have access. It was empty when inspected, so first fetch/check its current state and use the exact foundation commit Zubair publishes. If it is still empty, review the fixture and design your lane while Zubair prepares the foundation; do not independently scaffold the entire app or create another repository.
+REPOSITORY AND COORDINATION
+Use https://github.com/zubair480/belle-hackathon . We all have access. Inspect the current repository and preserve teammate work. Start from Zubair's agreed foundation commit; use or create codex/codey-data-graph. We work independently and merge feature branches only at the end. Do not create a competing app or replacement repository.
 
-We will develop independently and merge all three branches only at the end. Zubair owns the common foundation and shared contracts. Read SHARED_CONTRACT.md, TECHNICAL_BLUEPRINT.md, reference_case.py and reference_output before coding. If a referenced file is unavailable, identify the exact missing dependency and continue work that does not depend on it; do not invent a replacement fixture or incompatible contract.
+Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/reference/quality/quality_issue_reference.json, docs/reference/assembly/assembly_reference_case.py and assembly_reference_output. The active contract is assembly-quality-v3. These files supersede earlier industry prompts. Follow the current robotic/physical assembly scope and discrete serial counts.
 
 PRODUCT
-RecallRadius helps a food co-packer trace a suspect ingredient through mixing, split batches and rework to potentially affected inventory and customer shipments. It displays evidence and missing records. QA decides what to hold or recall.
+RecallRadius is an internal manufacturing issue and learning workspace for robotic and hardware assembly. Operators can create issues themselves, mark the affected part/assembly/station, assign teams, investigate causes, record and verify fixes, and reuse relevant previous resolutions. External supplier alerts and CSVs are additional inputs, not prerequisites.
 
-YOUR OWNERSHIP
-- Data ingestion, normalization and validation.
-- Synthetic fixture conversion/loading and reproducible seed commands.
-- Neo4j schema, constraints, accepted revisions and persistence.
-- Material traversal, inventory/shipment accounting, evidence paths and saved trace results.
-- Data/graph tests and a handoff for Zubair.
+Neo4j must power the actual issue/solution relationships, component genealogy and evidence-based team/supplier analytics. This is our substantive graph contribution for Track A and the Neo4j bonus. Qoder must perform real development work, with accepted contributions recorded for the judges.
 
-Use branch codex/codey-data-graph. Own src/server/data/**, src/server/graph/**, scripts/neo4j/**, fixtures/**, tests/data/** and docs/handoffs/CODEY.md. Ali owns UI/pitch. Zubair owns routes, shared contracts, AI and final integration. Request shared-contract or dependency changes through Zubair; keep them out of unrelated files.
+YOUR FILE OWNERSHIP
+Own src/server/data/**, src/server/graph/**, scripts/neo4j/**, fixtures/**, tests/data/** and docs/handoffs/CODEY.md. Zubair owns shared contracts, HTTP routes and AI; Ali owns UI and pitch. Coordinate contract or dependency changes through Zubair rather than editing shared files independently.
 
-IMPLEMENTATION
-1. Use TypeScript, Zod and the official Neo4j JavaScript driver from the shared foundation. Work through Qoder IDE and record specific accepted development contributions.
-2. Implement controlled CSV/text import with original submitted text, hashes and row locators. Group input/output allocation rows into complete events. Return preview issues before accepting data. Support the provided full fixture and prepared late-evidence correction.
-3. Preserve supplier/source, item and external lot identity. A matching lot code alone must not merge two suppliers' lots. Preserve event time separately from recording time.
-4. Build input LotSnapshot -> MaterialEvent -> output LotSnapshot relationships. Store quantities on allocations and evidence on their supporting records. Keep containers, brands, SKUs and sites outside material traversal.
-5. Scope queries and identities by workspace and accepted revision. For this small MVP, immutable graph projections per revision are acceptable. Seed commands must affect only their namespaced synthetic records.
-6. Implement fixed parameterized traversal with visited-lot deduplication and event witnesses. Count distinct stock positions and shipment lines once. Reconcile the movement ledger; never sum stock over paths.
-7. Scan the entire declared cohort for missing origins and coverage gaps, including disconnected lots. Preserve knownMaterialPath and hasUnresolvedEvidence as independent flags. Unsupported units, invalid quantities, missing event references and conflicting duplicates need explicit errors or review.
-8. Persist immutable runs, then compare compatible runs. A timeout or traversal limit must produce an incomplete result, not an apparently complete empty answer.
+P0: ISSUE AND RESOLUTION SERVICES
+1. Persist manually created issues, comments, entity/station annotations, assignments and audit history in Neo4j. A saved issue must survive a page/server reload. Do not make the application depend on imported data or a model call to report an issue.
+2. Use separate nodes/relationships for Issue, Team, Station, ProcessStep, Supplier, DefectType, CauseAssessment, FixRevision, Verification and Evidence. Link issues to actual component, joint and robot serials where known. Missing context stays unresolved.
+3. Export the shared issue services: createIssue, listIssues, getIssue, updateIssue, addIssueComment, recordCauseAssessment, createFixRevision, recordVerification, transitionIssue, findSimilarResolutions and getInsights. Zubair defines the exact DTO signatures in the shared foundation; receive server context first and return domain objects.
+4. Enforce lifecycle transitions and optimistic concurrency. Close only after a passed verification for the applied fix version, with an identifiable verifier and result evidence. A failed verification does not close an issue. Reopening preserves all prior events. Make create commands idempotent.
+5. Store reporting team, assigned team and confirmed causal team separately. Distinguish linked suppliers from confirmed supplier causes. Keep hypotheses, rejected causes and superseded cause assessments in history; use only the current confirmed primary cause for causal metrics.
+6. Retrieve prior verified fixes through relevant graph relationships: defect code, part number/revision, process step and reviewed cause. Return match reasons, applicability warnings and supporting verification. Unknown or incompatible revisions require review. A shared supplier/team alone is not proof that a fix applies.
+7. Reusing a fix creates a new proposal linked through sourceFixRevisionId to its original. Never edit the old fix or auto-close the new issue. The new application needs its own verification.
 
-EXPORT THIS SERVICE INTERFACE
-From src/server/graph/index.ts export the methods defined in SHARED_CONTRACT.md: previewImport, previewLateEvidence, acceptImport, runTrace, getTrace and compareTraces. Each receives server context first. Return domain DTOs; Zubair owns HTTP envelopes and routes. runTrace must save its result before returning it.
+P0: TEAM, PROCESS AND SUPPLIER INSIGHTS
+Return filterable counts and drilldown IDs for reported issues, assigned backlog, confirmed causes, affected process areas and recurring defect families. Separate detection location from causal location. Count distinct issues or distinct affected units according to the displayed metric.
 
-DEMO ACCEPTANCE
-- Revision 1: 160 kg onsite, 120 kg shipped, three direct consignees, finished lots F-A/F-B/F-C.
-- F-E remains unresolved: 40 kg onsite and 60 kg shipped.
-- Revision 2: 190 kg onsite, 180 kg shipped, four consignees; F-E now has a material path.
-- The late record consumes 10 kg of previously counted WIP. Do not report 200 kg onsite.
-- F-C has two paths but is counted once.
-- F-D shares a pallet only and never acquires a material path from that fact.
-- Report 10 kg already disposed separately in both revisions.
-- The earlier revision and run remain unchanged.
+Implement the quality fixture's supplier example: SUP-A has four confirmed issues across three distinct units among 20 inspected units (15%); SUP-B has two issues across two units among 10 (20%). Linked or unconfirmed supplier issues must not enter confirmed-fault numerators. Incomplete/missing denominators return null/N/A, not zero or a fabricated rate. Explain that different cards can overlap and are not additive blame scores.
 
-TESTS
-Port the relevant 22 Python reference checks into your TypeScript/data tests. Add actual Neo4j integration checks for traversal, persistence and revision isolation. Test duplicate imports, conflicting IDs, ambiguous lot identity, missing references, impossible chronology, negative closing stock and unsupported units. Distinguish locally passed logic tests from database checks actually executed.
+P1: ASSEMBLY DATA AND IMPACT CONTEXT
+Use controlled entity, batch, installation/removal and shipment inputs with evidence hashes, preview validation and immutable accepted revisions. Preserve issuer + part + serial identity. A design BOM does not prove an actual installation.
 
-BUILD ORDER
-First deliver real Neo4j traversal of revision 1 through the exported service. Then add validated import/review, revision 2 and comparison. Keep OCR, live ERP connectors, GraphRAG, autonomous notices and a full EPCIS implementation outside this day.
+Model child serial -> parent serial/slot with installation and removal intervals. Current paths use the selected configuration time. Historical paths require overlapping intervals across all hops. A removed encoder leaves current containment but remains in relevant history pending engineering review. Reject simultaneous parent/slot conflicts and invalid references. A shared crate is not an assembly path.
 
-HANDOFF
-Provide changed files, public exports, setup/seed/test commands, required environment-variable names, observed test results and remaining limitations in docs/handoffs/CODEY.md. Include examples matching the frozen DTOs. Commit and push only your feature branch to the shared repository and provide its commit SHA. Keep it ready for Zubair's final merge; do not perform the team merge yourself.
+Support the existing trace-service contract: previewImport, previewLateEvidence, acceptImport, runTrace, getTrace and compareTraces. Count a robot with two suspect encoders once. Keep loose parts, quarantined parts and whole-machine counts separate. Preserve previous trace results when new evidence arrives.
 
-Start by inspecting the repository, stating the files you own and checking the shared contract. Then implement the first working graph milestone rather than stopping with a plan.
+ACCEPTANCE AND TESTING
+- Create a manual issue, retrieve it, assign it, record a cause and fix, block premature closure, pass verification, close and retrieve that resolution for another issue.
+- A reused fix is a new proposal; the old verified fix remains unchanged.
+- Final Test can report a problem confirmed to originate in Mechanical Assembly. Its linked supplier is not automatically blamed.
+- Analytics match docs/reference/quality/quality_issue_reference.json, including distinct units and N/A denominators.
+- For supporting assembly tracing, initial current scope has one onsite robot, two shipped robots and two customers. A late certificate adds R005, producing three shipped robots/customers. Replaced-part robot R006 stays historical-only; crate-only R004 remains outside the recorded batch path.
+- Run meaningful real Neo4j service tests. Distinguish those from the 23 pre-existing Python assembly reference checks and the quality-fixture validation. Do not claim application persistence or lifecycle correctness based on fixtures alone.
+
+BUILD ORDER AND HANDOFF
+First deliver manual issue persistence, verified fix retrieval and the supplier/team count query through the exported services. Then finish lifecycle invariants and assembly context. Defer generic connectors, CAD, live robots, predictive scoring and full CAPA/8D.
+
+Keep queries parameterized and workspace-scoped, seeds namespaced and secrets out of source. Put setup/seed/test commands, exports, observed results, contract version, base SHA and limitations in docs/handoffs/CODEY.md. Commit and push only your branch, share its final SHA, and leave the team merge to Zubair.
+
+Begin by inspecting the repository and confirming your owned files, then implement the first persisted manual-issue milestone rather than stopping at a plan.
+
+
+REPOSITORY CONTEXT UPDATE
+Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v3 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.

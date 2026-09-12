@@ -1,224 +1,86 @@
-# RecallRadius technical blueprint
+# RecallRadius implementation brief for robotic assembly
 
-Build target: one-day hackathon demonstration, followed by a bounded paid pilot. Research checked September 12, 2026. This is an implementation proposal. Only the accompanying Python reference case has been executed; the application, Neo4j queries and runtime AI below have not been built or tested.
+Active scope: `assembly-quality-v3`. Build an internal issue, resolution and learning workspace for an assembler of robotic arms, joint modules and other serialized hardware. Operators report issues; quality and engineering teams investigate and verify fixes; a quality/operations leader reviews process and supplier trends.
 
-## Product contract
+This is an updated build proposal, not new market-validation research or a completed application. Follow `docs/SHARED_CONTRACT.md` for the exact DTOs, APIs, ownership and fixture. The earlier research PDF describes a different domain and is not the active assembly specification.
 
-Given a reviewer-confirmed suspect ingredient lot and a defined investigation scope, find recorded downstream material relationships, distinct inventory positions and outbound shipment lines. Show missing records and preserve each result as an immutable run. The operational output is a candidate investigation/hold list for QA, not an automated recall or a safety clearance.
+## Primary product story
 
-Start with one U.S. food co-packer site, multiple customer brands, actual production and rework records, and four controlled input formats. Avoid general ERP replacement, network-wide supplier onboarding, autonomous notifications and arbitrary document understanding.
+An operator manually reports a joint-fastening problem and marks the affected joint/robot and inspection location. The issue is saved in Neo4j, assigned to Mechanical Assembly and investigated. A graph query finds a relevant verified resolution from an earlier issue, explaining its part revision, process context and evidence. The new team reviews applicability, applies a new fix version, records verification and closes the issue. That new result can inform a later case.
 
-The primary research and commercial reasoning are in [RESEARCH_REPORT.md](RESEARCH_REPORT.md). The graph design draws on [GS1 EPCIS](https://ref.gs1.org/standards/epcis/2.0.1/), but the proposed internal format does not claim EPCIS conformance.
+The app separates the reporting team from the current owner and confirmed causal team. Likewise, supplier linkage, suspected supplier cause and confirmed supplier fault are distinct. Insights let users drill from team/process/supplier metrics to the underlying records. A user can create and update an issue without an import or AI call.
 
-## Essential stack
+The primary demo is issue -> assignment -> prior verified fix -> new application and verification -> persistent reuse -> evidence-linked analytics. Component tracing supports the issue's context and impact rather than controlling how every issue must originate.
 
-| Component | Choice and role |
-| --- | --- |
-| Development | Qoder IDE, with accepted edits and meaningful test work recorded for judges |
-| Application | Next.js, TypeScript, server Route Handlers |
-| Validation | Zod, controlled units and deterministic import checks |
-| Graph | Neo4j Aura, accessed only by the server through the official JavaScript driver |
-| Runtime AI | One interchangeable schema-output adapter for an alert or mapping proposal; manual fallback |
-| Files | Server-side original source files with hashes and row locators for a local synthetic demo |
-| Tests | Vitest for application rules and actual Neo4j integration tests against the reference cases |
-| Optional | Read-only Neo4j MCP for developer inspection of synthetic records |
+## Supporting assembly story
 
-Defer deployment-provider choice, OCR, vector search, GraphRAG, autonomous agents, blockchain, IoT ingestion and a full EPCIS server. These are not required to prove the product.
+A supplier flags possible test failures in rotary encoder batch ENC-B17. The assembler needs to identify which encoder serials came from that batch, which joint modules and robotic arms contain them, where the units are, and which customers received them. A replacement record may remove a part from a current configuration while leaving a historical engineering-review question. A missing batch certificate must remain visible.
 
-## Input contracts
+The proposed commercial starting point is a bounded pilot: one facility, a few manufacturing teams, one process/part family and a named quality reviewer. Users can enter live issues manually and optionally import historical cases. Test investigation effort, verified fix reuse, recurrence and evidence completeness before setting a subscription price. No paid demand or savings have been measured.
 
-Every import has `workspaceId`, `sourceSystem`, `importId`, `sourceHash`, `schemaVersion`, `receivedAt` and a review state. Original files are retained according to the workspace policy. Rows retain a stable locator. The server obtains the workspace from the authenticated session; it does not trust a browser-supplied tenant identifier.
+Manufacturing genealogy is an existing category: Siemens describes tracking actual production configurations, component records, repairs and destinations. That supports the relevance of this workflow, not a claim that it is unique. The differentiation to test is reconciling fragmented records and explaining uncertainty and configuration changes. [Siemens, January 28, 2022](https://blogs.sw.siemens.com/opcenter/manufacturing-traceability-how-your-mes-adds-product-value/).
 
-| Format | Required fields for the demo |
-| --- | --- |
-| Lot master / opening positions | issuer/source, item identifier, original lot code, internal lot ID, kind, site, opening quantity, unit, cutoff, origin status, evidence ID |
-| Event allocations | event ID, event time, recorded time, event type, direction (`input` or `output`), lot ID, quantity, unit, evidence ID |
-| Shipment lines | shipment line ID, lot ID, quantity/unit, dispatch time, direct consignee ID, brand ID, source record |
-| Other movements | movement ID, lot ID, movement type (receipt, disposal, return, adjustment), quantity/unit, time, site, evidence and review status |
+## One-day architecture
 
-Event-allocation rows are grouped into a complete canonical event before acceptance. A missing input or output makes the event incomplete. Exact repeated events are idempotent; a reused event ID with different content is a conflict needing review. Never append every CSV row as a new event on every import.
+Use the shared Next.js/TypeScript application, Zod contracts and official Neo4j driver. Qoder performs real development work. An optional schema-output AI adapter can structure an operator report or explain verified fixes retrieved from the graph. Manual creation, search and workflow transitions remain available without AI.
 
-Business identity should use a reviewed combination of source/issuer, item and external lot code, with date or other disambiguators when needed. Do not automatically join every occurrence of `T17` across suppliers. A fuzzy name match is a proposal. Preserve the actual external code and source fields alongside internal UUIDs; see [FDA lot-code guidance](https://www.fda.gov/food/food-safety-modernization-act-fsma/traceability-lot-code).
+The primary graph links Issue to Team (reported/assigned), Station/ProcessStep, DefectType and affected entities. Issue links to CauseAssessment, FixRevision and Verification. CauseAssessment links to reviewed responsible teams/suppliers; FixRevision can derive from an earlier verified fix. Keep audit events and actor/time context so edited assignments and cause judgments remain explainable.
 
-For an MVP, permit only kilograms and processes whose explicit inputs, outputs and waste reconcile. Pilot ingestion needs approved unit conversions, measured process losses and yields. Do not convert cases to kilograms without an approved, item-specific pack configuration and relevant date.
+Use deterministic transitions with version checks. Closure requires verification of the actual applied fix version. Reuse creates a new proposal linked to its source; it does not copy a prior verification into proof that the new application succeeded. Hypotheses never enter confirmed-cause analytics.
 
-Source coverage is a first-class record. Store which sites, date ranges and record categories the importer expected, what arrived, how many rows were rejected, and whether a reviewer accepted completeness. Matching supplied rows is not proof that all relevant rows were supplied.
-
-## Graph model
+Original submitted CSV/text records are retained with hashes and row locators. Codey normalizes reviewed records into workspace-scoped immutable revisions. Each revision contains component instances, subassembly instances, robot instances, supplier batches, installation intervals, shipments, dispositions and evidence. Save every trace with its selected root, scope, configuration cutoff, source revision and engine version.
 
 ```mermaid
 flowchart LR
-  L1[Input LotSnapshot] -->|INPUT_TO quantity| E[MaterialEvent]
-  E -->|OUTPUT_LOT quantity| L2[Output LotSnapshot]
-  L2 -->|INPUT_TO| R[Rework event]
-  R -->|OUTPUT_LOT| L3[Later output lot]
-  L2 -->|HAS_POSITION| P[InventoryPosition]
-  L3 -->|SHIPPED_IN| S[ShipmentLine]
-  S -->|TO| C[Direct consignee]
-  E -->|SUPPORTED_BY| V[Evidence and SourceRecord]
-  L2 -. PACKED_IN .-> X[Container]
-  T[TraceRun] -->|USES_REVISION| D[DataRevision]
+  B[Supplier batch] -->|origin record| C[Encoder serial]
+  C -->|installation interval| J[Joint module serial]
+  J -->|installation interval| R[Robot serial]
+  R -->|shipment record| U[Customer]
+  C -->|removal and disposition| Q[Quarantine record]
+  E[Evidence] -. supports .-> C
+  E -. supports .-> J
 ```
 
-Container relationships are excluded from material traversal. The same applies to brand, supplier, site and SKU relationships. These can filter or explain results without making every related item a material descendant.
+A design BOM is useful context but cannot establish the actual serial installed. An installation should identify child, parent, slot, installation ID, start/end times and evidence. Keep batch membership distinct from containment. Graph links such as common part number or crate membership do not imply that the suspect part was installed.
 
-Recommended nodes:
+## Correctness choices
 
-| Node | Important properties |
-| --- | --- |
-| `DataRevision` | ID, workspace, sequence, accepted time, source hashes, reviewer, completeness manifest |
-| `LotSnapshot` | workspace/revision, stable lot ID, external identity, kind, site, origin review status |
-| `MaterialEvent` | workspace/revision, event ID, type, event time, recorded time, evidence IDs |
-| `InventoryPosition` | stable position ID, lot ID, site/bin, quantity/unit, cutoff and ledger basis |
-| `ShipmentLine` | stable source line ID, lot ID, quantity/unit, dispatch time, consignee and source record |
-| `Evidence` | file hash, record locator, extracted span or original row, reviewer and acceptance |
-| `TraceRun` | immutable ID, root IDs, workspace, data revision, engine version, scope, cutoff, result digest, completion state |
-| `ReviewDecision` | actor, time, subject, decision, reason, evidence and scope/run reference |
+For current tracing, use accepted relationships active at the selected configuration time and deduplicate reached physical entity IDs. For historical tracing, carry the intersection of installation intervals through every hop. Node-only visited logic may discard a second path with a different valid interval; retain interval-aware traversal state. An empty interval means the path never existed as a complete physical assembly.
 
-For the small demo, duplicate the projection per accepted revision. This trades storage for simple and reliable history. Keep stable logical lot IDs separate from projection identities. A later pilot can use an append-only event store with reproducible projections after measuring its needs.
+Use finite traversal/time budgets. If exceeded, return incomplete execution with an explanation. Enforce unambiguous identities, required fields, parent/slot non-overlap and cycle checks for overlapping intervals. Conflicting edits to a known installation require review; exact repeated records should be idempotent.
 
-A proposed Neo4j uniqueness constraint is:
+An acknowledged unknown batch origin is a data gap, not automatically a reason to hide the entire record. The trace can finish with unresolved evidence. Scan the declared part-family cohort for those gaps independently of known batch membership.
 
-```cypher
-CREATE CONSTRAINT lot_snapshot_identity IF NOT EXISTS
-FOR (l:LotSnapshot)
-REQUIRE (l.workspaceId, l.revisionId, l.lotId) IS UNIQUE;
-```
+One row represents one serial. Keep robot counts separate from component counts. Two suspect encoders inside one robot produce two explanation paths and one robot count. Current unit location, shipment history and prior component exposure are separate facts. The supplied fixture only includes one outbound shipment per robot; returns, reshipments and un-serialized bulk parts require explicit later support.
 
-Create analogous identities for events, positions, lines and runs. Reject null required fields at ingestion; uniqueness alone does not enforce their presence or authorize access. See [Neo4j constraints](https://neo4j.com/docs/cypher-manual/current/schema/constraints/create-constraints/).
+Removing a suspect component does not by itself prove that the machine suffered no earlier effects. Keep that unit in historical review until a qualified person records a disposition. The application does not control robots, stop production lines, release units, issue supplier claims or send customer notices.
 
-For a future EPCIS adapter, preserve transformation groups. Multiple records with the same transformation identifier can belong to one effective process; either normalize that group with all required inputs and outputs or classify it as unsupported/incomplete. Do not silently treat each fragment as a complete independent event. Internal event IDs and lot-version IDs must not overwrite external regulatory identifiers.
+## Import and fixture
 
-## Deterministic trace algorithm
+Begin with controlled entity, batch, installation and shipment records plus explicit location/disposition and evidence. Include a manifest for the expected records. An omitted replacement or shipment can change the conclusion, so rejected/missing rows must be visible.
 
-1. Resolve the root against accepted business identities. If ambiguous, stop for review.
-2. Freeze the accepted data revision, engine version, site/time scope, inventory cutoff and QA exposure assumptions.
-3. Run schema, chronology, stock and coverage checks. Do not discard failed imports and then call the remaining graph complete.
-4. Traverse input lot -> material event -> output lot. Use a visited set of logical lot IDs within the revision, retain witnesses, and conservatively include each output of an affected process.
-5. Independently scan the entire selected cohort for missing origins, missing records and unreconciled movements. Follow known descendants of uncertain origins as review candidates.
-6. Keep `knownMaterialPath` and `hasUnresolvedEvidence` as independent flags. A lot can have both.
-7. Resolve distinct inventory position and shipment-line IDs. Aggregate each once, separately by disposition and compatible unit.
-8. Save the complete result and evidence references as a new immutable TraceRun. A changed record or scope produces a new run.
+`docs/reference/assembly/assembly_reference_case.py` creates two JSON revisions, concise oracle results and CSV exports. Its reference record is authoritative for the synthetic serials and times. The script has passed 23 checks; those are Python fixture checks, not application, Neo4j, security or real-hardware validation.
 
-One fixed, parameterized expansion query can underpin a server-side frontier loop:
+The late evidence only resolves E900's supplier-batch provenance. It expands current shipped robots/customers from two to three, while onsite robots remain one. R006's replacement history and R004's crate-only relationship remain unchanged. The full expected table is in the shared contract.
 
-```cypher
-UNWIND $frontier AS inputId
-MATCH (i:LotSnapshot {
-  workspaceId: $workspaceId, revisionId: $revisionId, lotId: inputId
-})-[:INPUT_TO]->(e:MaterialEvent)-[:OUTPUT_LOT]->(o:LotSnapshot)
-WHERE e.workspaceId = $workspaceId AND e.revisionId = $revisionId
-  AND o.workspaceId = $workspaceId AND o.revisionId = $revisionId
-RETURN DISTINCT i.lotId AS inputLotId, e.eventId AS eventId,
-                o.lotId AS outputLotId;
-```
+## Issue inputs, analytics and reference data
 
-This is proposed query text, not a database-verified implementation. Record every returned witness even when its output has already been visited; expand each newly seen output once. Keep explicit query/time budgets. Exceeding a budget returns an incomplete run and the reason; it must not return a complete-looking partial answer. An accepted revision must be immutable for the duration of the loop.
+The user can create/edit an issue, select a serial/station/process location, add comments or evidence, assign a team, record cause hypotheses and verify a fix. Provide manual team/supplier/station directory entry as well as seeded demo catalogs. Unknown serial relationships remain unconfirmed rather than fabricated. Drawing annotations on CAD/photos is later work; selected items and evidence notes meet the one-day scope.
 
-Limit incident scope deliberately. A missing edge may connect records outside the selected date/site envelope; show that boundary and let QA broaden it. The server should never interpret absence of a path as global safety evidence.
+Separate detection area, assignment and causal area in reports. Return distinct issue counts, current backlog, confirmed-cause breakdowns and repeat defect families with matching drilldown filters. Rates require complete inspection/production opportunity cohorts and an observation cutoff. Do not divide an arbitrary count of reports by unrelated output volumes.
 
-Quantity calculation is ledger-based:
+`docs/reference/quality/quality_issue_reference.json` contains the manual-issue demonstration, a verified prior fix and an inspection cohort. Its validated synthetic metrics are SUP-A: four confirmed issues on three units among 20 inspected (15%); SUP-B: two on two among 10 (20%). It also includes a linked-supplier hypothesis that must not affect confirmed supplier metrics. The validation script checks reference data and arithmetic, not application lifecycle or database persistence.
 
-```text
-closing stock = accepted opening + receipts + production outputs + returns
-                - production inputs - outbound shipments - disposal
-                + signed, reviewed adjustments
-```
+## Application and UI
 
-Only combine quantities sharing a valid unit conversion and cutoff. Keep historical shipments even when goods are later returned; current stock and customer communication history are different measures. Never add intermediate batch quantities to descendant finished quantities as if both were currently present.
+Ali builds the issue board/manual form, issue detail and evidence, similar-resolution panel, apply/verify workflow, and team/supplier/process insights. Assembly paths and replacement history appear in issue context. A graph is an explanation aid; issue actions, attribution labels and evidence are primary.
 
-Possible cross-contact needs separate case-specific records and a QA-defined exposure policy. It should not be approximated by allowing arbitrary graph edges into the ingredient traversal. In the MVP, display that it is outside the material genealogy assessment and allow an unresolved scope note.
+Zubair owns the exact HTTP routes and shared validation. He calls Codey's domain services rather than writing a second issue/analytics or trace engine. His AI adapter proposes structured fields or summarizes graph-retrieved evidence; confirmations select canonical identities. It never confirms causes, creates accepted installations or closes issues from a guess.
 
-## Runtime AI contract
+All credentials stay on the server. Scope data by workspace and revision, and document the single-workspace synthetic identity. Authentication, retention, access audit and restore testing are pilot requirements, not implied by a demo. Use explicit mocks for independent development and disable them for final integration.
 
-One narrow feature is sufficient: paste a supplier alert, propose the supplier, item, lot code and stated dates, then ask the user to match that proposal to known lot identities. Another useful pilot feature is column mapping. Start with one, not both.
+## Delivery order
 
-```ts
-type AlertDraft = {
-  supplier: string | null;
-  item: string | null;
-  externalLotCode: string | null;
-  statedDateRange: { from: string; to: string } | null;
-  evidence: Array<{
-    field: string;
-    sourceId: string;
-    startOffset: number;
-    endOffset: number;
-    exactText: string;
-  }>;
-  unresolvedFields: string[];
-};
-```
+Agree the v3 contract and foundation first. Codey builds manual issue persistence -> verified-fix retrieval -> cause-aware insights -> lifecycle checks, then adds assembly context. Ali builds New Issue/detail -> resolution/verification -> insights/drilldown, then adds assembly views. Zubair builds contracts/catalogs -> issue APIs -> workflow validation -> optional AI -> final real-service integration.
 
-Use a strict schema; validate that cited spans actually occur in the supplied source. Preserve nulls instead of guessing. Reject out-of-range offsets and invented lot identities. Prompt the model to treat all source content as untrusted data. No model tool has permission to send notices, change holds, create accepted relationships or execute arbitrary database queries.
-
-The human review state is `draft -> confirmed` or `draft -> rejected`. Confirmation includes the matched canonical lot ID and reviewer. A structured-output API reduces format errors; it does not guarantee factual correctness. See [Google's structured-output guidance](https://ai.google.dev/gemini-api/docs/structured-output).
-
-Keep the adapter replaceable and use an existing funded API if available. Qoder IDE credits should not be assumed to fund the application's inference endpoint. Call the model outside managed database transaction callbacks, which can be retried; see [Neo4j transactions](https://neo4j.com/docs/javascript-manual/current/transactions/).
-
-## Proposed endpoints and screens
-
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /api/imports/preview` | Parse controlled formats, calculate hashes and report errors without accepting a revision |
-| `POST /api/imports/:id/accept` | Record reviewer acceptance and create a validated, immutable projection |
-| `POST /api/alerts/extract` | Return an untrusted, schema-validated draft with source spans |
-| `POST /api/incidents/:id/traces` | Validate scope, run deterministic tracing and store a frozen result |
-| `GET /api/traces/:id` | Return quantities, paths, unresolved records and completion status |
-| `GET /api/traces/:id/compare?other=...` | Compare compatible scopes and label data/scope changes separately |
-| `GET /api/traces/:id/export` | Export the reviewed investigation table and provenance, not a compliance certificate |
-
-Use four screens: (1) source import and review, (2) result table with evidence drawer, (3) unresolved queue, (4) revision comparison. The primary table columns are status, lot, product/brand, onsite quantity, shipped quantity, direct consignees, evidence and next review action. Keep graph exploration secondary.
-
-Candidate actions should read "QA review: consider hold" or "Verify missing production record." Operational hold state must only be shown as applied if a verified source system or approved human action establishes that fact.
-
-## Executable reference case
-
-Run `reference_case.py` with Python 3. It uses the standard library and writes JSON results and a shipment CSV to `reference_output/`. It has been executed successfully in this workspace.
-
-```text
-python reference_case.py
-```
-
-| Checkpoint | Revision 1 | Revision 2 |
-| --- | --- | --- |
-| Onsite potential-impact stock | 160 kg | 190 kg |
-| Shipped quantity with recorded path | 120 kg | 180 kg |
-| Distinct direct consignees | 3 | 4 |
-| Unresolved finished stock | 40 kg onsite; 60 kg shipped | 0 in the complete fixture |
-| Already disposed | 10 kg | 10 kg |
-| F-D, sharing a pallet only | No recorded material path | No recorded material path |
-
-Revision 2 consumes 10 kg previously shown as WIP and adds 40 kg of finished stock to the material path. Therefore the onsite change is +30 kg. The previous result is preserved. The late record is a past physical event recorded later, not production occurring after the investigation.
-
-The fixture's R-UNK opening 20 kg is explicitly provisional. It balances the known E6 consumption without proving its source. Do not present this quantity as a verified receipt or silently materialize an invented origin edge.
-
-All 22 executed checks are listed in `reference_output/verification.json`. They include identity conflicts for events, duplicate paths and shipment lines, ordering, cycles, unknown origins and a known-path/unknown-origin overlap. They do not validate real-world correctness, tenant isolation, general measurements or Neo4j performance.
-
-## Application acceptance and adversarial cases
-
-Before the hackathon submission, run the reference expectations against the actual graph/API, not just the Python code. Add the following application-specific cases:
-
-| Case | Required outcome |
-| --- | --- |
-| Two suppliers both label a lot T17 | Identity review or distinct canonical lots; no automatic cross-supplier join |
-| Another workspace's lot ID is submitted | Access denied and no data leakage |
-| Missing file or dropped shipment row | Coverage exception; run not presented as complete |
-| Decimal weights, pack changes, moisture loss | Approved conversion/yield or explicit review, never silent arithmetic |
-| A graph query times out | Incomplete state with reason; no definitive empty result |
-| Upload includes instructions to ignore rules | Treated as source text; no tool execution or accepted data change |
-| Model fabricates an evidence span | Proposal rejected or flagged for correction |
-| Exact source file imported twice | Idempotent acceptance or explicit already-imported result |
-| Evidence is corrected after a run | New revision and run; previous result remains reproducible |
-| Customer returns a shipment | Current stock changes; original outbound history remains visible |
-| Unsupported grouped transformation import | Review exception until its effective inputs/outputs are complete |
-
-A pilot adds authenticated roles, source-system reconciliation, restore tests, retention/deletion, access logs and a QA-approved procedure. Start in shadow mode against historical incidents. Food-safety decision-making and regulatory applicability remain with qualified customer personnel.
-
-## Build order and cuts
-
-Budget approximately eight focused hours: one for schema and seeds; two for import/traversal/ledger; one and a half for results/evidence; one for AI review; one for version comparison/export; and one and a half for actual integration tests, recording and submission preparation.
-
-With less time, keep fixed synthetic imports and manual lot selection. Preserve Neo4j, causal paths, honest uncertainty and changing historical evidence. Remove generic file support, connectors, messaging, OCR and model embellishments before weakening correctness.
-
-For a four-week pilot, use week 1 for historical records and expert-labeled expected results, week 2 for secure imports and reconciliation, week 3 for repeated shadow drills and one useful integration, and week 4 for measured buyer review. Progress depends on access to data and a reviewer; calendar weeks alone are not evidence of readiness.
+Merge the three feature branches only at the end. The first final gate is a real manual issue saved and retrieved from Neo4j, assigned, resolved with a new verified fix, and reused on a later issue, with correct team/supplier drilldown. Then verify the included assembly context, old-run preservation and explicit errors. Defer live MES/ERP connectors, CAD, IoT, predictive failure models, full CAPA/8D, general engineering change management and deployment polish.

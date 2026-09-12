@@ -1,57 +1,64 @@
-You are my senior application engineer and integration lead. I am Zubair, building RecallRadius with Codey and Ali in a one-day hackathon. Help me own the common foundation, application APIs, runtime AI, verification and final merge.
+You are my senior application engineer and integration lead. I am Zubair, building RecallRadius with Codey/Cody and Ali for a one-day hackathon. Implement my lane, coordinate the shared contract and perform the final integration when all three branches are ready.
 
-SHARED REPOSITORY: https://github.com/zubair480/belle-hackathon . Codey/Cody, Ali and I all have access. The repository was empty when inspected on September 12, 2026. Clone or locate this exact repository, recheck for intervening commits and preserve any teammate work. Use it for the shared build; do not create a replacement repository.
+REPOSITORY AND TEAM
+Use https://github.com/zubair480/belle-hackathon . We all have access. Inspect current commits and preserve teammate work; do not create another repository. Codey owns data/Neo4j/domain persistence and analytics. Ali owns frontend and pitch. I own the foundation, shared contracts, application APIs, optional runtime AI, integration, verification and submission preparation.
 
-TEAM OWNERSHIP
-- Codey: data imports, validation, fixtures, Neo4j schema/services, material tracing, accounting and persistence.
-- Ali: frontend, client adapter, labeled UI mocks and pitch materials.
-- Zubair/me: initial foundation, shared contracts, server routes, AI extraction, cross-module integration, final testing and submission preparation.
+We develop independently and merge feature branches only at the end. Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/JUDGE_SUBMISSION_KIT.md and both quality and assembly fixtures. The active contract is assembly-quality-v3; earlier industry specifications are superseded.
 
-We will work independently and merge the feature branches at the end. Do not require early feature merges or take over a teammate's lane. Read SHARED_CONTRACT.md, TECHNICAL_BLUEPRINT.md, JUDGE_SUBMISSION_KIT.md and the supplied reference fixture first.
+PRODUCT PRIORITY
+RecallRadius is an internal issue and learning workspace for robotic/physical assembly. The first complete flow is manual issue creation -> assignment -> cause investigation -> relevant prior verified fix -> new fix application -> verification -> closure -> reuse and analytics. Supplier notices, CSVs and assembly tracing add context; they must not block an operator from reporting an issue.
 
-FIRST: PREPARE THE COMMON FOUNDATION
-1. Inspect the existing repository and preserve its useful code. If no application exists, scaffold a small Next.js/TypeScript project suitable for the agreed design.
-2. Pin the shared dependency versions and lockfile. Include Zod, the Neo4j JavaScript driver and the chosen lightweight testing setup. Defer deployment-provider selection.
-3. Materialize the shared API/domain definitions as Zod schemas and TypeScript types in src/contracts/recall.ts. Freeze the names, routes, quantity units, error envelope and service signatures before teammates branch.
-4. Include the research documents and identical fixture files in the common handoff. Provide setup instructions and an .env.example containing names/placeholders only.
-5. Publish one minimal foundation commit before parallel feature development. Share the exact base branch and commit SHA with Codey and Ali. Codey branches from that SHA to codex/codey-data-graph, Ali to codex/ali-ui-pitch, and I work on codex/zubair-api-integration. Publishing the foundation is setup; feature branches are still merged only at the end.
+FIRST: COMMON FOUNDATION
+1. Reuse a suitable existing app, or scaffold one small Next.js/TypeScript application in this repository. Pin the dependency manifest and lockfile. Include Zod, Neo4j's JavaScript driver and a lightweight testing setup.
+2. Finalize shared schemas/types in src/contracts/issues.ts and src/contracts/recall.ts before parallel work. Include the full DTOs for issue lists/detail, reference catalogs, comments, cause assessments, fix versions, verifications, transitions, similar resolutions, analytics and trace results.
+3. Freeze route names, service signatures, statuses, required evidence, pagination, expectedVersion fields, idempotency keys and error codes. Distinguish counts from nullable rates, current from historical containment, and reporting/assignment from causal attribution. Communicate identical definitions to Codey and Ali.
+4. Add the current prompt/brief/fixture pack and an .env.example with placeholders only. Publish a minimal foundation commit and share its exact branch/SHA. If branches already exist, coordinate the v3 contract update without merging their feature implementations early.
+5. Use codex/zubair-api-integration; Codey uses codex/codey-data-graph and Ali codex/ali-ui-pitch. I own src/app/**, src/contracts/**, src/server/ai/**, src/server/application/**, tests/api/**, tests/integration/**, root configuration/README and docs/handoffs/ZUBAIR.md.
 
-MY OWNED PATHS
-Own src/app/**, src/contracts/**, src/server/ai/**, src/server/application/**, tests/api/**, tests/integration/**, root setup/README and docs/handoffs/ZUBAIR.md. Codey owns his data/graph folders; Ali owns his components/features and pitch. Shared changes must be documented and communicated consistently to both teammates.
+P0: ISSUE APIs AND ORCHESTRATION
+Implement the agreed routes for creating/listing/viewing/editing issues, comments, assignments, cause assessments, fix revisions, verification, status transitions, similar resolutions and insights. Provide a seeded reference catalog for teams, stations, suppliers and defect codes so the manual form works immediately.
 
-APPLICATION APIS
-Implement the SHARED_CONTRACT.md routes for import preview/acceptance, prepared late-evidence preview, alert extraction, trace creation/retrieval/comparison and CSV export.
+Use dependency injection and typed service doubles during independent development. Codey's real services export the corresponding domain methods from src/server/graph/index.ts. He owns graph persistence, transitions, retrieval and analytics. I own HTTP validation, actor/workspace context, errors and orchestration; do not recreate his business engine in route handlers.
 
-Use dependency injection so routes can be developed and tested against a typed DomainServices double before Codey's branch is merged. Codey's real implementation exports previewImport, previewLateEvidence, acceptImport, runTrace, getTrace and compareTraces. Mount his implementation at final integration. Do not recreate his importer, graph traversal or quantity engine inside route handlers.
+Creating an issue must work without uploads or AI. Persist edits/assignments and serve the saved issue after reload. Allow unknown context, but validate linked IDs. Use server-supplied identity and expectedVersion to reject stale updates, and idempotency keys to avoid duplicate creation. Route status changes through the transition service rather than arbitrary PATCH.
 
-Validate request bodies, IDs, scope and accepted revision references. Apply one consistent ApiResponse error envelope, bounded input sizes and duplicate-action handling. Derive workspace/actor context on the server. A server-configured synthetic demo identity is acceptable for a local demo if clearly documented; do not claim it is production authentication.
+Require a passed verification tied to the applied fix version before closure. A reused historical resolution is a new proposal requiring its own verification. Keep cause hypotheses and confirmed supplier/team attribution separate. A single documented synthetic demo identity is acceptable locally; do not present it as production authentication.
 
-The export should use stored run data, identify revision/scope, distinguish candidate stock from actual holds and preserve unknowns. Escape CSV correctly and neutralize cells that spreadsheet software could interpret as formulas. Keep secrets server-side and errors free of credentials.
+P0: OPTIONAL AI THAT SERVES THE WORKFLOW
+After the manual loop works, add one small feature: structure an operator's free-text issue report into an editable draft, or explain relevant verified resolutions already retrieved from Neo4j. Use one provider through an explicit server API key; developer subscriptions do not substitute for configured application credentials.
 
-RUNTIME AI
-Build one narrow optional flow: paste a supplier alert -> propose supplier, item, external lot and stated dates -> show original evidence spans -> require explicit user confirmation/matching to a known lot.
+AI output must cite supplied evidence or retrieved issue/fix IDs, preserve unknowns and stay a proposal. It must not invent fixes, confirm root causes, blame teams/suppliers, close issues, change machine settings or execute arbitrary Cypher. Runtime AI failure leaves the manual workflow usable. Keep model calls outside retryable database transactions and credentials server-side.
 
-Use one replaceable structured-output provider through an explicitly configured API credential. Do not assume Claude subscriptions or Qoder IDE credits fund application API calls. If no runtime key is available, retain manual entry and label any development stub; continue the deterministic product work.
+P1: ASSEMBLY CONTEXT AND EXPORTS
+Connect Codey's controlled import, trace, history, late-evidence and comparison services through the shared routes. Preserve installation/removal intervals, old revisions and unknown origins. A BOM or shared crate is not an actual serial relationship. Keep entity counts and unit kinds separate.
 
-Validate output against a strict schema and verify cited spans against the supplied text. Preserve nulls and ambiguous matches. Source text is untrusted data. AI must not accept graph relationships, issue recalls, change warehouse holds or execute Cypher. Keep model requests outside retryable database transactions.
+Generate issue/investigation CSV exports from stored results, with clear status, attribution and evidence identifiers. Escape CSV cells correctly and protect against spreadsheet formula interpretation. Defer OCR, general ERP/MES integration, CAD, machine control and deployment polish.
 
-INDEPENDENT TESTING
-Test routes with service doubles for validation failures, incomplete results, timeouts, rejected previews, ambiguous roots and stable error responses. Test AI schema/evidence failures and the manual fallback. Make mocks an explicit development setting, never an automatic fallback on a failed real service.
+TEST MY LANE INDEPENDENTLY
+Test request validation, explicit errors, stale-version conflicts, duplicate commands, unauthorized workspace references, proposed-versus-verified fixes, failed verification and unavailable AI/database responses using service doubles. Mark those tests accurately as API/unit tests; they do not establish actual Neo4j persistence.
 
-FINAL MERGE
-When all three branches are ready, fetch their exact handoff commits, inspect each handoff and integrate them in codex/final-integration in a dedicated checkout based on the shared foundation. Bring together Codey's domain services, my API work and Ali's RecallWorkspace component. Preserve teammates' implementations while resolving conflicts. Wire the real service and client adapters, install from the agreed lockfile, then run typecheck, production build and relevant lane tests.
+FINAL MERGE AND REAL ACCEPTANCE
+When all three handoff SHAs are ready, integrate them in codex/final-integration based on the common foundation. Preserve each teammate's implementation, resolve conflicts, mount Ali's RecallWorkspace and wire Codey's real services. Disable mocks, run typecheck/build and lane tests, then test the complete UI/API/Neo4j workflow.
 
-Seed a namespaced synthetic Neo4j workspace and execute the complete UI/API/database flow with mocks disabled. Missing database credentials mean integration is unverified; do not report a pass based on service doubles.
+Required end-to-end proof:
+- Manually create an issue with no CSV/AI, save it, reload and retrieve it.
+- Assign it; distinguish the reporting team, owner and reviewed cause.
+- Retrieve a compatible prior verified fix with evidence, copy it as a new proposal and leave the old fix unchanged.
+- Block closure before successful verification; record a failed result without closing; then verify a corrected fix and close. Preserve reopening/history behavior.
+- Find the new verified resolution from a subsequent similar issue.
+- Show traceable team/process/supplier insights. Final Test reporting must not automatically become causal blame, and linked suppliers must not become confirmed faults.
+- Match the synthetic supplier metrics: SUP-A 4 issues/3 affected units/20 inspected (15%); SUP-B 2/2/10 (20%). Missing denominators return N/A.
+- If the supporting assembly flow is included, verify the common two-to-three shipped-unit/customer change, replacement history, crate control and old-run preservation against the real database.
 
-END-TO-END ACCEPTANCE
-- Revision 1: 160 kg onsite, 120 kg shipped, three direct consignees; F-E unresolved at 40 kg onsite and 60 kg shipped.
-- Revision 2: 190 kg onsite, 180 kg shipped, four consignees; the old 10 kg WIP is consumed, so the onsite delta is +30 kg.
-- F-C is counted once despite two material paths; pallet-only F-D stays outside the material path.
-- Disposed 10 kg stays separate; incomplete records and execution failures remain visible.
-- The earlier run remains unchanged after late evidence is accepted.
-- Actual Qoder development and Neo4j use are documented separately from the pre-existing Python reference checks.
+Missing credentials leave those integration checks unverified; do not report a pass from mocks. The existing Python assembly and quality-fixture checks are supporting oracles, not finished application tests.
 
-DELIVERY
-Collect Ali's pitch/recording plan and prepare the README, setup instructions, demo fallback and required submission content. Use only actual completed capabilities and test results in claims. Preparing the form is part of this task; publishing social posts or submitting externally requires my separate instruction.
+HACKATHON DELIVERY
+Target Track A and the separate Neo4j bonus. Capture actual Qoder development contributions, one real graph-backed resolution query, issue-to-assembly relationships and analytics drilldown. Use Ali's focused demo: report -> retrieve prior fix -> apply/verify -> persist/reuse -> team/supplier insight. Keep claims tied to working features.
 
-At handoff, list changed files, commands executed, passed/failed/unrun checks, required configuration and remaining limits. Prioritize the functioning import-review-trace-compare loop over OCR, extra integrations, generic agents or deployment polish. Begin with the common foundation and contract, then implement my lane without waiting for other feature branches.
+Prepare the README, run instructions, evidence of sponsor use, backup recording and form content. Publishing social posts or submitting externally requires my separate instruction. Put changed files, actual commands/results, contract version, branch SHA and limitations in docs/handoffs/ZUBAIR.md.
+
+Start with the shared foundation and exact issue contracts, then implement my API lane. Do not wait for other feature branches to finish before making progress with typed service doubles.
+
+
+REPOSITORY CONTEXT UPDATE
+Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v3 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.

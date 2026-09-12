@@ -1,47 +1,53 @@
-You are my senior frontend engineer and product storyteller. I am Ali, building RecallRadius with Codey and Zubair in a one-day hackathon. Implement the interface and prepare the judge pitch.
+You are my senior frontend engineer and product storyteller. I am Ali, building RecallRadius with Codey and Zubair for a one-day hackathon. Implement the UI and prepare a truthful, concise judge pitch.
 
-SHARED REPOSITORY: https://github.com/zubair480/belle-hackathon . All three teammates have access. It was empty when inspected. Check its current state and branch from the exact foundation commit Zubair publishes. While that foundation is being prepared, work on the demo narrative and screen outline; do not scaffold a competing app or create another repository.
+REPOSITORY AND COORDINATION
+Use https://github.com/zubair480/belle-hackathon . All three teammates have access. Inspect current work and branch from Zubair's agreed foundation; use or create codex/ali-ui-pitch. We develop independently and merge feature branches at the end. Do not independently scaffold a competing application.
 
-We will work independently and merge only at the end. Start from Zubair's common foundation. Read SHARED_CONTRACT.md, TECHNICAL_BLUEPRINT.md and JUDGE_SUBMISSION_KIT.md. Use the supplied fixture outcomes for every mock and screen; do not create a second demo story with different quantities.
+Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/JUDGE_SUBMISSION_KIT.md and docs/reference/quality/quality_issue_reference.json. Use assembly-quality-v3, including its manual issue workflow. These instructions supersede prior industry prompts.
 
 PRODUCT AND USER
-RecallRadius helps a food co-packer's quality manager investigate a suspect ingredient. The user needs to see which lots, stock positions and customer shipments have a recorded material path, which records are missing, and what changes when evidence arrives.
+The user is an operator, manufacturing quality manager or production engineer assembling robots or physical hardware. They can report an issue inside the app, mark its component/assembly/station, assign it, learn from previous verified fixes and see process/team/supplier patterns. Imports and supplier notices are optional additional inputs.
 
-YOUR OWNERSHIP
-- Frontend components, interactions, client API adapter and explicitly labeled development mocks.
-- Evidence display, unresolved queue and revision comparison.
-- Pitch narrative, concise slides, three-minute script and 90-second fallback.
-- UI checks and handoff documentation.
+YOUR FILE OWNERSHIP
+Own src/components/recall/**, src/features/recall/**, tests/ui/**, docs/pitch/** and docs/handoffs/ALI.md. Export RecallWorkspace from src/features/recall/index.ts for Zubair to mount. Codey owns data/graph logic; Zubair owns routes, contracts and AI. Request shared configuration/dependency changes through Zubair.
 
-Use branch codex/ali-ui-pitch. Own src/components/recall/**, src/features/recall/**, tests/ui/**, docs/pitch/** and docs/handoffs/ALI.md. Export RecallWorkspace from src/features/recall/index.ts. Zubair will mount it in the application route. Codey owns imports/graph logic; Zubair owns API routes, AI and integration. Coordinate changes to shared contracts, package files or app routes through Zubair.
+P0: THE PRIMARY INTERFACE
+1. Issue board and New Issue: a prominent manual creation action, status/severity, title, observed problem, reporting team, assigned team, detection station/process and optional part/serial/supplier links. Users can select/mark an affected item and add notes/evidence. Keep unknown fields editable; no CSV or AI is required to submit an issue.
+2. Issue detail: issue history, assignments, observations, source evidence, affected serials and current status. Support comments/annotations and show saved state clearly. Reopening the view fetches the stored record. Distinguish current owner from who reported it.
+3. Investigation and resolution: display cause hypotheses separately from confirmed/rejected causes. Show potential prior fixes with their originating issue, applicability, match reasons and successful verification. Reuse creates an editable new proposal. Provide apply, verification and status actions through the API; the server enforces transitions.
+4. Team/supplier insights: filter by date, defect type, part family, process area, team role, supplier and status. Separate reported, assigned and confirmed-cause counts. Clicking a metric opens the underlying issue list and evidence.
 
-BUILD FOUR CONNECTED VIEWS
-1. Import and review: select the supported CSVs, preview row/coverage issues, and accept an eligible import. Include pasted supplier-alert input, an editable AI draft, source evidence and explicit confirmation of the matching lot. Manual lot selection must work when AI is unavailable.
-2. Trace results: show revision, investigation scope, execution status, quantities and customer count. Put an actionable table before the graph. Include lot/product/brand, onsite and shipped quantities, consignees, evidence and unresolved flags.
-3. Evidence and gaps: clicking a row opens its supporting source text/locator and material-event path. Show unknown origins and missing records in a separate queue, including records outside the known-path results.
-4. Revision comparison: preview and accept the prepared late evidence through the API, run a new trace, and compare it with the preserved earlier run. Explain added customers, resolved issues and quantity changes.
+P0: UX AND TRUTHFUL LABELS
+- Start the app on the issue workflow, not an upload wizard or external-alert inbox.
+- Treat marking up an issue as selecting a part/location plus notes/evidence for this day. CAD/photo drawing is optional later work.
+- Separate detected-at station from confirmed causal station. A team that finds a defect did not necessarily cause it.
+- Separate linked supplier, suspected supplier cause and confirmed supplier fault.
+- A copied previous fix is “Proposed from a verified prior resolution.” Do not call the current problem solved until its own verification passes.
+- Show verification failures, pending review, stale-update conflicts, loading, empty and unavailable-backend states. Disable duplicate submissions while pending and preserve useful draft input on errors.
+- Render server-provided counts; do not create a second analytics engine in the frontend. Defect rates need a known matching denominator. Display N/A and coverage notes where unavailable.
+- Use readable operational tables, concise cards and a compact evidence/relationship view. Reuse the shared design system and keep the layout desktop-first.
 
-DESIGN RULES
-- Use a clean desktop-first operations interface with clear typography and restrained color. Reuse the shared app styling. Favor readable tables and short explanations over animation.
-- Use the labels “Traced potential impact,” “Unresolved scope,” and “No recorded material path.” Never label a lot “safe” merely because it has no recorded path.
-- Known-path and unresolved-evidence flags can coexist. Show both when appropriate.
-- Keep known-path, unresolved-only and disposed quantities separate. Do not independently calculate business totals; render the API values.
-- Distinguish a completed computation from complete evidence. Missing data must not look like a successful clean result.
-- Provide loading, empty, validation-error, incomplete-run and unavailable-backend states. Disable duplicate acceptance/trace actions while pending.
-- Label sample/mock mode visibly. Default final integration to real API calls; never silently fall back to fake success.
+P1: ASSEMBLY CONTEXT
+From issue detail, show the relevant component -> joint -> robot -> shipment path. Distinguish recorded current containment, historical containment and unresolved evidence. Keep replaced parts in history; removal is not automatic engineering clearance. A shared crate must never be shown as an installation.
 
-API COORDINATION
-Implement a typed, swappable client using the routes and ApiResponse envelope in SHARED_CONTRACT.md. Build independently with mocks that match those schemas. API errors should show an understandable message and a recovery action. Neo4j credentials and runtime model secrets must never appear in frontend code.
+Use the common assembly values: one current onsite robot and two shipped robots/customers initially; a late supplier certificate adds R005, increasing current shipped robots/customers to three. R006 is historical-only after replacement; R004 is crate-only. Keep robot counts separate from loose and quarantined component counts.
 
-DEMO NUMBERS
-Revision 1 has 160 kg onsite, 120 kg shipped and three direct customers. F-E remains unresolved at 40 kg onsite and 60 kg shipped. Revision 2 has 190 kg onsite, 180 kg shipped and four customers. The onsite increase is 30 kg because 10 kg of old WIP is consumed. Both revisions separately show 10 kg disposed. F-D shares only a pallet and stays outside the recorded material path.
+API AND INDEPENDENT DEVELOPMENT
+Use the frozen issue and trace contracts and ApiResponse envelope. Implement a typed client with explicit development mocks matching the same DTOs. Label mock mode visibly; do not silently return sample success after a real endpoint fails. Record all API assumptions in the handoff. No database/model secrets belong in client code.
 
-PITCH
-Tell the story of a co-packer receiving a supplier warning, tracing several brands, finding a missing rework record and discovering another customer in scope. Explain Codey's Neo4j material traversal and the team's actual Qoder development work. Use the submission kit's Track A and Neo4j-bonus guidance. A three-minute script is our preparation target, not a claimed official pitch limit.
+CORE DEMO STORY
+An operator manually reports a joint-fastening problem on J005/R005. Final Test reports it and Mechanical Assembly owns the investigation. A prior verified JOINT-10 revision B fix is suggested. The user reviews applicability, records a cause, applies a new fix and verifies closure. Show how the graph preserves that resolution for a later issue and updates role-separated team analytics. Linking a supplier does not make it a confirmed supplier fault.
 
-Prepare a five-slide outline covering problem/buyer, workflow, graph/evidence, late-record demo and proposed paid pilot. Describe implemented capabilities truthfully. Pricing is an experiment; do not invent paying customers, prevented illnesses, time savings, certifications or completed features. Prepare content for Zubair to submit; do not publish or submit it yourself.
+PITCH AND HACKATHON
+Prepare five concise slides: user/problem; manual issue workflow; Neo4j issue/fix/assembly relationships; verified reuse and analytics demo; bounded paid pilot. Prepare three-minute and 90-second scripts. Track A and the separate Neo4j bonus are the targets. Describe real Qoder development and actual Neo4j queries, not just logos.
 
-DONE WHEN
-The complete interaction works against the agreed mocks, the API adapter is ready for real endpoints, error states work, keyboard/focus behavior is reasonable, quantities remain consistent and both scripts are ready. Record exactly which UI checks were run. Put setup, component exports, mock toggle, API assumptions, screenshots if available and remaining work in docs/handoffs/ALI.md. Commit and push only your feature branch to the shared repository and give Zubair its commit SHA.
+The differentiator to test is connected issue history, evidence and reusable fixes across assembly context. Do not invent customers, measured savings, automatic root-cause accuracy, compliance certification or completed features. Use only observed implementation/test results. Prepare content for Zubair to submit; do not publish social posts or submit the entry yourself.
 
-Start with the trace table and evidence drawer, then build the late-record comparison. Add import polish and slides after the core story works. Implement within your owned paths and leave the final merge to Zubair.
+HANDOFF
+Run relevant UI checks for manual create/edit, errors, proposed-versus-verified resolution, attribution labels and metric drilldown. Record what was actually tested. Supply component exports, client/mock setup, screenshots if available, scripts and remaining work in docs/handoffs/ALI.md. Commit and push only your feature branch and give Zubair its SHA for the final merge.
+
+Start with the manual issue form, issue detail and similar-resolution panel. Build the focused loop before chart polish, animation or extra slides.
+
+
+REPOSITORY CONTEXT UPDATE
+Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v3 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.

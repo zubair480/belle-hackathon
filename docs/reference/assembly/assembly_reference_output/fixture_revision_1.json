@@ -1,0 +1,464 @@
+{
+  "contractVersion": "assembly-quality-v3",
+  "revisionId": "assembly-r1",
+  "workspaceId": "synthetic-robot-assembler",
+  "scope": {
+    "siteId": "S1",
+    "configurationAsOf": "2026-09-10T23:59:59Z",
+    "historyFrom": "2026-09-01T00:00:00Z",
+    "trackedPartNumber": "ENC-42"
+  },
+  "batches": {
+    "B17": {
+      "supplierId": "SUP-A",
+      "partNumber": "ENC-42",
+      "externalCode": "ENC-B17"
+    },
+    "B18": {
+      "supplierId": "SUP-A",
+      "partNumber": "ENC-42",
+      "externalCode": "ENC-B18"
+    }
+  },
+  "entities": {
+    "E001": {
+      "id": "E001",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E001",
+      "issuerId": "SUP-A",
+      "batchId": "B17",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E001",
+      "locationState": "installed"
+    },
+    "E002": {
+      "id": "E002",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E002",
+      "issuerId": "SUP-A",
+      "batchId": "B17",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E002",
+      "locationState": "installed"
+    },
+    "E003": {
+      "id": "E003",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E003",
+      "issuerId": "SUP-A",
+      "batchId": "B17",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E003",
+      "locationState": "installed"
+    },
+    "E004": {
+      "id": "E004",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E004",
+      "issuerId": "SUP-A",
+      "batchId": "B17",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E004",
+      "locationState": "installed"
+    },
+    "E005": {
+      "id": "E005",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E005",
+      "issuerId": "SUP-A",
+      "batchId": "B17",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E005",
+      "locationState": "onsite"
+    },
+    "E006": {
+      "id": "E006",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E006",
+      "issuerId": "SUP-A",
+      "batchId": "B17",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E006",
+      "locationState": "quarantine"
+    },
+    "E101": {
+      "id": "E101",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E101",
+      "issuerId": "SUP-A",
+      "batchId": "B18",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E101",
+      "locationState": "installed"
+    },
+    "E102": {
+      "id": "E102",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E102",
+      "issuerId": "SUP-A",
+      "batchId": "B18",
+      "originEvidenceId": "SYNTHETIC-RECEIPT-E102",
+      "locationState": "installed"
+    },
+    "E900": {
+      "id": "E900",
+      "kind": "component",
+      "partNumber": "ENC-42",
+      "partRevision": "A",
+      "serialNumber": "E900",
+      "issuerId": "SUP-A",
+      "batchId": null,
+      "originEvidenceId": null,
+      "locationState": "installed"
+    },
+    "J001": {
+      "id": "J001",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J001",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "J002": {
+      "id": "J002",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J002",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "J003": {
+      "id": "J003",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J003",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "J004": {
+      "id": "J004",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J004",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "J005": {
+      "id": "J005",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J005",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "J006": {
+      "id": "J006",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J006",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "J007": {
+      "id": "J007",
+      "kind": "subassembly",
+      "partNumber": "JOINT-10",
+      "partRevision": "B",
+      "serialNumber": "J007",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "installed"
+    },
+    "R001": {
+      "id": "R001",
+      "kind": "robot",
+      "partNumber": "ARM-100",
+      "partRevision": "A",
+      "serialNumber": "R001",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "shipped"
+    },
+    "R002": {
+      "id": "R002",
+      "kind": "robot",
+      "partNumber": "ARM-100",
+      "partRevision": "A",
+      "serialNumber": "R002",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "shipped"
+    },
+    "R003": {
+      "id": "R003",
+      "kind": "robot",
+      "partNumber": "ARM-100",
+      "partRevision": "A",
+      "serialNumber": "R003",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "onsite"
+    },
+    "R004": {
+      "id": "R004",
+      "kind": "robot",
+      "partNumber": "ARM-100",
+      "partRevision": "A",
+      "serialNumber": "R004",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "shipped"
+    },
+    "R005": {
+      "id": "R005",
+      "kind": "robot",
+      "partNumber": "ARM-100",
+      "partRevision": "A",
+      "serialNumber": "R005",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "shipped"
+    },
+    "R006": {
+      "id": "R006",
+      "kind": "robot",
+      "partNumber": "ARM-100",
+      "partRevision": "A",
+      "serialNumber": "R006",
+      "issuerId": "OEM-DEMO",
+      "batchId": null,
+      "locationState": "shipped"
+    }
+  },
+  "installations": [
+    {
+      "id": "I01",
+      "childId": "E001",
+      "parentId": "J001",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I01"
+    },
+    {
+      "id": "I02",
+      "childId": "J001",
+      "parentId": "R001",
+      "slotId": "joint-1",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I02"
+    },
+    {
+      "id": "I03",
+      "childId": "E002",
+      "parentId": "J002",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I03"
+    },
+    {
+      "id": "I04",
+      "childId": "J002",
+      "parentId": "R002",
+      "slotId": "joint-1",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I04"
+    },
+    {
+      "id": "I05",
+      "childId": "E003",
+      "parentId": "J003",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I05"
+    },
+    {
+      "id": "I06",
+      "childId": "J003",
+      "parentId": "R002",
+      "slotId": "joint-2",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I06"
+    },
+    {
+      "id": "I07",
+      "childId": "E004",
+      "parentId": "J004",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I07"
+    },
+    {
+      "id": "I08",
+      "childId": "J004",
+      "parentId": "R003",
+      "slotId": "joint-1",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I08"
+    },
+    {
+      "id": "I09",
+      "childId": "E900",
+      "parentId": "J005",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I09"
+    },
+    {
+      "id": "I10",
+      "childId": "J005",
+      "parentId": "R005",
+      "slotId": "joint-1",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I10"
+    },
+    {
+      "id": "I11",
+      "childId": "E006",
+      "parentId": "J006",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": "2026-09-08T10:00:00Z",
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I11"
+    },
+    {
+      "id": "I12",
+      "childId": "J006",
+      "parentId": "R006",
+      "slotId": "joint-1",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I12"
+    },
+    {
+      "id": "I13",
+      "childId": "E102",
+      "parentId": "J006",
+      "slotId": "encoder",
+      "installedAt": "2026-09-08T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I13"
+    },
+    {
+      "id": "I14",
+      "childId": "E101",
+      "parentId": "J007",
+      "slotId": "encoder",
+      "installedAt": "2026-09-02T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I14"
+    },
+    {
+      "id": "I15",
+      "childId": "J007",
+      "parentId": "R004",
+      "slotId": "joint-1",
+      "installedAt": "2026-09-03T10:00:00Z",
+      "removedAt": null,
+      "recordedAt": "2026-09-10T12:00:00Z",
+      "evidenceId": "SYNTHETIC-BUILD-I15"
+    }
+  ],
+  "shipments": [
+    {
+      "id": "SHIP-R001",
+      "unitId": "R001",
+      "customerId": "CUST-A",
+      "shippedAt": "2026-09-09T10:00:00Z",
+      "evidenceId": "SYNTHETIC-SHIP-R001"
+    },
+    {
+      "id": "SHIP-R002",
+      "unitId": "R002",
+      "customerId": "CUST-B",
+      "shippedAt": "2026-09-09T10:00:00Z",
+      "evidenceId": "SYNTHETIC-SHIP-R002"
+    },
+    {
+      "id": "SHIP-R004",
+      "unitId": "R004",
+      "customerId": "CUST-A",
+      "shippedAt": "2026-09-09T10:00:00Z",
+      "evidenceId": "SYNTHETIC-SHIP-R004"
+    },
+    {
+      "id": "SHIP-R005",
+      "unitId": "R005",
+      "customerId": "CUST-C",
+      "shippedAt": "2026-09-09T10:00:00Z",
+      "evidenceId": "SYNTHETIC-SHIP-R005"
+    },
+    {
+      "id": "SHIP-R006",
+      "unitId": "R006",
+      "customerId": "CUST-D",
+      "shippedAt": "2026-09-09T10:00:00Z",
+      "evidenceId": "SYNTHETIC-SHIP-R006"
+    }
+  ],
+  "containers": [
+    {
+      "id": "CRATE-1",
+      "unitIds": [
+        "R001",
+        "R004"
+      ]
+    }
+  ],
+  "engineeringReviews": [
+    {
+      "unitId": "R006",
+      "state": "pending",
+      "reason": "Suspect encoder was removed; replacement does not settle possible prior effects."
+    }
+  ],
+  "notes": [
+    "All identities and records are synthetic.",
+    "Only the tracked encoder family is modeled, not the complete machine BOM.",
+    "Current means the recorded configuration at the selected cutoff."
+  ]
+}
