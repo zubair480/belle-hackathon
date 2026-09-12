@@ -127,7 +127,140 @@ function card(slide, x, y, w, h, opts = {}) {
   s.addNotes("Keep this to 20 seconds. The middle card is the pain; the right card is the honesty that judges reward.");
 }
 
-// ---------- Slide 3: the workflow (what the demo shows) ----------
+// ---------- Slide 3: the problem in dollars ----------
+{
+  const s = pres.addSlide();
+  s.background = { color: PAPER };
+  title(s, "The problem is measured in tens of billions a year");
+  const stats = [
+    { n: "$57.9B", l: "warranty claims paid by 40 global passenger-car OEMs in 2024", sub: "about 95% of worldwide passenger-vehicle warranty expense" },
+    { n: "$72.5B", l: "set aside in warranty accruals in 2024, up 11% on 2023", sub: "OEMs are reserving more, not less" },
+    { n: "2.2%", l: "average warranty claims rate in 2024, up from 1.9%", sub: "roughly one-sixth worse in a single year" },
+    { n: "3 to 4%", l: "of total revenue now goes to warranty claims at most OEMs", sub: "before recall logistics and brand damage" },
+  ];
+  const sw = 2.15, gap = 0.13, y0 = 1.5;
+  stats.forEach((st, i) => {
+    const x = M + i * (sw + gap);
+    card(s, x, y0, sw, 2.35, { fill: i === 2 ? INK : TINT });
+    const dark = i === 2;
+    s.addText(st.n, { x: x + 0.15, y: y0 + 0.12, w: sw - 0.3, h: 0.8, fontFace: FONT_H, fontSize: 32, bold: true, color: dark ? COPPER : INK, isTextBox: true, margin: 0, valign: "middle", fit: "shrink" });
+    s.addText(st.l, { x: x + 0.15, y: y0 + 0.95, w: sw - 0.3, h: 0.85, fontFace: FONT_B, fontSize: 11, bold: true, color: dark ? PAPER : INK, isTextBox: true, margin: 0, valign: "top" });
+    s.addText(st.sub, { x: x + 0.15, y: y0 + 1.8, w: sw - 0.3, h: 0.5, fontFace: FONT_B, fontSize: 9, color: dark ? "9CA3AF" : MUTED, isTextBox: true, margin: 0, valign: "top" });
+  });
+  card(s, M, 4.05, 9.0, 0.95, { fill: TINT });
+  s.addText([
+    { text: "Every one of those dollars starts as an issue somebody found on a line, traced to a part, and either fixed once or fixed again. ", options: { bold: true, color: INK } },
+    { text: "RecallRadius works on the step between finding the defect and proving the fix, where the record is split across systems today.", options: { color: "374151" } },
+  ], { x: M + 0.2, y: 4.1, w: 8.6, h: 0.85, fontFace: FONT_B, fontSize: 11.5, isTextBox: true, margin: 0, valign: "middle" });
+  footer(s, "Sources: Warranty Week, Worldwide Auto Warranty Report (30 Oct 2025); WardsAuto, \"The $100B quality tax\" (23 Apr 2026). Public industry figures, not our measurements.");
+  s.addNotes("Read the four numbers slowly. These are public industry figures from Warranty Week and WardsAuto, not ours. The point: warranty is 3 to 4 percent of revenue and the claims rate is rising, so the cost of a defect found late keeps going up.");
+}
+
+// ---------- Slide 4: EV makers and recalls (native chart) ----------
+{
+  const s = pres.addSlide();
+  s.background = { color: PAPER };
+  title(s, "Every EV maker pays it, and electrical systems lead recalls");
+  s.addText("Warranty claims paid in 2025, US-based automakers, $ billions", {
+    x: M, y: 1.4, w: 5.4, h: 0.3, fontFace: FONT_B, fontSize: 11, bold: true, color: INK, isTextBox: true, margin: 0,
+  });
+  s.addChart(pres.charts.BAR, [
+    { name: "Warranty claims 2025 ($B)", labels: ["Ford", "GM", "Tesla", "Rivian", "Lucid"], values: [5.73, 5.32, 1.72, 0.11, 0.031] },
+  ], {
+    x: M, y: 1.7, w: 5.4, h: 2.9, barDir: "col", chartColors: [COPPER, COPPER, COPPER, SAGE, SAGE],
+    showValue: true, dataLabelPosition: "outEnd", dataLabelFormatCode: "0.00", dataLabelFontSize: 10, dataLabelColor: INK, dataLabelFontFace: FONT_B,
+    catAxisLabelColor: INK, catAxisLabelFontSize: 11, catAxisLabelFontFace: FONT_B,
+    valAxisLabelColor: MUTED, valAxisLabelFontSize: 9, valAxisLabelFontFace: FONT_B, valAxisMaxVal: 7, valAxisMajorUnit: 1,
+    valGridLine: { color: "E5E7EB", size: 0.5 }, catGridLine: { style: "none" }, showLegend: false, showTitle: false,
+  });
+  s.addText("Ford down 2%, GM up 19%, Tesla up 19%, Rivian up 62% versus 2024. Newer EV makers are small in dollars and growing fastest in claims.", {
+    x: M, y: 4.62, w: 5.4, h: 0.45, fontFace: FONT_B, fontSize: 9.5, italic: true, color: MUTED, isTextBox: true, margin: 0, valign: "top",
+  });
+  // Right: NHTSA facts
+  const rx = 6.25, rw = 3.25;
+  card(s, rx, 1.4, rw, 3.65, { fill: INK });
+  s.addText("US safety recalls, 2024 (NHTSA)", { x: rx + 0.2, y: 1.5, w: rw - 0.4, h: 0.3, fontFace: FONT_H, fontSize: 12.5, bold: true, color: COPPER, isTextBox: true, margin: 0 });
+  const facts = [
+    ["1,073", "safety recalls across 257 manufacturers"],
+    ["27.7M", "vehicles recalled in the year"],
+    ["72.7M", "vehicles on the road with an open recall, about one in four"],
+    ["Electrical", "systems were the most-recalled component"],
+  ];
+  facts.forEach((f, i) => {
+    const y = 1.9 + i * 0.75;
+    s.addText(f[0], { x: rx + 0.2, y, w: 1.15, h: 0.65, fontFace: FONT_H, fontSize: 18, bold: true, color: PAPER, isTextBox: true, margin: 0, valign: "top", fit: "shrink" });
+    s.addText(f[1], { x: rx + 1.4, y: y + 0.02, w: rw - 1.6, h: 0.65, fontFace: FONT_B, fontSize: 9.5, color: "D1D5DB", isTextBox: true, margin: 0, valign: "top" });
+  });
+  footer(s, "Sources: Warranty Week, U.S. Auto Warranty Expenses (12 Mar 2026); NHTSA 2024 Annual Recalls Report (Apr 2025) as summarised by Motus. Public figures, not ours.");
+  s.addNotes("The chart is warranty claims paid in 2025 by US-based automakers, from Warranty Week's March 2026 report. Rivian and Lucid look tiny next to Ford and GM, but Rivian's claims grew 62 percent in a year: young EV programs have the least history to reuse. Right side: NHTSA's 2024 totals; electrical systems, which include charge ports and connectors, were the most-recalled component.");
+}
+
+// ---------- Slide 5: where the value comes from ----------
+{
+  const s = pres.addSlide();
+  s.background = { color: INK };
+  title(s, "Where RecallRadius takes cost out", { color: PAPER });
+  // Left: the cost pool
+  const lx = M, lw = 3.6;
+  card(s, lx, 1.45, lw, 3.55, { fill: PANEL, line: "2C3440" });
+  s.addText("The cost pool", { x: lx + 0.2, y: 1.55, w: lw - 0.4, h: 0.3, fontFace: FONT_H, fontSize: 13, bold: true, color: COPPER, isTextBox: true, margin: 0 });
+  s.addText("5 to 30%", { x: lx + 0.2, y: 1.9, w: lw - 0.4, h: 0.7, fontFace: FONT_H, fontSize: 34, bold: true, color: PAPER, isTextBox: true, margin: 0, valign: "middle" });
+  s.addText("of annual revenue is the range industry research gives for the cost of poor quality in manufacturing: scrap, rework, warranty, returns, penalties.", {
+    x: lx + 0.2, y: 2.65, w: lw - 0.4, h: 0.95, fontFace: FONT_B, fontSize: 10.5, color: "D1D5DB", isTextBox: true, margin: 0, valign: "top",
+  });
+  s.addText("about 6 : 1", { x: lx + 0.2, y: 3.65, w: lw - 0.4, h: 0.45, fontFace: FONT_H, fontSize: 22, bold: true, color: PAPER, isTextBox: true, margin: 0, valign: "middle" });
+  s.addText("return on formal quality systems, per ASQ as cited by industry sources, mostly from avoided rework and warranty.", {
+    x: lx + 0.2, y: 4.1, w: lw - 0.4, h: 0.8, fontFace: FONT_B, fontSize: 9.5, color: "9CA3AF", isTextBox: true, margin: 0, valign: "top",
+  });
+  // Right: three levers, each tied to a cost line and the pilot metric
+  const rx = 4.35, rw = 5.15;
+  const levers = [
+    { h: "Investigation time per issue", b: "Provenance for both origins, the prior fix and its verification in one record. Cost line: engineering and quality hours per issue." },
+    { h: "Repeated issue families", b: "Graph retrieval surfaces the verified fix for the same defect, part family and process step. Cost line: rework, scrap, repeat warranty claims." },
+    { h: "Verified fix reuse", b: "A reused fix is a proposal until this vehicle passes its own check, so reuse never ships an unverified change. Cost line: recurrence and field recalls." },
+  ];
+  levers.forEach((l, i) => {
+    const y = 1.45 + i * 1.2;
+    numberDot(s, rx, y + 0.02, i + 1);
+    s.addText(l.h, { x: rx + 0.45, y, w: rw - 0.45, h: 0.35, fontFace: FONT_H, fontSize: 12.5, bold: true, color: PAPER, isTextBox: true, margin: 0, valign: "middle" });
+    s.addText(l.b, { x: rx + 0.45, y: y + 0.37, w: rw - 0.45, h: 0.78, fontFace: FONT_B, fontSize: 9.5, color: "D1D5DB", isTextBox: true, margin: 0, valign: "top" });
+  });
+  footer(s, "Illustration only: an OEM with $10B revenue at the 2024 average claims rate of 2.2% pays about $220M a year in warranty claims; each 1% cut is about $2.2M. Arithmetic on public figures, not a measured result.", true);
+  s.addNotes("These three levers are exactly the three numbers we ask a pilot to measure. Do not promise a percentage. If pressed, use the footer arithmetic and say it is arithmetic on a public claims rate, not a result we have measured.");
+}
+
+// ---------- Slide 6: market and wedge ----------
+{
+  const s = pres.addSlide();
+  s.background = { color: PAPER };
+  title(s, "A growing market, and a narrow wedge into it");
+  const lx = M, lw = 3.4;
+  card(s, lx, 1.45, lw, 3.55, { fill: INK });
+  s.addText("Quality management software", { x: lx + 0.2, y: 1.55, w: lw - 0.4, h: 0.3, fontFace: FONT_H, fontSize: 12.5, bold: true, color: COPPER, isTextBox: true, margin: 0 });
+  s.addText("~$12B", { x: lx + 0.2, y: 1.9, w: lw - 0.4, h: 0.7, fontFace: FONT_H, fontSize: 34, bold: true, color: PAPER, isTextBox: true, margin: 0, valign: "middle" });
+  s.addText("global market in 2025, analyst estimates", { x: lx + 0.2, y: 2.6, w: lw - 0.4, h: 0.3, fontFace: FONT_B, fontSize: 10, color: "D1D5DB", isTextBox: true, margin: 0 });
+  s.addText("~$29B", { x: lx + 0.2, y: 3.0, w: lw - 0.4, h: 0.6, fontFace: FONT_H, fontSize: 28, bold: true, color: PAPER, isTextBox: true, margin: 0, valign: "middle" });
+  s.addText("projected for 2033, about 11.5% a year", { x: lx + 0.2, y: 3.6, w: lw - 0.4, h: 0.3, fontFace: FONT_B, fontSize: 10, color: "D1D5DB", isTextBox: true, margin: 0 });
+  s.addText("We do not size our share. The market number says buyers already pay for this category.", { x: lx + 0.2, y: 4.05, w: lw - 0.4, h: 0.85, fontFace: FONT_B, fontSize: 9.5, italic: true, color: "9CA3AF", isTextBox: true, margin: 0, valign: "top" });
+
+  const rx = 4.15, rw = 5.35;
+  const cols = [
+    { h: "Why now", b: "EV programs mix bought and in-house parts on new part families with no history. Warranty claims rates rose from 1.9% to 2.2% in one year. Attribution fights slow every fix." },
+    { h: "Where we fit", b: "A connected-record layer beside MES and QMS, not a replacement. Issue, parts, lots, teams, causes, fixes, verifications and evidence as one graph; existing systems stay the source of their own data." },
+    { h: "How we would charge", b: "Per-site pilot first, then per-plant subscription. Pricing follows the three measured pilot numbers: investigation time, repeated issue families, verified fix reuse." },
+  ];
+  cols.forEach((c, i) => {
+    const y = 1.45 + i * 1.2;
+    card(s, rx, y, rw, 1.08, { fill: TINT });
+    numberDot(s, rx + 0.15, y + 0.15, i + 1);
+    s.addText(c.h, { x: rx + 0.6, y: y + 0.12, w: rw - 0.75, h: 0.35, fontFace: FONT_H, fontSize: 12.5, bold: true, color: INK, isTextBox: true, margin: 0, valign: "middle" });
+    s.addText(c.b, { x: rx + 0.6, y: y + 0.48, w: rw - 0.75, h: 0.58, fontFace: FONT_B, fontSize: 9.5, color: "374151", isTextBox: true, margin: 0, valign: "top" });
+  });
+  footer(s, "Market figures: Fortune Business Insights and Verified Market Research, 2025 editions (analyst estimates, ranges differ by publisher). Claims-rate figure: Warranty Week, Oct 2025.");
+  s.addNotes("Market size is an analyst estimate and different publishers disagree by a billion or two; say 'around twelve billion'. Do not claim a share. The wedge is the connected record between finding a defect and proving the fix; MES and QMS keep their data.");
+}
+
+// ---------- Slide 7: the workflow (what the demo shows) ----------
 {
   const s = pres.addSlide();
   s.background = { color: PAPER };
