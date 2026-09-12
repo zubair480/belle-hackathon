@@ -337,3 +337,13 @@ backend-mode badges, sketch-only entity states and vehicle labelling; merge pend
   post-hackathon task.
 - Checks at 70f1298: typecheck passed; vitest 104 passed / 8 skipped (one agent UI test is timing
   sensitive under full-suite load and passes in isolation).
+
+### Switched to the shared Aura instance 7bd3cbcf (2026-09-12, ~15:45)
+Zubair supplied the credentials for the team instance provisioned by Codey (database and user are
+named after the instance id). .env.local now points there; nothing committed. Results on
+codex/final-integration @ 8dda91b: npm run neo4j:check connected (Neo4j/5.27-aura); npm run neo4j:seed
+loaded the EV model idempotently alongside Codey's 77 existing nodes (different labels, same
+workspace); real integration suites 5 passed / 1 skipped (per-test timeout raised to 120 s for the
+long loop; the shared instance is slower than the first one); HTTP acceptance 22/22 before restart
+(docs/evidence/acceptance-graph-7bd3cbcf-before.json) and 23/23 after a documented restart
+(acceptance-graph-7bd3cbcf-after.json). The earlier instance c5905f5f is no longer used by the app.

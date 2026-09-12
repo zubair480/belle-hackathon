@@ -62,7 +62,7 @@ describe.skipIf(!hasCreds || !graphMode)("EV acceptance against real graph servi
   const handlers = () =>
     createHandlers({ services: () => services!, context: () => ({ workspaceId: env.RECALL_WORKSPACE_ID ?? EV_DEMO.workspaceId, actorId: env.RECALL_DEMO_ACTOR_ID ?? "qa-reviewer-demo" }), aiProvider: () => null, serviceTimeoutMs: 60_000, aiTimeoutMs: 1000, describeWiring: () => ({}) });
 
-  it("manual issue persists, exposes both origins, gates closure on verification, and is reusable", async (ctx) => {
+  it("manual issue persists, exposes both origins, gates closure on verification, and is reusable", { timeout: 120_000 }, async (ctx) => {
     if (!services) return ctx.skip("src/server/graph not present; integration UNVERIFIED");
     const api = handlers();
     const created = await unwrap<Issue>(await api.issueCreate(post({ idempotencyKey: key(), title: "Charge-port connector misaligned on DEMO-EV-005", description: "Integration run", origin: "manual", detectedAt: "2026-09-12T10:00:00Z", reportingTeamId: EV_DEMO.teams.finalInspection, assignedTeamId: null, detectionStationId: EV_DEMO.stations.finalInspection, processStepId: EV_DEMO.processSteps.chargePortInstall, entityIds: [EV_DEMO.entities.module, EV_DEMO.entities.connector, EV_DEMO.entities.bracket, EV_DEMO.entities.vehicle], partNumber: EV_DEMO.parts.module, partRevision: "A", linkedSupplierIds: [EV_DEMO.suppliers.connector], defectCode: EV_DEMO.defectCodes.misalignment, severity: "major", evidenceIds: [] })));
@@ -111,7 +111,7 @@ describe.skipIf(!hasCreds || !graphMode)("EV acceptance against real graph servi
     expect(connector.entity.origin?.sourcingType).toBe("supplier");
   });
 
-  it("legacy robotics regression: 1/2/2 -> 1/3/3, R006 historical-only, R004 unlinked, old run preserved", async (ctx) => {
+  it("legacy robotics regression: 1/2/2 -> 1/3/3, R006 historical-only, R004 unlinked, old run preserved", { timeout: 120_000 }, async (ctx) => {
     if (!services) return ctx.skip("src/server/graph not present; integration UNVERIFIED");
     const api = createHandlers({ services: () => services!, context: () => ({ workspaceId: ASSEMBLY_REGRESSION.workspaceId, actorId: "qa" }), aiProvider: () => null, serviceTimeoutMs: 60_000, aiTimeoutMs: 1000, describeWiring: () => ({}) });
     const { readFile } = await import("node:fs/promises");
