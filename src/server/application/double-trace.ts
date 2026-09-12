@@ -24,6 +24,8 @@ import {
   type TraceRow,
   type TraceServices,
 } from "@/contracts/recall";
+import { EV_DEMO } from "@/contracts/issues";
+import { buildEvSeed, type EvSeed } from "./ev-seed";
 import fixture1 from "../../../docs/reference/assembly/assembly_reference_output/fixture_revision_1.json";
 import fixture2 from "../../../docs/reference/assembly/assembly_reference_output/fixture_revision_2.json";
 import reference1 from "../../../docs/reference/assembly/assembly_reference_output/trace_revision_1.json";
@@ -71,7 +73,7 @@ export type TraceDoubleOptions = {
   failures?: Array<{ method: keyof TraceServices; error: Error; delayMs?: number }>;
   incompleteForRoots?: string[];
 };
-type RevisionRecord = RevisionInfo & { fixture: Key; sequence: number; sourceHashes: string[] };
+type RevisionRecord = RevisionInfo & { fixture: Key | "ev"; sequence: number; sourceHashes: string[] };
 type PreviewRecord = ImportPreview & { fixture: Key; consumed: boolean };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -82,6 +84,12 @@ export function createTraceDouble(options: TraceDoubleOptions = {}): TraceServic
   const previews = new Map<string, PreviewRecord>();
   const runs = new Map<string, TraceResult>();
   const counters = new Map<string, number>();
+  let evSeed: EvSeed | null = null;
+  const seed = () => (evSeed ??= buildEvSeed());
+  if (workspaceId === EV_DEMO.workspaceId) {
+    // Pre-accepted synthetic EV revision so the EV trace roots work without an import.
+    revisions.set("ev-r1", { contractVersion: CONTRACT_VERSION, revisionId: "ev-r1", acceptedAt: "2026-09-12T08:00:00Z", dataHash: sha256("ev-seed-v1"), fixture: "ev", sequence: 0, sourceHashes: [] });
+  }
   const nextId = (p: string) => {
     const n = (counters.get(p) ?? 0) + 1;
     counters.set(p, n);
@@ -114,7 +122,7 @@ export function createTraceDouble(options: TraceDoubleOptions = {}): TraceServic
   }
 
   function buildRun(rev: RevisionRecord, request: TraceRequest, runId: string): TraceResult {
-    const { data, ref } = FIX[rev.fixture];
+    const { data, ref } = FIX[rev.fixture as Key];
     const current = new Set(ref.currentRobotIds);
     const historicalOnly = new Set(ref.historicalOnlyRobotIds);
     const unresolvedOnly = new Set(ref.unresolvedOnlyRobotIds);
@@ -179,9 +187,103 @@ export function createTraceDouble(options: TraceDoubleOptions = {}): TraceServic
       counts: mapCounts(ref.counts),
       rows,
       issues,
-      evidence: evidenceFor(rev.fixture),
+      evidence: evidenceFor(rev.fixture as Key),
       paths,
       customers: [...customerIds].sort().map((id) => ({ id, name: `${id} (synthetic)` })),
+      ...(request.incidentId ? { incidentId: request.incidentId } : {}),
+    };
+  }
+
+  /** EV seed trace (double): lot -> produced/received components -> active installations -> distinct vehicles. */
+  function buildEvRun(rev: RevisionRecord, request: TraceRequest, runId: string): TraceResult {
+    const { entities, installations, shipments, evidenceTexts } = seed();
+    const byId = new Map(entities.map((e) => [e.id, e]));
+    const at = Date.parse(request.scope.configurationAsOf);
+    const active = (i: (typeof installations)[number]) => Date.parse(i.installedAt) <= at && (i.removedAt === null || Date.parse(i.removedAt) > at);
+    const root = request.root;
+    const suspects = entities.filter((e) => {
+      if (root.kind === "component_serial") return e.id === root.id;
+      if (!e.origin || e.origin.productionLotId !== root.id) return false;
+      return root.kind === "supplier_batch" ? e.origin.sourcingType === "supplier" : e.origin.sourcingType === "in_house";
+    });
+    if (suspects.length === 0) throw new DomainError("NOT_FOUND", "Root " + root.kind + " " + root.id + " is not in the accepted revision.");
+    const rowsById = new Map<string, TraceRow>();
+    const paths: TracePath[] = [];
+    const evidenceIds = new Set<string>();
+    const shipmentByUnit = new Map(shipments.map((sh) => [sh.unitId, sh]));
+    const currentVehicles = new Set<string>();
+    const rowFor = (e: (typeof entities)[number], current: boolean): TraceRow => {
+      const sh = e.kind === "vehicle" ? shipmentByUnit.get(e.id) : undefined;
+      const existing = rowsById.get(e.id);
+      if (existing) {
+        existing.currentContainment = existing.currentContainment || current;
+        existing.historicalContainment = existing.historicalContainment || current;
+        return existing;
+      }
+      const row: TraceRow = {
+        entityId: e.id, entityKind: e.kind, partNumber: e.partNumber, serialNumber: e.serialNumber, buildId: e.vehicle?.buildId ?? null, vin: e.vehicle?.vin ?? null,
+        locationState: e.locationState, customerId: sh?.customerId ?? null, shipmentLineIds: sh ? [sh.id] : [],
+        currentContainment: current, historicalContainment: current, hasUnresolvedEvidence: false,
+        engineeringReview: e.locationState === "quarantine" ? "reviewed" : "not_recorded",
+        evidenceIds: [...(e.origin?.evidenceIds ?? []), ...(sh ? ["EVID-" + sh.id] : [])], issueIds: [],
+      };
+      rowsById.set(e.id, row);
+      return row;
+    };
+    let loose = 0;
+    let quarantined = 0;
+    for (const c of suspects) {
+      const kind = c.origin?.sourcingType === "in_house" ? "LOT_PRODUCED_COMPONENT" : "BATCH_HAS_COMPONENT";
+      paths.push({ relationshipId: kind + "-" + root.id + "-" + c.id, fromId: root.id, toId: c.id, kind, validFrom: null, validTo: null, evidenceIds: c.origin?.evidenceIds ?? [] });
+      c.origin?.evidenceIds.forEach((x) => evidenceIds.add(x));
+      const chain: string[] = [];
+      let cursor = c.id;
+      let reachedVehicle: string | null = null;
+      for (let hop = 0; hop < 6; hop += 1) {
+        const inst = installations.find((i) => i.childId === cursor && active(i));
+        if (!inst) break;
+        paths.push({ relationshipId: inst.id, fromId: inst.childId, toId: inst.parentId, kind: "INSTALLED_IN", validFrom: inst.installedAt, validTo: inst.removedAt, evidenceIds: inst.evidenceIds });
+        inst.evidenceIds.forEach((x) => evidenceIds.add(x));
+        chain.push(inst.parentId);
+        const parent = byId.get(inst.parentId);
+        if (!parent) break;
+        if (parent.kind === "vehicle") {
+          reachedVehicle = parent.id;
+          break;
+        }
+        cursor = parent.id;
+      }
+      rowFor(c, reachedVehicle !== null);
+      for (const id of chain) {
+        const e = byId.get(id);
+        if (e) rowFor(e, true);
+      }
+      if (reachedVehicle) currentVehicles.add(reachedVehicle);
+      else if (c.locationState === "quarantine") quarantined += 1;
+      else if (c.locationState === "onsite") loose += 1;
+    }
+    const vehicles = [...currentVehicles].map((id) => byId.get(id)).filter((v): v is (typeof entities)[number] => Boolean(v));
+    const customers = new Set(vehicles.map((v) => shipmentByUnit.get(v.id)?.customerId).filter((x): x is string => Boolean(x)));
+    const evidence: Evidence[] = [...evidenceIds]
+      .map((id) => {
+        const t = evidenceTexts[id];
+        return t ? ({ id, sourceName: t.sourceName, sourceHash: sha256(t.text), locator: t.locator, text: t.text, sourceKind: "synthetic", sourceRecordId: null, sourceUrl: null, retrievedAt: null } as Evidence) : null;
+      })
+      .filter((x): x is Evidence => x !== null);
+    return {
+      contractVersion: CONTRACT_VERSION, runId, revisionId: rev.revisionId, root: structuredClone(root), createdAt: now(), engineVersion: "trace-double-ev-seed-1", dataHash: rev.dataHash,
+      scope: structuredClone(request.scope), executionStatus: "completed", dataCompleteness: "reviewed_scope",
+      counts: {
+        currentOnsiteVehicleCount: vehicles.filter((v) => v.locationState !== "shipped").length,
+        currentShippedVehicleCount: vehicles.filter((v) => v.locationState === "shipped").length,
+        currentCustomerCount: customers.size,
+        looseCandidateComponentCount: loose,
+        quarantinedComponentCount: quarantined,
+        historicalOnlyVehicleCount: 0,
+        unresolvedOnlyVehicleCount: 0,
+      },
+      rows: [...rowsById.values()].sort((a, b) => a.entityId.localeCompare(b.entityId)), issues: [], evidence, paths,
+      customers: [...customers].sort().map((id) => ({ id, name: id + " (synthetic)" })),
       ...(request.incidentId ? { incidentId: request.incidentId } : {}),
     };
   }
@@ -233,7 +335,7 @@ export function createTraceDouble(options: TraceDoubleOptions = {}): TraceServic
       const dup = p.issues.find((i) => i.code === REVIEW_ISSUE_CODES.ALREADY_IMPORTED);
       if (dup) throw new DomainError("DUPLICATE_ACTION", dup.message);
       p.consumed = true;
-      const rec: RevisionRecord = { contractVersion: CONTRACT_VERSION, revisionId: nextId("rev"), acceptedAt: now(), dataHash: FIX[p.fixture].ref.dataHash, fixture: p.fixture, sequence: revisions.size + 1, sourceHashes: p.sourceHashes };
+      const rec: RevisionRecord = { contractVersion: CONTRACT_VERSION, revisionId: nextId("rev"), acceptedAt: now(), dataHash: FIX[p.fixture as Key].ref.dataHash, fixture: p.fixture, sequence: revisions.size + 1, sourceHashes: p.sourceHashes };
       revisions.set(rec.revisionId, rec);
       return { contractVersion: CONTRACT_VERSION, revisionId: rec.revisionId, acceptedAt: rec.acceptedAt, dataHash: rec.dataHash };
     },
@@ -241,10 +343,16 @@ export function createTraceDouble(options: TraceDoubleOptions = {}): TraceServic
       await gate("runTrace");
       assertWorkspace(ctx);
       const rev = revisions.get(request.revisionId);
-      if (!rev) throw new DomainError("NOT_FOUND", `Revision ${request.revisionId} does not exist.`);
+      if (!rev) throw new DomainError("NOT_FOUND", "Revision " + request.revisionId + " does not exist.");
+      if (rev.fixture === "ev") {
+        if (request.scope.siteId !== EV_DEMO.siteId) throw new DomainError("SCOPE_INVALID", "Site " + request.scope.siteId + " is outside the accepted revision's coverage.");
+        const evRun = buildEvRun(rev, request, nextId("run"));
+        runs.set(evRun.runId, Object.freeze(structuredClone(evRun)));
+        return structuredClone(evRun);
+      }
       if (request.scope.siteId !== ASSEMBLY_REGRESSION.scope.siteId) throw new DomainError("SCOPE_INVALID", `Site ${request.scope.siteId} is outside the accepted revision's coverage.`);
       if (request.root.id === "AMBIGUOUS") throw new DomainError("AMBIGUOUS_ROOT", "Root code matches more than one accepted batch; review required.", { candidates: ["B17@SUP-A", "B17@SUP-B"] });
-      const { data } = FIX[rev.fixture];
+      const { data } = FIX[rev.fixture as Key];
       if (request.root.kind === "supplier_batch" && !data.batches.some((b) => b.id === request.root.id)) throw new DomainError("NOT_FOUND", `Batch ${request.root.id} is not in the accepted revision.`);
       if (request.root.kind === "manufacturing_lot") throw new DomainError("NOT_FOUND", "The regression fixture has no manufacturing lots; the EV fixture (Codey) provides them.");
       const run = buildRun(rev, request, nextId("run"));

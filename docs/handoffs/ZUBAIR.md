@@ -152,3 +152,27 @@ import in `tests/integration/neo4j.integration.test.ts` with a static one; set
 `RECALL_SERVICES=graph`, `NEXT_PUBLIC_RECALL_UI_MOCKS=false`, `RECALL_AI_PROVIDER=none` (or a
 real key); run `npm run typecheck`, `npm run build`, `npm test`, `npm run test:integration`, then
 `npm run acceptance -- --base http://localhost:3000` twice with a server restart in between.
+
+## Acceptance runner strengthened (integration branch, later on 2026-09-12)
+
+- `tests/integration/acceptance-runner.mts` now: reads fixture-defined expectations from
+  `tests/integration/acceptance-expectations.json` (expected current vehicle ids, counts and
+  component ids per trace root; an empty vehicle list fails when the fixture expects vehicles);
+  asserts a vehicle with two affected components per lot (DEMO-EV-003, front and rear modules)
+  appears once in rows and once in counts; snapshots the source fix before reuse and deep-compares
+  it after; validates every mutation response (envelope, HTTP status, required keys) and stores
+  status/code/message/details for failures in the JSON report; treats retrieval after a documented
+  server restart as a separate persistence check (`--persist-from <report>`) that compares the
+  saved issue's status, version, fix states, verification outcomes, cause states and audit kinds
+  to the pre-restart snapshot; is HTTP-only, with the browser workflow kept in
+  `tests/integration/BROWSER_ACCEPTANCE.md`.
+- Both doubles now share `src/server/application/ev-seed.ts` (synthetic EV entities,
+  installations, shipments), and the trace double answers the EV roots on a pre-accepted
+  revision `ev-r1`. This is double data, not Codey's fixture; Codey's Neo4j fixture must satisfy
+  the same expectations file.
+- Dry run on the double (dev server, stub AI): 22/22 passed. Second run after a server restart
+  with `--persist-from`: the persistence step FAILED with 404 NOT_FOUND as expected for an
+  in-memory double, and the failure details were preserved in the report. This demonstrates the
+  check; it is development evidence only, not integration evidence.
+- Docker Desktop launched its processes but the engine still did not answer; no Neo4j
+  credentials; real database checks remain blocked on this machine.

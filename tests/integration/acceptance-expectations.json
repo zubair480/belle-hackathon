@@ -1,0 +1,50 @@
+{
+  "$comment": "Fixture-defined expectations for the HTTP acceptance runner. Codey's EV fixture must satisfy these (adjust here only through Zubair). Ids come from EV_DEMO / EV_TRACE_DEMO in src/contracts.",
+  "contractVersion": "assembly-quality-v4",
+  "workspaceId": "synthetic-ev-assembler",
+  "revisionId": "ev-r1",
+  "incidentId": "INC-CHARGEPORT-005",
+  "scope": {
+    "siteId": "PLANT-1",
+    "configurationAsOf": "2026-09-12T12:00:00Z",
+    "historyFrom": "2026-09-01T00:00:00Z",
+    "trackedPartNumber": "CP-CONN-100",
+    "limitations": ["Synthetic EV fixture; one charge-port path, not a full vehicle BOM", "Removal is not engineering clearance"]
+  },
+  "traceRoots": {
+    "supplier_batch": {
+      "root": { "kind": "supplier_batch", "id": "LOT-SUP-01" },
+      "expectedCurrentVehicleIds": ["DEMO-EV-002", "DEMO-EV-003", "DEMO-EV-004", "DEMO-EV-005"],
+      "expectedCounts": { "currentOnsiteVehicleCount": 2, "currentShippedVehicleCount": 2, "currentCustomerCount": 1, "looseCandidateComponentCount": 1, "quarantinedComponentCount": 0, "historicalOnlyVehicleCount": 0, "unresolvedOnlyVehicleCount": 0 },
+      "expectedComponentIds": ["CONN-0002", "CONN-0003", "CONN-0004", "CONN-0005", "CONN-0006", "CONN-0007"]
+    },
+    "manufacturing_lot": {
+      "root": { "kind": "manufacturing_lot", "id": "LOT-MFG-01" },
+      "expectedCurrentVehicleIds": ["DEMO-EV-002", "DEMO-EV-003", "DEMO-EV-004", "DEMO-EV-005"],
+      "expectedCounts": { "currentOnsiteVehicleCount": 2, "currentShippedVehicleCount": 2, "currentCustomerCount": 1, "looseCandidateComponentCount": 0, "quarantinedComponentCount": 1, "historicalOnlyVehicleCount": 0, "unresolvedOnlyVehicleCount": 0 },
+      "expectedComponentIds": ["BRKT-0002", "BRKT-0003", "BRKT-0004", "BRKT-0005", "BRKT-0006", "BRKT-0007"]
+    }
+  },
+  "doubleContainment": {
+    "$comment": "This vehicle contains two affected components from EACH lot (front and rear charge-port modules). It must appear once in rows and once in counts.",
+    "vehicleId": "DEMO-EV-003",
+    "componentsPerRoot": 2
+  },
+  "issueStory": {
+    "reportingTeamId": "TEAM-FINAL-INSPECTION",
+    "assignedTeamId": "TEAM-INHOUSE-MFG",
+    "linkedSupplierId": "SUP-CONNECTOR",
+    "detectionStationId": "ST-FINAL-INSPECTION",
+    "processStepId": "chargeport-install",
+    "causalStationId": "ST-BRACKET-CELL",
+    "causalProcessStepId": "bracket-forming",
+    "defectCode": "CONNECTOR_MISALIGNED",
+    "laterDefectCode": "BRACKET_OUT_OF_TOLERANCE",
+    "entityIds": ["CPM-0005", "CONN-0005", "BRKT-0005", "DEMO-EV-005"],
+    "modulePartNumber": "CP-MOD-300",
+    "bracketPartNumber": "CP-BRKT-200",
+    "priorVerifiedFixId": "FIX-BRKT-PRIOR-V1",
+    "priorIssueId": "ISS-BRKT-PRIOR",
+    "workInstructionRef": "WI-BRKT-12 rev 2"
+  }
+}

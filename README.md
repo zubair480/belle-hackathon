@@ -8,7 +8,7 @@ Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessment
 
 ## Integration status
 
-`codex/final-integration` exists with the API lane merged. Codey's graph services and Ali's UI are not on the remote yet, so the real Neo4j acceptance run has not happened; `npm run acceptance -- --base <url>` is the runner that will produce it (see `docs/handoffs/ZUBAIR.md`). Nothing below claims Neo4j persistence.
+`codex/final-integration` exists with the API lane merged. Codey's graph services and Ali's UI are not on the remote yet, so the real Neo4j acceptance run has not happened. `npm run acceptance -- --base <url>` (HTTP) plus `tests/integration/BROWSER_ACCEPTANCE.md` (browser) will produce that evidence; fixture expectations live in `tests/integration/acceptance-expectations.json`. The latest dry run on the service double passed 22/22 and its post-restart persistence check failed as expected for an in-memory double. That is development evidence only; nothing below claims Neo4j persistence.
 
 ## Zubair lane status (codex/zubair-api-integration)
 

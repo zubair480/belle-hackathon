@@ -51,6 +51,7 @@ import {
   type VerificationInput,
 } from "@/contracts/issues";
 import quality from "../../../docs/reference/quality/quality_issue_reference.json";
+import { buildEvSeed } from "./ev-seed";
 
 type Env = Record<string, string | undefined>;
 const sha256 = (t: string) => createHash("sha256").update(t, "utf8").digest("hex");
@@ -219,39 +220,12 @@ export function createIssueDouble(options: IssueDoubleOptions = {}): IssueServic
       { id: "CONNECTOR_DEFECT", name: "Connector defect (supplied part)", active: true, family: "Supplied component" },
     );
 
-    const supplierOrigin = (id: string, evid: string) => ({
-      id: `ORIGIN-${id}`, sourcingType: "supplier" as const, producerOrganizationId: EV_DEMO.suppliers.connector, partNumber: EV_DEMO.parts.connector, partRevision: "A",
-      productionLotId: "LOT-SUP-01", supplierId: EV_DEMO.suppliers.connector, supplierBatchCode: EV_DEMO.supplierLotCode, siteId: null, manufacturingLotCode: null,
-      workOrderId: null, manufacturingTeamId: null, processStepId: null, evidenceIds: [evid],
-    });
-    const inHouseOrigin = (id: string, evid: string) => ({
-      id: `ORIGIN-${id}`, sourcingType: "in_house" as const, producerOrganizationId: null, partNumber: EV_DEMO.parts.bracket, partRevision: "A",
-      productionLotId: "LOT-MFG-01", supplierId: null, supplierBatchCode: null, siteId: EV_DEMO.siteId, manufacturingLotCode: EV_DEMO.manufacturingLotCode,
-      workOrderId: EV_DEMO.workOrderId, manufacturingTeamId: EV_DEMO.teams.inHouseManufacturing, processStepId: EV_DEMO.processSteps.bracketForming, evidenceIds: [evid],
-    });
-    const moduleOrigin = (id: string) => ({
-      id: `ORIGIN-${id}`, sourcingType: "in_house" as const, producerOrganizationId: null, partNumber: EV_DEMO.parts.module, partRevision: "A",
-      productionLotId: "LOT-MFG-02", supplierId: null, supplierBatchCode: null, siteId: EV_DEMO.siteId, manufacturingLotCode: "DEMO-MFG-LOT-02",
-      workOrderId: "WO-DEMO-0002", manufacturingTeamId: EV_DEMO.teams.assembly, processStepId: EV_DEMO.processSteps.chargePortInstall, evidenceIds: [],
-    });
-    const put = (e: EntityRecord) => entities.set(e.id, e);
-    for (const n of ["0002", "0003", "0004", "0005", "0006"]) {
-      const recv = addEvidence(`EVID-RECEIPT-CONN-${n}`, "Synthetic receiving record", `receipt:CONN-${n}`, `Connector CONN-${n} received in supplier batch ${EV_DEMO.supplierLotCode}; incoming inspection recorded.`);
-      const mfg = addEvidence(`EVID-MFG-BRKT-${n}`, "Synthetic work order record", `workorder:${EV_DEMO.workOrderId}:BRKT-${n}`, `Bracket BRKT-${n} produced in ${EV_DEMO.manufacturingLotCode} under ${EV_DEMO.workOrderId} at bracket forming.`);
-      put({ id: `CONN-${n}`, kind: "component", partNumber: EV_DEMO.parts.connector, partRevision: "A", serialNumber: `CONN-${n}`, displayCode: `CP-CONN-100 / CONN-${n}`, issuerId: EV_DEMO.suppliers.connector, locationState: n === "0006" ? "onsite" : "installed", origin: supplierOrigin(`CONN-${n}`, recv.id), vehicle: null });
-      put({ id: `BRKT-${n}`, kind: "component", partNumber: EV_DEMO.parts.bracket, partRevision: "A", serialNumber: `BRKT-${n}`, displayCode: `CP-BRKT-200 / BRKT-${n}`, issuerId: null, locationState: n === "0006" ? "quarantine" : "installed", origin: inHouseOrigin(`BRKT-${n}`, mfg.id), vehicle: null });
-      if (n === "0006") continue;
-      put({ id: `CPM-${n}`, kind: "subassembly", partNumber: EV_DEMO.parts.module, partRevision: "A", serialNumber: `CPM-${n}`, displayCode: `CP-MOD-300 / CPM-${n}`, issuerId: null, locationState: "installed", origin: moduleOrigin(`CPM-${n}`), vehicle: null });
-      const shipped = n === "0002" || n === "0003";
-      put({ id: `DEMO-EV-${n.slice(1)}`, kind: "vehicle", partNumber: EV_DEMO.parts.vehicle, partRevision: null, serialNumber: `DEMO-EV-${n.slice(1)}`, displayCode: `Build DEMO-EV-${n}`, issuerId: null, locationState: shipped ? "shipped" : "onsite", origin: null, vehicle: { entityId: `DEMO-EV-${n.slice(1)}`, buildId: `DEMO-EV-${n.slice(1)}`, vin: null } });
-      if (shipped) customers.set(`DEMO-EV-${n.slice(1)}`, "CUST-DEALER-1");
-      const build = addEvidence(`EVID-BUILD-${n}`, "Synthetic build record", `build:DEMO-EV-${n}`, `Module CPM-${n} (connector CONN-${n}, bracket BRKT-${n}) installed into build DEMO-EV-${n}.`);
-      installations.push(
-        { id: `INST-CONN-${n}`, childId: `CONN-${n}`, parentId: `CPM-${n}`, slotId: "connector", installedAt: "2026-09-03T09:00:00Z", removedAt: null, recordedAt: "2026-09-03T09:05:00Z", evidenceIds: [build.id] },
-        { id: `INST-BRKT-${n}`, childId: `BRKT-${n}`, parentId: `CPM-${n}`, slotId: "bracket", installedAt: "2026-09-03T09:00:00Z", removedAt: null, recordedAt: "2026-09-03T09:05:00Z", evidenceIds: [build.id] },
-        { id: `INST-CPM-${n}`, childId: `CPM-${n}`, parentId: `DEMO-EV-${n.slice(1)}`, slotId: "chargeport", installedAt: "2026-09-05T09:00:00Z", removedAt: null, recordedAt: "2026-09-05T09:05:00Z", evidenceIds: [build.id] },
-      );
-    }
+    // Shared EV seed (entities, installations, shipments) used by both doubles.
+    const seed = buildEvSeed();
+    for (const [id, ev] of Object.entries(seed.evidenceTexts)) addEvidence(id, ev.sourceName, ev.locator, ev.text);
+    for (const e of seed.entities) entities.set(e.id, structuredClone(e));
+    installations.push(...structuredClone(seed.installations));
+    for (const s of seed.shipments) customers.set(s.unitId, s.customerId);
     // Prior closed bracket issue with a verified fix (reusable knowledge).
     const obs = addEvidence("EVID-BRKT-PRIOR-OBS", "Synthetic inspection note", "note:1", "Bracket BRKT-0002 measured out of tolerance at final inspection; connector could not seat.");
     const cause = addEvidence("EVID-BRKT-PRIOR-CAUSE", "Synthetic cell inspection", "note:2", "Forming die offset found in bracket cell; lot DEMO-MFG-LOT-01 affected.");
