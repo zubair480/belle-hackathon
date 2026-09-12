@@ -82,7 +82,21 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   const hoverDetails = (t: HoverTarget): HoverDetail => {
     if (t.wireId) {
       const w = WIRES.find((x) => x.id === t.wireId);
-      return w ? describeWire(w) : null;
+      if (!w) return null;
+      const d = describeWire(w);
+      const fromSlot = slotById(w.from);
+      const toSlot = slotById(w.to);
+      const ends = [fromSlot, toSlot].filter((x): x is NonNullable<typeof x> => Boolean(x)).map((x) => entityIdFor(x, vehicle.suffix));
+      const endIssues = issues.filter((i) => i.status !== "closed" && i.entityIds.some((id) => ends.includes(id)));
+      return {
+        title: d.title,
+        lines: [
+          ...d.lines,
+          `On this vehicle: ${ends.join(" → ")}`,
+          endIssues.length ? `Open issues at the ends: ${endIssues.map((i) => i.id).join(", ")}` : "No open issues on the parts it joins",
+          "Click to highlight its circuit · Mark mode to flag this wire",
+        ],
+      };
     }
     if (!t.entityId) return null;
     const hit = slotForEntityId(t.entityId);
@@ -145,6 +159,13 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
                 ws.setExplorer({ wiring: true, circuitId: w.circuitId });
               }}
               hoverDetails={hoverDetails}
+              onWireHover={(wireId) => {
+                if (!wireId) return;
+                const w = WIRES.find((x) => x.id === wireId);
+                if (!w) return;
+                const d = describeWire(w);
+                setWireInfo(`${d.title} · ${d.lines.join(" · ")}`);
+              }}
               cameraRequest={ex.cameraRequest}
               instant={instantZoom}
             />
@@ -204,7 +225,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
             </div>
           ) : null}
           <p className="rrx-muted rrx-small" style={{ marginTop: 8 }}>
-            Wireframe is illustrative geometry for the synthetic platform; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded backend data. Left/right follow the driver's seat on the left.
+            Wireframe is illustrative geometry; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded data. Left/right follow the driver's seat on the left.
           </p>
           {issuesError ? <Banner kind="error">Issue list unavailable for this vehicle: {issuesError}</Banner> : null}
         </div>

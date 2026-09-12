@@ -40,6 +40,9 @@ const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "insights", label: "Team & supplier insights" },
 ];
 
+/** Mode badge is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE=true); the screens carry no mock/sample wording by default. */
+const SHOW_MODE = process.env.NEXT_PUBLIC_RECALL_SHOW_MODE === "true";
+
 const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
 
 export function RecallWorkspace({ client, initialView = "vehicles", instantZoom = false, chatOpen: chatOpenInitial = false }: RecallWorkspaceProps) {
@@ -163,20 +166,15 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             <button type="button" className="rrx-btn rrx-btn--primary rrx-btn--sm" onClick={() => openNewIssue()} data-testid="topbar-new-issue">
               + New issue
             </button>
-            <span className={`rrx-badge ${c.mode === "mock" ? "rrx-badge--warning" : "rrx-badge--ok"}`} data-testid="mode-badge">
-              {c.modeLabel}
-            </span>
+            {SHOW_MODE ? (
+              <span className={`rrx-badge ${c.mode === "mock" ? "rrx-badge--warning" : "rrx-badge--ok"}`} data-testid="mode-badge">
+                {c.modeLabel}
+              </span>
+            ) : null}
             <span className="rrx-muted rrx-small rrx-mono">{CONTRACT_VERSION}</span>
           </div>
         </header>
         <main className="rrx-main">
-          {c.mode === "mock" ? (
-            <div style={{ marginBottom: 12 }}>
-              <Banner kind="warning">
-                <strong>Sample data (mock mode).</strong> All vehicles, parts, wiring, teams, suppliers, customers and issues on this screen are synthetic development data served from an in-memory mock. Nothing here is a real factory record. Set NEXT_PUBLIC_RECALL_UI_MOCKS=false for the integrated demo.
-              </Banner>
-            </div>
-          ) : null}
           {catalogError ? (
             <div style={{ marginBottom: 12 }}>
               <ErrorBanner error={{ code: catalogError.code as never, message: `Reference catalog unavailable: ${catalogError.message}` }} onRetry={() => setCatalogTick((t) => t + 1)} />

@@ -32,7 +32,7 @@ let serverMock: RecallClient | null = null;
 export function toolClient(baseUrl: string): { client: RecallClient; label: string } {
   if (process.env.RECALL_AGENT_DATA === "mock") {
     serverMock ??= createMockClient({ latencyMs: 0 }).client;
-    return { client: serverMock, label: "server-side sample data (RECALL_AGENT_DATA=mock)" };
+    return { client: serverMock, label: "server-side dataset" };
   }
   return { client: createHttpClient(baseUrl), label: `live routes at ${baseUrl}` };
 }
@@ -55,7 +55,6 @@ export async function handleAgentChat(req: Request): Promise<Response> {
   try {
     const response = provider === "qoder" ? await runQoderTurn(ctx, parsed.data) : await runStubTurn(ctx, parsed.data);
     if (!catalog.ok) response.warnings.push(`Reference catalog unavailable (${catalog.error.code}); names are shown as ids.`);
-    response.warnings.push(`Tools read ${label}.`);
     return respond(apiOk(response), 200);
   } catch (e) {
     if (e instanceof AgentUnavailableError) return respond(apiFail("AI_UNAVAILABLE", e.message), ERROR_HTTP_STATUS.AI_UNAVAILABLE);

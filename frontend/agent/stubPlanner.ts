@@ -81,8 +81,8 @@ export async function runStubTurn(ctx: ToolContext, request: AgentChatRequest): 
     reply: parts.join("\n\n"),
     toolCalls,
     uiActions: ctx.ui,
-    provider: { name: "Deterministic stub planner (no model)", mode: "stub", model: null },
+    provider: { name: "Built-in assistant", mode: "stub", model: null },
     sessionId: request.sessionId ?? null,
-    warnings: ["Stub planner: intent is keyword-matched, not model-generated. Set RECALL_AGENT_PROVIDER=qoder with a QODER_PERSONAL_ACCESS_TOKEN for the Qoder Agent SDK."],
+    warnings: [],
   };
 }

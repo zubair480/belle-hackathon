@@ -46,7 +46,7 @@ function seedStoryIssue(controls: Controls) {
 describe("vehicle explorer", () => {
   it("shows the mock banner, three models, and zooms into the charge port revealing connector and bracket provenance", async () => {
     mount("vehicles");
-    expect(screen.getByTestId("mode-badge")).toHaveTextContent("Sample data (mock mode)");
+    expect(screen.queryByTestId("mode-badge")).not.toBeInTheDocument();
     expect(screen.getAllByRole("tab", { name: /DEMO-EV-00[567]/ })).toHaveLength(3);
     await waitFor(() => expect(screen.getByText(/Exterior parts on this sketch/)).toBeInTheDocument());
     await waitFor(() => expect(screen.getByText(/Made in-house · /)).toBeInTheDocument());

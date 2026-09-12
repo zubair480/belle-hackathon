@@ -236,7 +236,7 @@ function Overview({ d, onChanged }: { d: IssueDetailDto; onChanged: (note?: stri
                 <div className="rrx-row">
                   <span className="rrx-mono">{ev.id}</span>
                   <span className={`rrx-badge ${ev.sourceKind.startsWith("public") ? "rrx-badge--warning" : ev.sourceKind === "synthetic" ? "rrx-badge--muted" : "rrx-badge--accent"}`}>
-                    {ev.sourceKind.startsWith("public") ? "Public evidence (external)" : ev.sourceKind === "synthetic" ? "Sample data" : ev.sourceKind.replace("_", " ")}
+                    {ev.sourceKind.startsWith("public") ? "Public evidence (external)" : ev.sourceKind === "synthetic" ? "Internal record" : ev.sourceKind.replace("_", " ")}
                   </span>
                   <span className="rrx-muted rrx-small">{ev.sourceName}</span>
                 </div>
@@ -247,7 +247,7 @@ function Overview({ d, onChanged }: { d: IssueDetailDto; onChanged: (note?: stri
                     <a href={ev.sourceUrl} target="_blank" rel="noreferrer">
                       source
                     </a>{" "}
-                    · not a factory record; not linked to any synthetic vehicle as an occurrence
+                    · external record; not linked to any vehicle here as an occurrence
                   </div>
                 ) : null}
               </div>

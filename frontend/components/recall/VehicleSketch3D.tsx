@@ -4,7 +4,8 @@
  * Mild perspective, white lines on black; drag to rotate, wheel to zoom, tap a part to zoom onto
  * it. Only exterior parts are drawn and interactive; interior parts stay in the records and the
  * rail. Zooming onto a part reveals its children and attached wires; wires are smoothed routes
- * with lane offsets, connector dots and gauge-based thickness. Hovering shows a detail tooltip.
+ * with lane offsets, connector dots and gauge-based thickness, drawn above the parts so they can
+ * be hovered. Hovering a part or a wire shows a detail tooltip.
  * Pointer capture starts only once a drag has moved, so a plain tap reaches the part's click.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent } from "react";
@@ -30,6 +31,8 @@ export type VehicleSketch3DProps = {
   markMode: boolean;
   onMark: (target: { entityId: string | null; slot: string | null; wireId: string | null }) => void;
   onWireSelect?: (wireId: string) => void;
+  /** Called with the hovered wire id, or null when the pointer leaves it. */
+  onWireHover?: (wireId: string | null) => void;
   hoverDetails?: (target: HoverTarget) => HoverDetail;
   cameraRequest: { preset: CameraPreset; seq: number } | null;
   instant?: boolean;
@@ -77,7 +80,7 @@ function hull(points: P2[]): P2[] {
 }
 
 export function VehicleSketch3D(props: VehicleSketch3DProps) {
-  const { style, suffix, info, selectedEntityId, onSelect, sourcingFilter, markers, circuitId, wiring, markMode, onMark, onWireSelect, hoverDetails, cameraRequest, instant = false } = props;
+  const { style, suffix, info, selectedEntityId, onSelect, sourcingFilter, markers, circuitId, wiring, markMode, onMark, onWireSelect, onWireHover, hoverDetails, cameraRequest, instant = false } = props;
   const [cam, setCam] = useState<Camera>(DEFAULT_CAMERA);
   const camRef = useRef<Camera>(DEFAULT_CAMERA);
   camRef.current = cam;
@@ -246,46 +249,6 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
             return <path key={i} d={polyD(pts)} className={`rrx-sketch-line${l.cls ? ` rrx-sketch-line--${l.cls}` : ""}`} style={{ opacity: l.cls === "dashed" ? 0.5 : depthOpacity(avgDepth(pts)) }} vectorEffect="non-scaling-stroke" />;
           })}
 
-          {wiresToShow.map((w) => {
-            const pts3 = wirePath(w, style);
-            if (pts3.length < 2) return null;
-            const pts = proj(pts3, cam);
-            const d = smoothD(pts);
-            const inCircuit = circuitId ? w.circuitId === circuitId : true;
-            const marked = highlightedWireIds.has(w.id);
-            const hovered = tip?.kind === "wire" && tip.id === w.id;
-            const cls = `rrx-wire rrx-wire--${w.voltageClass.toLowerCase()}${inCircuit ? " rrx-wire--active" : " rrx-wire--dim"}${marked ? " rrx-wire--marked" : ""}${hovered ? " rrx-wire--hover" : ""}`;
-            const a = pts[1] ?? pts[0]!;
-            const b = pts[pts.length - 2] ?? pts[pts.length - 1]!;
-            const width = wireWidth(w);
-            return (
-              <g
-                key={w.id}
-                className="rrx-wire-group"
-                data-testid={`wire-${w.id}`}
-                data-active={inCircuit}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (drag.current?.moved) return;
-                  if (markMode) onMark({ entityId: null, slot: null, wireId: w.id });
-                  else onWireSelect?.(w.id);
-                }}
-                onPointerEnter={(e) => showTip("wire", w.id, { wireId: w.id }, e)}
-                onPointerMove={moveTip}
-                onPointerLeave={() => setTip((t) => (t?.id === w.id ? null : t))}
-              >
-                <path d={d} className="rrx-wire-hit" vectorEffect="non-scaling-stroke" />
-                <path d={d} className={cls} style={{ opacity: inCircuit ? Math.max(0.55, depthOpacity(avgDepth(pts))) : 0.12, strokeWidth: hovered || marked ? width + 1.6 : width }} vectorEffect="non-scaling-stroke" />
-                {inCircuit ? (
-                  <>
-                    <circle className="rrx-wire-end" cx={a.x} cy={a.y} r={2.6} />
-                    <circle className="rrx-wire-end" cx={b.x} cy={b.y} r={2.6} />
-                  </>
-                ) : null}
-              </g>
-            );
-          })}
-
           {orderedParts.map((p) => {
             const box = partBox(p.slot, style)!;
             const entityId = entityIdFor(p, suffix);
@@ -341,6 +304,52 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
                     {p.label}
                     {(meta?.openIssueCount ?? 0) > 0 ? <tspan fill="#ff6b7a"> · {meta!.openIssueCount} open</tspan> : null}
                   </text>
+                ) : null}
+              </g>
+            );
+          })}
+
+          {wiresToShow.map((w) => {
+            const pts3 = wirePath(w, style);
+            if (pts3.length < 2) return null;
+            const pts = proj(pts3, cam);
+            const d = smoothD(pts);
+            const inCircuit = circuitId ? w.circuitId === circuitId : true;
+            const marked = highlightedWireIds.has(w.id);
+            const hovered = tip?.kind === "wire" && tip.id === w.id;
+            const cls = `rrx-wire rrx-wire--${w.voltageClass.toLowerCase()}${inCircuit ? " rrx-wire--active" : " rrx-wire--dim"}${marked ? " rrx-wire--marked" : ""}${hovered ? " rrx-wire--hover" : ""}`;
+            const a = pts[1] ?? pts[0]!;
+            const b = pts[pts.length - 2] ?? pts[pts.length - 1]!;
+            const width = wireWidth(w);
+            return (
+              <g
+                key={w.id}
+                className="rrx-wire-group"
+                data-testid={`wire-${w.id}`}
+                data-active={inCircuit}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (drag.current?.moved) return;
+                  if (markMode) onMark({ entityId: null, slot: null, wireId: w.id });
+                  else onWireSelect?.(w.id);
+                }}
+                onPointerEnter={(e) => {
+                  showTip("wire", w.id, { wireId: w.id }, e);
+                  onWireHover?.(w.id);
+                }}
+                onPointerMove={moveTip}
+                onPointerLeave={() => {
+                  setTip((t) => (t?.id === w.id ? null : t));
+                  onWireHover?.(null);
+                }}
+              >
+                <path d={d} className="rrx-wire-hit" vectorEffect="non-scaling-stroke" />
+                <path d={d} className={cls} style={{ opacity: inCircuit ? Math.max(0.55, depthOpacity(avgDepth(pts))) : 0.12, strokeWidth: hovered || marked ? width + 1.6 : width }} vectorEffect="non-scaling-stroke" />
+                {inCircuit ? (
+                  <>
+                    <circle className="rrx-wire-end" cx={a.x} cy={a.y} r={2.6} />
+                    <circle className="rrx-wire-end" cx={b.x} cy={b.y} r={2.6} />
+                  </>
                 ) : null}
               </g>
             );

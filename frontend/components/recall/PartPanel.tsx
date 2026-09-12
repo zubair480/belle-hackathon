@@ -72,7 +72,6 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
               {vehicle.modelName} · {vehicle.platform} · {vehicle.style}
             </div>
           </div>
-          <span className="rrx-badge rrx-badge--muted">Sample vehicle</span>
         </div>
         {vehicleLoad?.status === "loading" ? <Loading label="Loading vehicle record" /> : null}
         {vehicleLoad?.status === "error" && vehicleLoad.error ? <ErrorBanner error={vehicleLoad.error} /> : null}

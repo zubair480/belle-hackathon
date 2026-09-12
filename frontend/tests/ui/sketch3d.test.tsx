@@ -60,6 +60,13 @@ describe("zoom disclosure and hover details", () => {
     expect(tip).toHaveTextContent("From Charge connector (X-CONN-CP)");
     expect(tip).toHaveTextContent("To On-board charger (X-OBC-AC)");
     expect(tip).toHaveTextContent("Circuit Charging (C-CHARGE)");
+    expect(tip).toHaveTextContent("On this vehicle: CONN-0005 → OBC-0005");
+    // Wires are drawn above the parts so a real pointer can reach them.
+    const wiresGroup = wire.parentElement!;
+    const partGroup = screen.getByTestId("hotspot-charge-port-module");
+    expect(partGroup.compareDocumentPosition(wire) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wiresGroup).toBe(partGroup.parentElement);
+    expect(screen.getByTestId("wire-info")).toHaveTextContent("W-034 · CP / PP pilot");
     fireEvent.pointerLeave(wire);
     await waitFor(() => expect(screen.queryByTestId("sketch-tooltip")).not.toBeInTheDocument());
 
