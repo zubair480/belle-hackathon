@@ -1,18 +1,30 @@
+EV VEHICLE ASSEMBLY UPDATE - READ FIRST
+The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md before the rest of this prompt. It defines the current demo and takes precedence over legacy robotics fixture examples. Proposed shared contract: assembly-quality-v4; Zubair must publish its exact source schema before implementations depend on it. Preserve existing code and coordinate the migration. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
+
+The official event is an open-ended AI-native development/agentic-engineering hackathon. No EV-specific required theme or track was found. EV assembly is our chosen domain for Track A Builder plus the separate Neo4j bonus. Use Qoder in development and substantive Neo4j queries; the app's core manual issue workflow still works without AI.
+
+YOUR EV DELIVERABLES
+- Coordinate the move from the earlier assembly-quality-v3 brief to assembly-quality-v4. Reuse the existing scaffold. Publish exact shared source types before Codey/Ali consume them; feature implementations still merge only at the end.
+- Freeze supplier versus internal origin fields, internal production lots/work orders, generic vehicle entities with build ID/nullable VIN, manufacturing-lot trace roots, in-house-manufacturing causes and vehicle count names. Update API validators/contracts and relevant tests together. Do not silently reinterpret legacy robot/food DTOs.
+- Provide the reference catalogs and API responses needed to show both sourcing routes in manual issue detail. Keep public source records/provenance distinct from local issue facts and verified fixes.
+- Give the in-app agent bounded server tools for relevant prior verified fixes, component origin/vehicle context and evidence-linked issue insights. No direct browser database credentials or unconstrained write queries. Model absence must not block manual issue creation or retrieval.
+- Final acceptance must prove an EV issue persists, exposes both origin paths, records reviewed attribution, reuses a compatible fix as a new proposal and requires a new verification. Verify supplier-lot and manufacturing-lot vehicle queries separately. A passed old robotics fixture is not this acceptance proof.
+
 You are my senior application engineer and integration lead. I am Zubair, building RecallRadius with Codey/Cody and Ali for a one-day hackathon. Implement my lane, coordinate the shared contract and perform the final integration when all three branches are ready.
 
 REPOSITORY AND TEAM
 Use https://github.com/zubair480/belle-hackathon . We all have access. Inspect current commits and preserve teammate work; do not create another repository. Codey owns data/Neo4j/domain persistence and analytics. Ali owns frontend and pitch. I own the foundation, shared contracts, application APIs, optional runtime AI, integration, verification and submission preparation.
 
-We develop independently and merge feature branches only at the end. Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/JUDGE_SUBMISSION_KIT.md and both quality and assembly fixtures. The active contract is assembly-quality-v3; earlier industry specifications are superseded.
+We develop independently and merge feature branches only at the end. Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/JUDGE_SUBMISSION_KIT.md and both quality and assembly fixtures. The active contract is assembly-quality-v4; earlier industry specifications are superseded.
 
 PRODUCT PRIORITY
-RecallRadius is an internal issue and learning workspace for robotic/physical assembly. The first complete flow is manual issue creation -> assignment -> cause investigation -> relevant prior verified fix -> new fix application -> verification -> closure -> reuse and analytics. Supplier notices, CSVs and assembly tracing add context; they must not block an operator from reporting an issue.
+RecallRadius is an internal issue and learning workspace for EV vehicle assembly. The first complete flow is manual issue creation -> assignment -> cause investigation -> relevant prior verified fix -> new fix application -> verification -> closure -> reuse and analytics. Supplier notices, CSVs and assembly tracing add context; they must not block an operator from reporting an issue.
 
 FIRST: COMMON FOUNDATION
-1. Reuse a suitable existing app, or scaffold one small Next.js/TypeScript application in this repository. Pin the dependency manifest and lockfile. Include Zod, Neo4j's JavaScript driver and a lightweight testing setup.
+1. Reuse the existing Next.js/TypeScript scaffold in this repository; do not create a competing application. Pin the dependency manifest and lockfile. Include Zod, Neo4j's JavaScript driver and a lightweight testing setup.
 2. Finalize shared schemas/types in src/contracts/issues.ts and src/contracts/recall.ts before parallel work. Include the full DTOs for issue lists/detail, reference catalogs, comments, cause assessments, fix versions, verifications, transitions, similar resolutions, analytics and trace results.
 3. Freeze route names, service signatures, statuses, required evidence, pagination, expectedVersion fields, idempotency keys and error codes. Distinguish counts from nullable rates, current from historical containment, and reporting/assignment from causal attribution. Communicate identical definitions to Codey and Ali.
-4. Add the current prompt/brief/fixture pack and an .env.example with placeholders only. Publish a minimal foundation commit and share its exact branch/SHA. If branches already exist, coordinate the v3 contract update without merging their feature implementations early.
+4. Add the current prompt/brief/fixture pack and an .env.example with placeholders only. Publish a minimal foundation commit and share its exact branch/SHA. If branches already exist, coordinate the v4 contract update without merging their feature implementations early.
 5. Use codex/zubair-api-integration; Codey uses codex/codey-data-graph and Ali codex/ali-ui-pitch. I own src/app/**, src/contracts/**, src/server/ai/**, src/server/application/**, tests/api/**, tests/integration/**, root configuration/README and docs/handoffs/ZUBAIR.md.
 
 P0: ISSUE APIs AND ORCHESTRATION
@@ -48,7 +60,7 @@ Required end-to-end proof:
 - Find the new verified resolution from a subsequent similar issue.
 - Show traceable team/process/supplier insights. Final Test reporting must not automatically become causal blame, and linked suppliers must not become confirmed faults.
 - Match the synthetic supplier metrics: SUP-A 4 issues/3 affected units/20 inspected (15%); SUP-B 2/2/10 (20%). Missing denominators return N/A.
-- If the supporting assembly flow is included, verify the common two-to-three shipped-unit/customer change, replacement history, crate control and old-run preservation against the real database.
+- For the retained robotics regression fixture only, verify the common two-to-three shipped-unit/customer change, replacement history, crate control and old-run preservation against the real database.
 
 Missing credentials leave those integration checks unverified; do not report a pass from mocks. The existing Python assembly and quality-fixture checks are supporting oracles, not finished application tests.
 
@@ -61,4 +73,4 @@ Start with the shared foundation and exact issue contracts, then implement my AP
 
 
 REPOSITORY CONTEXT UPDATE
-Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v3 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.
+Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v4 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.

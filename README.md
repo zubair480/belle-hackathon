@@ -1,12 +1,15 @@
 # RecallRadius
 
-An internal issue and learning workspace for **robotic and physical assembly manufacturing**. Report a problem, mark the affected part or process, assign investigation, retrieve a relevant verified fix, verify the new application, and preserve the knowledge for the next issue.
+An internal issue and learning workspace for **EV vehicle assembly with purchased and in-house manufactured components**. Report a problem, mark the affected part or process, assign investigation, retrieve a relevant verified fix, verify the new application, and preserve the knowledge for the next issue.
 
 Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessments, fix versions and evidence. Team and supplier insights distinguish reporting, ownership and confirmed cause, with drilldown to the records behind each metric.
 
-**Status: foundation plus updated planning/reference files.** The application source still needs migration from the earlier lot-based contract to `assembly-quality-v3`. Start with [project context](docs/PROJECT_CONTEXT.md); this documentation update does not claim the new workflow is implemented.
+**Status: foundation plus updated planning/reference files.** The application source still needs migration from the earlier lot-based contract to `assembly-quality-v4`. Start with [project context](docs/PROJECT_CONTEXT.md); this documentation update does not claim the new workflow is implemented.
 
 ## Start here
+
+Read the current [EV assembly scope](docs/EV_ASSEMBLY_SCOPE.md). We are building for a whole-vehicle EV assembler that buys some parts and manufactures others in-house. The demo follows one charge-port assembly; it does not claim full vehicle BOM coverage. EV is our chosen industry, not an organizer-mandated theme.
+
 
 Read the [shared prompt](docs/prompts/SHARED_PROMPT.md), then your role prompt:
 
@@ -42,9 +45,9 @@ npm test
 npm run build
 ```
 
-Lane suites: `npm run test:api`, `test:data`, `test:ui`, and `test:integration`. Their current tests are not proof of the v3 application. `npm run reference:python` still points to the legacy fixture until Zubair migrates that script.
+Lane suites: `npm run test:api`, `test:data`, `test:ui`, and `test:integration`. Their current tests are not proof of the v4 application. `npm run reference:python` still points to the legacy fixture until Zubair migrates that script.
 
-Active synthetic oracles:
+Earlier synthetic regression oracles (robotics IDs; EV fixtures are still to be implemented):
 
 ```bash
 python docs/reference/quality/build_quality_fixture.py
@@ -55,7 +58,7 @@ No application credentials are included. The existing demo identity/mocks are de
 
 ## Demo and hackathon
 
-The primary demo is **manual issue -> assignment -> prior verified fix -> new verification and closure -> reusable knowledge -> team/supplier insight**. The first user is an operator, manufacturing quality manager or production engineer at a hardware/robotic assembler.
+The primary demo is **manual issue -> assignment -> prior verified fix -> new verification and closure -> reusable knowledge -> team/supplier insight**. The first user is an operator, manufacturing quality manager or production engineer at an EV manufacturing and vehicle assembly plant.
 
 Target Track A (Developers) and the separate Neo4j bonus. Perform and document actual Qoder development and meaningful Neo4j queries. Optional AI structures a report or explains retrieved evidence; it does not establish causes or approve corrective actions. Deployment tooling is deferred.
 
@@ -65,4 +68,4 @@ The supporting assembly fixture demonstrates replacement history, missing compon
 
 Manual issues do not require datasets or external alerts. Users can record annotations and evidence in the app. Keep reporting and assigned teams separate from confirmed causal teams, and linked suppliers separate from confirmed faults. A reused fix needs verification in the new case; removed components remain in appropriate history.
 
-Twenty-three Python assembly reference checks and the quality fixture validation passed during preparation. Actual UI/API/Neo4j tests, buyer demand and measured operational benefits remain work for the team. Legacy files under `docs/research/` are historical; the active examples are under `docs/reference/`.
+Twenty-three Python assembly reference checks and the quality fixture validation passed during preparation. Actual UI/API/Neo4j tests, buyer demand and measured operational benefits remain work for the team. Legacy files under `docs/research/` are historical; the earlier regression examples are under `docs/reference/`. The current EV scenario is specified in `docs/EV_ASSEMBLY_SCOPE.md`.

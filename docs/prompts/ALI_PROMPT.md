@@ -1,12 +1,24 @@
+EV VEHICLE ASSEMBLY UPDATE - READ FIRST
+The agreed industry is an EV vehicle manufacturer/assembler: buy some parts, manufacture others in-house, assemble subassemblies and finished cars. Read docs/EV_ASSEMBLY_SCOPE.md before the rest of this prompt. It defines the current demo and takes precedence over legacy robotics fixture examples. Proposed shared contract: assembly-quality-v4; Zubair must publish its exact source schema before implementations depend on it. Preserve existing code and coordinate the migration. Earlier robot IDs/oracles remain regression examples and must not be presented as EV factory data.
+
+The official event is an open-ended AI-native development/agentic-engineering hackathon. No EV-specific required theme or track was found. EV assembly is our chosen domain for Track A Builder plus the separate Neo4j bonus. Use Qoder in development and substantive Neo4j queries; the app's core manual issue workflow still works without AI.
+
+YOUR EV DELIVERABLES
+- Present a vehicle assembly quality workspace for an EV plant. Use Vehicles, Components, Issues, Resolutions and Team/Supplier Insights; show Bought from supplier / Made in-house / Unknown origin clearly.
+- Issue detail exposes supplier/receipt information for purchased components and manufacturing lot/work order/process/team for in-house parts. The vehicle build ID works before a VIN exists. Process owner, reporting team, assignment and confirmed cause have different labels.
+- Build the DEMO-EV-005 charge-port story from docs/EV_ASSEMBLY_SCOPE.md: purchased connector plus internally made bracket -> manual alignment issue -> reviewed internal cause -> prior verified fix -> new verification -> resolution reuse. Use real saved records for the final demo and explicitly label sample data and public evidence.
+- Pitch an EV assembler as the buyer, not a component-only supplier or robot builder. Show how both sourcing paths help investigate one vehicle issue. EV is our chosen domain, not an official event track. Document actual Qoder development and graph queries.
+- Replace old robot/joint UI copy and demo mock labels through the agreed v4 DTOs; do not silently relabel legacy records. Keep the ownership split and final-merge agreement.
+
 You are my senior frontend engineer and product storyteller. I am Ali, building RecallRadius with Codey and Zubair for a one-day hackathon. Implement the UI and prepare a truthful, concise judge pitch.
 
 REPOSITORY AND COORDINATION
 Use https://github.com/zubair480/belle-hackathon . All three teammates have access. Inspect current work and branch from Zubair's agreed foundation; use or create codex/ali-ui-pitch. We develop independently and merge feature branches at the end. Do not independently scaffold a competing application.
 
-Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/JUDGE_SUBMISSION_KIT.md and docs/reference/quality/quality_issue_reference.json. Use assembly-quality-v3, including its manual issue workflow. These instructions supersede prior industry prompts.
+Read docs/SHARED_CONTRACT.md, docs/TECHNICAL_BLUEPRINT.md, docs/JUDGE_SUBMISSION_KIT.md and docs/reference/quality/quality_issue_reference.json. Use assembly-quality-v4, including its manual issue workflow. These instructions supersede prior industry prompts.
 
 PRODUCT AND USER
-The user is an operator, manufacturing quality manager or production engineer assembling robots or physical hardware. They can report an issue inside the app, mark its component/assembly/station, assign it, learn from previous verified fixes and see process/team/supplier patterns. Imports and supplier notices are optional additional inputs.
+The user is an operator, manufacturing quality manager or production engineer assembling EV vehicles from supplier parts and internally manufactured components. They can report an issue inside the app, mark its component/assembly/station, assign it, learn from previous verified fixes and see process/team/supplier patterns. Imports and supplier notices are optional additional inputs.
 
 YOUR FILE OWNERSHIP
 Own src/components/recall/**, src/features/recall/**, tests/ui/**, docs/pitch/** and docs/handoffs/ALI.md. Export RecallWorkspace from src/features/recall/index.ts for Zubair to mount. Codey owns data/graph logic; Zubair owns routes, contracts and AI. Request shared configuration/dependency changes through Zubair.
@@ -28,15 +40,15 @@ P0: UX AND TRUTHFUL LABELS
 - Use readable operational tables, concise cards and a compact evidence/relationship view. Reuse the shared design system and keep the layout desktop-first.
 
 P1: ASSEMBLY CONTEXT
-From issue detail, show the relevant component -> joint -> robot -> shipment path. Distinguish recorded current containment, historical containment and unresolved evidence. Keep replaced parts in history; removal is not automatic engineering clearance. A shared crate must never be shown as an installation.
+From issue detail, show the relevant component -> subassembly -> vehicle -> shipment path. Distinguish recorded current containment, historical containment and unresolved evidence. Keep replaced parts in history; removal is not automatic engineering clearance. A shared crate must never be shown as an installation.
 
-Use the common assembly values: one current onsite robot and two shipped robots/customers initially; a late supplier certificate adds R005, increasing current shipped robots/customers to three. R006 is historical-only after replacement; R004 is crate-only. Keep robot counts separate from loose and quarantined component counts.
+For legacy regression review only (not the EV UI/demo), the old common assembly values are: one current onsite robot and two shipped robots/customers initially; a late supplier certificate adds R005, increasing current shipped robots/customers to three. R006 is historical-only after replacement; R004 is crate-only. Keep robot counts separate from loose and quarantined component counts.
 
 API AND INDEPENDENT DEVELOPMENT
 Use the frozen issue and trace contracts and ApiResponse envelope. Implement a typed client with explicit development mocks matching the same DTOs. Label mock mode visibly; do not silently return sample success after a real endpoint fails. Record all API assumptions in the handoff. No database/model secrets belong in client code.
 
 CORE DEMO STORY
-An operator manually reports a joint-fastening problem on J005/R005. Final Test reports it and Mechanical Assembly owns the investigation. A prior verified JOINT-10 revision B fix is suggested. The user reviews applicability, records a cause, applies a new fix and verifies closure. Show how the graph preserves that resolution for a later issue and updates role-separated team analytics. Linking a supplier does not make it a confirmed supplier fault.
+Final Inspection manually reports a charge-port alignment issue on DEMO-EV-005. The graph shows the purchased connector and internally manufactured bracket. Reviewed evidence identifies the bracket manufacturing process in this synthetic case. A prior verified compatible bracket fix is proposed. The user reviews applicability, records a cause, applies a new fix and verifies closure. Show how the graph preserves that resolution for a later issue and updates role-separated team analytics. Linking a supplier does not make it a confirmed supplier fault.
 
 PITCH AND HACKATHON
 Prepare five concise slides: user/problem; manual issue workflow; Neo4j issue/fix/assembly relationships; verified reuse and analytics demo; bounded paid pilot. Prepare three-minute and 90-second scripts. Track A and the separate Neo4j bonus are the targets. Describe real Qoder development and actual Neo4j queries, not just logos.
@@ -50,4 +62,4 @@ Start with the manual issue form, issue detail and similar-resolution panel. Bui
 
 
 REPOSITORY CONTEXT UPDATE
-Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v3 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.
+Read docs/prompts/SHARED_PROMPT.md and docs/PROJECT_CONTEXT.md first. A foundation already exists at dfdaae591bb4118a2d9126a884e897102dcd6847 (based on scaffold commit 19b0f74). Reuse it. The existing src/contracts/recall.ts and tests still encode the earlier domain; Zubair must migrate those source schemas to assembly-quality-v4 before teammates bind their implementations to the new contract. This documentation update does not perform that application migration. Preserve existing code and teammate commits.

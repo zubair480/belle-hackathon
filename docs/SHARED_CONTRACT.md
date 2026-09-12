@@ -1,8 +1,10 @@
-# RecallRadius shared build agreement - robotic assembly
+# RecallRadius shared build agreement - EV vehicle assembly
 
-Contract version: `assembly-quality-v3`. The primary product is now an internal manufacturing issue, resolution and learning workspace for robotic/physical assembly. Users can create and annotate issues themselves; external bulletins and datasets are additional inputs. Keep RecallRadius, the agreed role ownership and final-merge workflow.
+> Current domain: **EV vehicle assembly**, including purchased components and parts manufactured in-house. Read [EV assembly scope](EV_ASSEMBLY_SCOPE.md) for the demo, sourcing model, public data and verified hackathon fit. The proposed contract is `assembly-quality-v4`; source migration and EV fixtures are still implementation work. Earlier robotics fixtures remain labelled regression examples, not the EV demo.
 
-Repository: https://github.com/zubair480/belle-hackathon . Codey/Cody, Ali and Zubair have access. A Next.js/TypeScript foundation exists at dfdaae591bb4118a2d9126a884e897102dcd6847. Reuse it and preserve intervening teammate work. Its source schemas still require the v3 migration; see docs/PROJECT_CONTEXT.md.
+Contract version: `assembly-quality-v4`. The primary product is now an internal manufacturing issue, resolution and learning workspace for EV vehicle assembly. Users can create and annotate issues themselves; external bulletins and datasets are additional inputs. Keep RecallRadius, the agreed role ownership and final-merge workflow.
+
+Repository: https://github.com/zubair480/belle-hackathon . Codey/Cody, Ali and Zubair have access. A Next.js/TypeScript foundation exists at dfdaae591bb4118a2d9126a884e897102dcd6847. Reuse it and preserve intervening teammate work. Its source schemas still require the v4 migration; see docs/PROJECT_CONTEXT.md.
 
 ## Parallel work and ownership
 
@@ -22,9 +24,9 @@ Codey tests his services directly against a namespaced synthetic Neo4j workspace
 
 ## Target buyer and bounded product
 
-The initial buyer is a manufacturing quality manager, production engineer or operations lead at a robotic-arm assembler or hardware contract manufacturer. The product lets operators and teams report assembly/manufacturing problems, assign investigation, record causes, apply and verify fixes, and retrieve relevant prior solutions. Component tracing provides context and impact scope for those issues.
+The initial buyer is a manufacturing quality manager, production engineer or operations lead at an EV vehicle manufacturer/assembler that buys components and manufactures others in-house. The product lets operators and teams report assembly/manufacturing problems, assign investigation, record causes, apply and verify fixes, and retrieve relevant prior solutions. Component tracing provides context and impact scope for those issues.
 
-The concrete demo tracks rotary encoder part family `ENC-42` through serialized joint modules into robotic arms. It is a software traceability workspace around existing build, replacement, supplier and shipment records. The MVP needs no robot hardware, live sensor feed, CAD viewer or machine-control interface. Other machine parts are outside this fixture's coverage; do not claim a complete robot BOM.
+The concrete EV demo tracks a purchased charge-port connector and an internally manufactured mounting bracket into a charge-port module and a finished EV. Record supplier batches and internal manufacturing lots/work orders separately. No live vehicle, sensor feed, CAD viewer or machine-control interface is required. The whole vehicle is the customer context; only this bounded assembly path is implemented for the demo. See docs/EV_ASSEMBLY_SCOPE.md for exact scope and fixture requirements.
 
 A design BOM describes intended parts. Actual installation and removal records establish what was assembled. Use the recorded physical configuration at a selected cutoff, plus its history. A planned relationship, common SKU, same supplier, shared rack or shipping crate is not proof of installation.
 
@@ -63,7 +65,7 @@ Zubair defines matching schemas in `src/contracts/issues.ts`; use the same `ApiR
 type IssueStatus = "open" | "triaged" | "in_progress" | "pending_verification" | "closed";
 type IssueInput = {
   title: string; description: string;
-  origin: "manual" | "import" | "supplier_notice";
+  origin: "manual" | "import" | "supplier_notice"; // Public records imported as evidence retain separate provenance.
   detectedAt: string; reportingTeamId: string;
   assignedTeamId: string | null; detectionStationId: string | null;
   processStepId: string | null; entityIds: string[];
@@ -79,7 +81,7 @@ type Issue = IssueInput & {
 type CauseAssessment = {
   id: string; issueId: string;
   state: "hypothesis" | "confirmed" | "rejected";
-  causeType: "supplier_component" | "assembly_process" | "design" | "calibration" | "handling" | "unknown";
+  causeType: "supplier_component" | "in_house_manufacturing" | "assembly_process" | "design" | "calibration" | "handling" | "unknown";
   responsibleTeamId: string | null; responsibleSupplierId: string | null;
   causalStationId: string | null; rationale: string; evidenceIds: string[];
   assessedBy: string; assessedAt: string; supersedesId: string | null;
@@ -112,25 +114,27 @@ Before branching, finish the small remaining contracts for list filters, issue-d
 
 Issue detail includes the issue, linked entities, cause history, fix versions, verifications and audit events. Add reference-data endpoints and a seeded reference catalog for teams, suppliers, stations and defect codes, so the manual form can work from the first launch. Support manual directory creation/editing for teams, suppliers and stations; operators should not need a CSV to add these records. Optional production/inspection opportunity records may be entered manually or imported, with a defined cohort and completeness status before they support a rate.
 
-## Core issue demonstration and analytics oracle
+## Earlier regression issue and analytics oracle
 
-The main story is an operator manually reporting a fastening defect on joint J005 / robot R005. Final Test reports it; Mechanical Assembly receives the assignment. A prior verified torque-related issue on part JOINT-10 revision B suggests a compatible work-instruction-based fix. The user records a confirmed assembly-process cause, applies a new fix revision, attaches a passed verification and closes the issue. A later similar issue can retrieve that exact resolution with its evidence and applicability.
+The paragraph and IDs below describe the retained robotics regression fixture. Use the EV scenario in docs/EV_ASSEMBLY_SCOPE.md for the current user flow and pitch. Codey must provide EV-native fixtures against the agreed v4 source types; these legacy checks do not validate the new sourcing model.
+
+The earlier regression story is an operator manually reporting a fastening defect on joint J005 / robot R005. Final Test reports it; Mechanical Assembly receives the assignment. A prior verified torque-related issue on part JOINT-10 revision B suggests a compatible work-instruction-based fix. The user records a confirmed assembly-process cause, applies a new fix revision, attaches a passed verification and closes the issue. A later similar issue can retrieve that exact resolution with its evidence and applicability.
 
 The issue's linked component supplier must not be counted as a confirmed supplier fault merely because it supplied a part in the machine. Final Test's reporting count rises; Mechanical Assembly's confirmed-cause count rises only after reviewed attribution. Preserve both facts.
 
-Use `docs/reference/quality/quality_issue_reference.json` as the common seeded issue/fix and supplier-inspection oracle. Its supplier example has four confirmed issues across three distinct inspected units for SUP-A and two across two units for SUP-B. With complete cohorts of 20 and 10 inspected units respectively, the demonstrated affected-unit rates are 15% and 20%. Raw issue counts alone would rank these differently. Unconfirmed linked-supplier issues do not enter those confirmed numerators. These are synthetic teaching values, not measured supplier performance.
+Retain `docs/reference/quality/quality_issue_reference.json` as a legacy issue/fix and supplier-inspection regression oracle, not the active EV seed. Its supplier example has four confirmed issues across three distinct inspected units for SUP-A and two across two units for SUP-B. With complete cohorts of 20 and 10 inspected units respectively, the demonstrated affected-unit rates are 15% and 20%. Raw issue counts alone would rank these differently. Unconfirmed linked-supplier issues do not enter those confirmed numerators. These are synthetic teaching values, not measured supplier performance.
 
 The required first acceptance test creates and saves a manual issue without any import or AI dependency, retrieves it after a reload, assigns it, proposes a prior verified fix, blocks closure before successful verification, closes it after a valid verification, and finds the resulting reusable resolution from another issue. Verify that failed verification, stale updates, rejected causes and missing denominators behave correctly.
 
 ## Assembly rules
 
-- Identity combines issuer/manufacturer, part number and serial number; batch identity combines supplier, part number and batch code. Internal IDs remain distinct from displayed codes.
+- Identity combines issuer/manufacturer, part number and serial number; production-lot identity combines producer, part number and lot code. Supplier and internal-production origins remain distinct; see the sourcing addendum in docs/EV_ASSEMBLY_SCOPE.md. Internal IDs remain distinct from displayed codes.
 - Represent installation with a child serial, parent serial, slot, installation ID, evidence and a half-open interval `[installedAt, removedAt)`. A null end remains open. Removing a part ends its interval; replacement creates a new interval for the new serial.
 - One serialized item cannot have two active physical parents, and one parent slot cannot contain two items at the same instant. Different slots may contain the same part number with different serials.
 - Current containment follows edges active at `configurationAsOf`. Historical containment requires a nonempty intersection of all intervals along the path and the selected history window. Traversing every old edge without checking overlapping dates is wrong.
 - Preserve current and historical relationships separately. A removed suspect part leaves the current configuration but remains in the unit's historical exposure. Removal alone is not an engineering clearance; possible prior damage remains a review decision.
 - Known suspect containment and unresolved evidence can coexist. Unknown batch origins in the tracked part family remain in a review queue even when disconnected from the known batch.
-- Count distinct finished-unit serials, component serials and customer IDs. A robot containing two suspect encoders counts as one robot. Do not add a robot and its installed parts into a single inventory total.
+- Count distinct finished-unit serials, component serials and customer IDs. A vehicle containing two suspect components counts as one vehicle. Do not add a vehicle and its installed parts into a single inventory total.
 - Separate loose component candidates, already-quarantined components, onsite finished units, currently implicated shipped units and historical-only units needing review. A proposed hold is not an applied inventory hold.
 - Keep original source data, event time, recording time and accepted data revision. Later evidence creates a new revision and trace; it does not mutate an earlier result.
 
@@ -147,8 +151,21 @@ type Scope = {
   siteId: string; configurationAsOf: string; historyFrom: string;
   trackedPartNumber: string; limitations: string[];
 };
-type RootSelector = { kind: "supplier_batch" | "component_serial"; id: string };
-type TraceRequest = { contractVersion: "assembly-quality-v3";
+type RootSelector = { kind: "supplier_batch" | "manufacturing_lot" | "component_serial"; id: string };
+type ProductionOrigin = {
+  id: string; sourcingType: "supplier" | "in_house" | "unknown";
+  producerOrganizationId: string | null;
+  partNumber: string; partRevision: string | null;
+  productionLotId: string | null;
+  supplierId: string | null; supplierBatchCode: string | null;
+  siteId: string | null; manufacturingLotCode: string | null;
+  workOrderId: string | null; manufacturingTeamId: string | null;
+  processStepId: string | null; evidenceIds: string[];
+};
+type VehicleIdentity = {
+  entityId: string; buildId: string; vin: string | null;
+};
+type TraceRequest = { contractVersion: "assembly-quality-v4";
   revisionId: string; root: RootSelector; scope: Scope };
 type ReviewIssue = {
   id: string; code: string; severity: "warning" | "blocking";
@@ -157,9 +174,12 @@ type ReviewIssue = {
 type Evidence = {
   id: string; sourceName: string; sourceHash: string;
   locator: string; text: string;
+  sourceKind: "manual" | "internal_import" | "supplier_notice" |
+    "public_complaint" | "public_recall" | "manufacturer_communication" | "synthetic";
+  sourceRecordId: string | null; sourceUrl: string | null; retrievedAt: string | null;
 };
 type TraceRow = {
-  entityId: string; entityKind: "component" | "subassembly" | "robot";
+  entityId: string; entityKind: "component" | "subassembly" | "vehicle";
   partNumber: string; serialNumber: string;
   locationState: "onsite" | "installed" | "shipped" | "quarantine" | "unknown";
   customerId: string | null; shipmentLineIds: string[];
@@ -169,13 +189,13 @@ type TraceRow = {
   evidenceIds: string[]; issueIds: string[];
 };
 type TraceCounts = {
-  currentOnsiteRobotCount: number; currentShippedRobotCount: number;
+  currentOnsiteVehicleCount: number; currentShippedVehicleCount: number;
   currentCustomerCount: number; looseCandidateComponentCount: number;
-  quarantinedComponentCount: number; historicalOnlyRobotCount: number;
-  unresolvedOnlyRobotCount: number;
+  quarantinedComponentCount: number; historicalOnlyVehicleCount: number;
+  unresolvedOnlyVehicleCount: number;
 };
 type TraceResult = {
-  contractVersion: "assembly-quality-v3"; runId: string; revisionId: string;
+  contractVersion: "assembly-quality-v4"; runId: string; revisionId: string;
   root: RootSelector; createdAt: string; engineVersion: string;
   dataHash: string; scope: Scope;
   executionStatus: "completed" | "incomplete";
@@ -188,7 +208,7 @@ type TraceResult = {
   customers: Array<{ id: string; name: string }>;
 };
 type ImportInput = {
-  contractVersion: "assembly-quality-v3"; files: Array<{ name: string; text: string }>;
+  contractVersion: "assembly-quality-v4"; files: Array<{ name: string; text: string }>;
   scope: Scope; baseRevisionId?: string;
 };
 type ImportPreview = {
@@ -196,18 +216,20 @@ type ImportPreview = {
   canAccept: boolean; issues: ReviewIssue[]; sourceHashes: string[];
   coverage: { expected: string[]; received: string[]; missing: string[] };
 };
-type RevisionInfo = { contractVersion: "assembly-quality-v3";
+type RevisionInfo = { contractVersion: "assembly-quality-v4";
   revisionId: string; acceptedAt: string; dataHash: string };
 type TraceComparison = {
   earlierRunId: string; laterRunId: string;
   comparable: boolean; reasons: string[];
   delta: TraceCounts | null;
-  addedCurrentRobotIds: string[]; removedCurrentRobotIds: string[];
+  addedCurrentVehicleIds: string[]; removedCurrentVehicleIds: string[];
   addedCurrentCustomerIds: string[]; resolvedIssueIds: string[];
 };
 ```
 
-`TraceCounts` in a result contains nonnegative integers; the same fields in a comparison delta are signed integers. Historical containment includes current containment where an interval overlaps the history window. `historicalOnlyRobotCount` excludes current robots. `unresolvedOnlyRobotCount` excludes current known-containment robots but can overlap historical-only review; it is an independent queue and is not additive with every other card.
+`ProductionOrigin` is linked to the actual component/produced instance, not assumed globally for a part number. Null provenance remains an explicit gap. Internal-origin records do not require a supplier; manufacturer/team/process ownership does not establish fault. The site/lot/work-order links describe production, while installation intervals describe physical assembly. Vehicle entities reference `VehicleIdentity`; use the build ID before a VIN is assigned. Zubair must include these origin/identity aggregates in entity catalogs and issue-detail DTOs before consumers bind to v4.
+
+`TraceCounts` in a result contains nonnegative integers; the same fields in a comparison delta are signed integers. Historical containment includes current containment where an interval overlaps the history window. `historicalOnlyVehicleCount` excludes current vehicles. `unresolvedOnlyVehicleCount` excludes current known-containment vehicles but can overlap historical-only review; it is an independent queue and is not additive with every other card.
 
 Execution completion is not evidence completeness. The actor and workspace come from the server. An explicitly configured synthetic demo context is sufficient for a local demo but is not production authentication.
 
@@ -241,6 +263,8 @@ The root is supplier batch ID `B17`, displayed as `ENC-B17`, part `ENC-42`. The 
 | E006 -> J006 -> R006, historically | E006 removed September 8 and quarantined; replacement E102 is from B18. R006 shipped to CUST-D; engineering review of prior effects remains pending |
 | E101 -> J007 -> R004 | Control batch B18; R004 shares a crate with R001 and is also shipped to CUST-A |
 | E900 -> J005 -> R005 | Installed encoder has an unknown batch origin in revision 1; robot shipped to CUST-C |
+
+This section describes the legacy robotics regression dataset and its original output field names, not the v4 EV seed.
 
 The late supplier certificate establishes that E900 belongs to B17. The component was already installed; this is newly recorded provenance, not a new physical installation. Revision 2 adds R005 to current known containment and resolves its origin gap. Both runs use the same configuration cutoff.
 
