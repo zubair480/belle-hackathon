@@ -33,5 +33,6 @@
 | `25-new-issue-dialog.png` | Rebuilt New Issue dialog: sections, severity buttons, marked items, sticky footer summary |
 | `26-real-tap-headlamp.png` | Real browser click on the left headlamp: zoomed, attached wires, hover tooltip on the bumper |
 | `27-real-tap-chargeport.png` | Real browser click on the charge port from the full view: connector and bracket revealed |
+| `28-real-qoder-fault-marker.png` | Real Qoder Agent SDK turn (not the stub): "charge port is misaligned" marks the bracket flange inside the module |
 
 Do not add customers, savings or accuracy claims. The judge kit in `docs/JUDGE_SUBMISSION_KIT.md` holds the 200-word description draft; Zubair submits.
