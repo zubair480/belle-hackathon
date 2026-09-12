@@ -319,3 +319,21 @@ Not run in the browser: sketch marking, second-tab stale edit, later-issue retri
 AI-off and database-down states (the HTTP runner covers retrieval, stale writes and traces).
 A front-end integration agent is working on codex/frontend-backend-integration (worktree) on
 backend-mode badges, sketch-only entity states and vehicle labelling; merge pending its report.
+
+### Late lanes merged (2026-09-12, ~15:30)
+- Ali `codex/ali-ui-pitch` @ f202d63 merged: adds `@qoder-ai/qoder-agent-sdk` 1.0.39 to the manifest
+  (Ali's agent planner; a server-side PAT is still required to use it) and `agentRules: false` in
+  next.config.ts. Lockfile regenerated.
+- Codey `claude/cody-data-graph` @ 2fcdf6c merged, namespaced under `src/server/graph/cody/`
+  (driver, schema, imports, traces, index) with import paths rewritten; `fixtures/ev`,
+  `src/server/data`, `scripts/neo4j/*.ts`, `tests/data` and `docs/handoffs/CODEY.md` included as
+  delivered. His slice implements TraceServices only (CSV ingestion, late evidence, robotics
+  regression adapter, NHTSA cache) on a different graph model (EntityState / DataRevision /
+  SupplierBatch / ManufacturingLot / Installation / Shipment nodes) and a different Aura instance
+  (7bd3cbcf), and its fixture's expected counts differ from `tests/integration/acceptance-expectations.json`.
+  The active `graphServices` therefore remain Zubair's implementation; Codey's modules are
+  preserved and importable (`@/server/graph/cody/*`) but not wired. His unit tests run in the suite
+  (11 passed, 4 Neo4j tests skip without credentials). Wiring his ingestion as the trace path is a
+  post-hackathon task.
+- Checks at 70f1298: typecheck passed; vitest 104 passed / 8 skipped (one agent UI test is timing
+  sensitive under full-suite load and passes in isolation).
