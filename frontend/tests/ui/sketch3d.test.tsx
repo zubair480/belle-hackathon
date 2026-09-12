@@ -76,15 +76,18 @@ describe("zoom disclosure and hover details", () => {
     mount();
     fireEvent.click(screen.getByRole("tab", { name: /DEMO-EV-006/ }));
     await waitFor(() => expect(screen.getByText(/DEMOVIN0000000006/)).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId("layer-inside"));
     fireEvent.click(screen.getByTestId("hotspot-hv-junction"));
     let panel = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-HVJ-008")).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId("layer-outside"));
     fireEvent.click(screen.getByTestId("hotspot-mirror-R"));
     panel = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-MIRROR-011")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("tab", { name: /DEMO-EV-007/ }));
     await waitFor(() => expect(screen.getByText(/DEMOVIN0000000007/)).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId("layer-inside"));
     fireEvent.click(screen.getByTestId("hotspot-seat-FL"));
     panel = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-SEAT-010")).toBeInTheDocument());

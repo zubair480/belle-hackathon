@@ -41,6 +41,22 @@ export function slotForEntityId(entityId: string): { slot: PartSlot; suffix: str
   return null;
 }
 
+export type ViewLayer = "outside" | "inside";
+
+const EXTERIOR_SLOTS = new Set(["charge-port-module", "charge-connector", "charge-bracket", "door-FL", "door-FR", "door-RL", "door-RR", "hood", "tailgate", "windshield", "rear-glass", "mirror-L", "mirror-R", "headlamp-L", "headlamp-R", "taillamp-L", "taillamp-R", "bumper-front", "bumper-rear", "wheel-FL", "wheel-FR", "wheel-RL", "wheel-RR"]);
+
+/** Exterior parts are visible from outside the car; everything else is an interior/underbody component. */
+export function isExteriorSlot(slot: string): boolean {
+  return EXTERIOR_SLOTS.has(slot);
+}
+export function layerForSlot(slot: string): ViewLayer {
+  return isExteriorSlot(slot) ? "outside" : "inside";
+}
+export function layerForEntityId(entityId: string): ViewLayer | null {
+  const hit = slotForEntityId(entityId);
+  return hit ? layerForSlot(hit.slot.slot) : null;
+}
+
 // ---------------------------------------------------------------------------
 // Body styles
 // ---------------------------------------------------------------------------
@@ -115,8 +131,28 @@ export function bodyLines(style: BodyStyle): Polyline3[] {
     lines.push({ points: [[p.pts[10]![0] - 20, side * (w - 120), 900], [p.pts[10]![0] - 20, side * (w - 520), 940], [p.pts[10]![0] - 140, side * (w - 520), 990], [p.pts[10]![0] - 140, side * (w - 120), 960], [p.pts[10]![0] - 20, side * (w - 120), 900]], cls: "thin" });
     lines.push({ points: [[p.pts[1]![0] + 10, side * (w - 100), 880], [p.pts[1]![0] + 10, side * (w - 480), 900], [p.pts[1]![0] + 120, side * (w - 480), 960], [p.pts[1]![0] + 120, side * (w - 100), 940], [p.pts[1]![0] + 10, side * (w - 100), 880]], cls: "thin" });
   }
-  // Floor / underbody outline (dashed) so the battery reads as under the cabin.
+  // Pillars: A (windshield base to roof front), B (between doors), C (rear deck to roof rear).
+  for (const side of [-1, 1]) {
+    const y = side * (w - 40);
+    lines.push({ points: [[ws0[0], y, ws0[1]], [ws1[0], y, ws1[1]]], cls: "thin" });
+    lines.push({ points: [[0, side * (w + 4), 430], [0, side * (w - 60), doorTop]], cls: "thin" });
+    lines.push({ points: [[rg0[0], y, rg0[1]], [rg1[0], y, rg1[1]]], cls: "thin" });
+  }
+  // Bumper skirts and wheel spokes.
+  for (const [x, dir] of [[p.pts[11]![0], 1], [p.pts[0]![0], -1]] as Array<[number, number]>) {
+    lines.push({ points: [[x - dir * 30, -w + 60, 380], [x - dir * 30, w - 60, 380], [x - dir * 30, w - 60, 620], [x - dir * 30, -w + 60, 620], [x - dir * 30, -w + 60, 380]], cls: "thin" });
+  }
+  for (const wx of p.wheelX) {
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2;
+        lines.push({ points: [[wx, side * (w - 110), 400], [wx + Math.cos(a) * p.wheelR * 0.55, side * (w - 110), 400 + Math.sin(a) * p.wheelR * 0.55]], cls: "thin" });
+      }
+    }
+  }
+  // Floor / underbody outline (dashed) so the battery reads as under the cabin, and a ground shadow.
   lines.push({ points: [[-1900, -w + 80, 340], [1900, -w + 80, 340], [1900, w - 80, 340], [-1900, w - 80, 340], [-1900, -w + 80, 340]], cls: "dashed" });
+  lines.push({ points: circle3([0, 0, 20], 1, "xy", 40).map(([cx, cy, cz]) => [cx * (p.pts[11]![0] + 250), cy * (w + 250), cz] as Vec3), cls: "dashed" });
   return lines;
 }
 
@@ -213,18 +249,58 @@ export function boxEdges(b: Box3): Polyline3[] {
   ];
 }
 
-/** Wire path through the harness position when the wire has one. */
+/** Lane index of a wire among wires sharing the same harness (or the same end points), for fan-out. */
+export function wireLane(w: WireDef): { index: number; count: number } {
+  const key = w.harness ?? `${w.from}>${w.to}`;
+  const group = WIRES.filter((x) => (x.harness ?? `${x.from}>${x.to}`) === key);
+  return { index: group.findIndex((x) => x.id === w.id), count: group.length };
+}
+
+/**
+ * Wire route: leaves the source part from its side face, runs along the harness spine in its own
+ * lane, and enters the destination part. Returned as 3D waypoints; the renderer smooths them.
+ */
 export function wirePath(w: WireDef, style: BodyStyle): Vec3[] {
   const a = partBox(w.from, style);
   const b = partBox(w.to, style);
   if (!a || !b) return [];
-  const pts: Vec3[] = [a.center];
+  const { index, count } = wireLane(w);
+  const lane = (index - (count - 1) / 2) * 36; // mm offset between parallel wires
+  const dirY = Math.sign(b.center[1] - a.center[1]) || 1;
+  const exitA: Vec3 = [a.center[0], a.center[1] + (dirY * a.size[1]) / 2, a.center[2]];
+  const entryB: Vec3 = [b.center[0], b.center[1] - (dirY * b.size[1]) / 2, b.center[2]];
+  const pts: Vec3[] = [a.center, exitA];
   if (w.harness && w.harness !== w.from && w.harness !== w.to) {
     const h = partBox(w.harness, style);
-    if (h) pts.push([h.center[0], h.center[1], h.center[2]]);
+    if (h) {
+      // Two points along the harness spine so the wire visibly runs inside the harness.
+      const spineDir = h.size[0] >= h.size[1] ? 0 : 1;
+      const p1: Vec3 = [h.center[0], h.center[1], h.center[2] + lane * 0.4];
+      const p2: Vec3 = [...p1] as Vec3;
+      const towardA = Math.sign(a.center[spineDir] - h.center[spineDir]) || 1;
+      const towardB = Math.sign(b.center[spineDir] - h.center[spineDir]) || -1;
+      const half = h.size[spineDir] * 0.35;
+      p1[spineDir] = h.center[spineDir] + towardA * half;
+      p2[spineDir] = h.center[spineDir] + towardB * half;
+      const other = spineDir === 0 ? 1 : 0;
+      p1[other] += lane;
+      p2[other] += lane;
+      pts.push(p1, p2);
+    }
+  } else {
+    // Direct connection: bow the midpoint by the lane offset so parallel wires do not overlap.
+    const mid: Vec3 = [(exitA[0] + entryB[0]) / 2, (exitA[1] + entryB[1]) / 2 + lane, (exitA[2] + entryB[2]) / 2 + 60 + Math.abs(lane) * 0.5];
+    pts.push(mid);
   }
-  pts.push(b.center);
+  pts.push(entryB, b.center);
   return pts;
+}
+
+/** Stroke width from gauge text ("70 mm2" -> thick, "0.35 mm2" -> thin). */
+export function wireWidth(w: WireDef): number {
+  const m = w.gauge.match(/([\d.]+)\s*mm2/);
+  const g = m ? Number(m[1]) : 1;
+  return g >= 50 ? 3.2 : g >= 10 ? 2.4 : g >= 2 ? 1.8 : 1.3;
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +322,10 @@ export const CAMERA_PRESETS: Record<string, Pick<Camera, "yaw" | "pitch">> = {
 
 export const DEFAULT_CAMERA: Camera = { ...CAMERA_PRESETS.iso!, scale: 0.155, target: [0, 0, 700] };
 
-/** Orthographic projection: returns screen x, y (SVG units) and depth (larger = further away). */
+/** Perspective strength: distance of the eye from the target in model units (larger = flatter). */
+export const PERSPECTIVE_DISTANCE = 9000;
+
+/** Perspective projection: returns screen x, y (SVG units) and depth (larger = further away). */
 export function project(p: Vec3, cam: Camera): { x: number; y: number; depth: number } {
   const dx = p[0] - cam.target[0];
   const dy = p[1] - cam.target[1];
@@ -260,7 +339,8 @@ export function project(p: Vec3, cam: Camera): { x: number; y: number; depth: nu
   const sp = Math.sin(cam.pitch);
   const up = dz * cp + y1 * sp; // screen up
   const depth = y1 * cp - dz * sp;
-  return { x: VIEW.w / 2 + x1 * cam.scale, y: VIEW.h / 2 - up * cam.scale, depth };
+  const k = PERSPECTIVE_DISTANCE / Math.max(PERSPECTIVE_DISTANCE * 0.2, PERSPECTIVE_DISTANCE + depth);
+  return { x: VIEW.w / 2 + x1 * k * cam.scale, y: VIEW.h / 2 - up * k * cam.scale, depth };
 }
 
 /** Scale that fits a box comfortably in the stage. */

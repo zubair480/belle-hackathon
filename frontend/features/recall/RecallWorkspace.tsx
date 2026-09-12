@@ -14,12 +14,12 @@ import { IssueDetailView, type IssueDetailTab } from "../../components/recall/Is
 import { InsightsView } from "../../components/recall/InsightsView";
 import { NewIssueForm } from "../../components/recall/NewIssueForm";
 import { VehicleExplorer } from "../../components/recall/VehicleExplorer";
-import { Banner, ErrorBanner, Loading } from "../../components/recall/primitives";
+import { Banner, Dialog, ErrorBanner, Loading } from "../../components/recall/primitives";
 import type { AgentContext, UiAction } from "../../agent/types";
 import { getDefaultClient, type RecallClient } from "./api";
 import { WorkspaceContext, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
 import { makeLookup } from "./format";
-import { SKETCH_VEHICLES, slotForEntityId } from "./sketches/car3d";
+import { SKETCH_VEHICLES, layerForEntityId, slotForEntityId } from "./sketches/car3d";
 
 export type RecallWorkspaceProps = {
   /** Injected client (tests / integration). Defaults to env-selected live or mock client. */
@@ -40,7 +40,7 @@ const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "insights", label: "Team & supplier insights" },
 ];
 
-const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
+const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, layer: "outside", cameraRequest: null };
 
 export function RecallWorkspace({ client, initialView = "vehicles", instantZoom = false, chatOpen: chatOpenInitial = false }: RecallWorkspaceProps) {
   const c = useMemo(() => client ?? getDefaultClient(), [client]);
@@ -76,7 +76,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
       const hit = slotForEntityId(entityId);
       const vehicle = SKETCH_VEHICLES.find((v) => v.entityId === entityId || (hit && v.suffix === hit.suffix));
       setRoute({ view: "vehicles", issueId: null, issueTab: "overview" });
-      setExplorer((s) => ({ vehicleBuildId: vehicle?.buildId ?? s.vehicleBuildId, selectedEntityId: vehicle && vehicle.entityId === entityId ? null : entityId }));
+      setExplorer((s) => ({ vehicleBuildId: vehicle?.buildId ?? s.vehicleBuildId, selectedEntityId: vehicle && vehicle.entityId === entityId ? null : entityId, layer: layerForEntityId(entityId) ?? s.layer }));
     },
     [setExplorer],
   );
@@ -94,7 +94,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             setExplorer((s) => {
               const hit = slotForEntityId(a.entityId);
               const v = hit ? SKETCH_VEHICLES.find((x) => x.suffix === hit.suffix) : null;
-              return { vehicleBuildId: v?.buildId ?? s.vehicleBuildId, selectedEntityId: a.entityId };
+              return { vehicleBuildId: v?.buildId ?? s.vehicleBuildId, selectedEntityId: a.entityId, layer: layerForEntityId(a.entityId) ?? s.layer };
             });
             break;
           case "mark":
@@ -191,8 +191,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
         {chatOpen ? <AgentChat /> : null}
 
         {newIssue.open ? (
-          <div className="rrx-overlay" role="presentation">
-            <div className="rrx-dialog" role="dialog" aria-modal="true" aria-label="New issue">
+          <Dialog label="New issue" onClose={() => setNewIssue({ open: false })} wide>
               {catalog ? (
                 <NewIssueForm
                   prefill={newIssue.prefill}
@@ -210,8 +209,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
                   </button>
                 </div>
               )}
-            </div>
-          </div>
+          </Dialog>
         ) : null}
       </div>
     </WorkspaceContext.Provider>

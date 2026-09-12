@@ -26,5 +26,10 @@
 | `18-3d-suv.png` | SUV body style (DEMO-EV-006) with its open issues on the sketch |
 | `19-3d-sports.png` | Sports car body style (DEMO-EV-007) |
 | `20-zoom-wire-hover.png` | Zoomed onto the start switch: attached wires revealed, hover tooltip on W-011 showing from/to, connectors, harness and circuit |
+| `21-3d-outside.png` | Outside layer: perspective body shell with exterior parts only |
+| `22-3d-inside.png` | Inside layer: ghosted body, cabin / electrical / powertrain parts |
+| `23-3d-inside-zoom-wires.png` | Zoomed onto the fuse box inside: attached wires routed in lanes with connector dots |
+| `24-3d-wiring-all-top.png` | All wiring from the top, inside layer |
+| `25-new-issue-dialog.png` | Rebuilt New Issue dialog: sections, severity buttons, marked items, sticky footer summary |
 
 Do not add customers, savings or accuracy claims. The judge kit in `docs/JUDGE_SUBMISSION_KIT.md` holds the 200-word description draft; Zubair submits.

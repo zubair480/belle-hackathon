@@ -1,16 +1,16 @@
 "use client";
 /**
  * 3D wireframe EV sketch rendered in SVG from frontend/features/recall/sketches/car3d.ts.
- * White lines on black; drag to rotate, wheel to zoom, tap a part to zoom onto it. Far-side
- * geometry is dimmed so left and right parts read correctly. Zooming onto a part reveals its
- * child components and the wires attached to it; hovering a part or wire shows a detail tooltip
- * (what it is for, where the wire goes). Also shows circuit highlights and markers placed by the
- * user or the agent. No rendering dependency.
+ * Mild perspective, white lines on black; drag to rotate, wheel to zoom, tap a part to zoom onto
+ * it. Two layers: "outside" (body shell + exterior parts) and "inside" (ghosted body + cabin,
+ * electrical, powertrain). Only the active layer's parts are rendered and interactive. Zooming
+ * onto a part reveals its children and attached wires; wires are smoothed routes with lane
+ * offsets, connector dots and gauge-based thickness. Hovering shows a detail tooltip.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { CameraPreset, SketchMarker } from "../../features/recall/context";
-import { CAMERA_PRESETS, DEFAULT_CAMERA, PARTS, VIEW, WIRES, bodyLines, boxEdges, cameraForPart, entityIdFor, lerpCamera, partBox, project, slotForEntityId, wirePath, wiresNear, type BodyStyle, type Camera, type PartSlot, type Vec3 } from "../../features/recall/sketches/car3d";
+import { CAMERA_PRESETS, DEFAULT_CAMERA, PARTS, VIEW, WIRES, bodyLines, boxEdges, cameraForPart, entityIdFor, isExteriorSlot, lerpCamera, partBox, project, slotForEntityId, wirePath, wireWidth, wiresNear, type BodyStyle, type Camera, type PartSlot, type Vec3, type ViewLayer } from "../../features/recall/sketches/car3d";
 
 export type HotspotInfo = { sourcing: SourcingType | null; openIssueCount: number; recorded: boolean };
 export type HoverTarget = { entityId?: string; wireId?: string };
@@ -27,6 +27,7 @@ export type VehicleSketch3DProps = {
   circuitId: string | null;
   wiring: boolean;
   markMode: boolean;
+  layer: ViewLayer;
   onMark: (target: { entityId: string | null; slot: string | null; wireId: string | null }) => void;
   onWireSelect?: (wireId: string) => void;
   hoverDetails?: (target: HoverTarget) => HoverDetail;
@@ -36,22 +37,29 @@ export type VehicleSketch3DProps = {
 
 const DUR = 650;
 
-function pathD(points: Vec3[], cam: Camera): { d: string; depth: number } {
-  let depth = 0;
-  const d = points
-    .map((p, i) => {
-      const s = project(p, cam);
-      depth += s.depth;
-      return `${i === 0 ? "M" : "L"} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
-    })
-    .join(" ");
-  return { d, depth: depth / Math.max(1, points.length) };
-}
-
+type P2 = { x: number; y: number; depth: number };
+const proj = (pts: Vec3[], cam: Camera): P2[] => pts.map((p) => project(p, cam));
+const avgDepth = (pts: P2[]) => pts.reduce((a, p) => a + p.depth, 0) / Math.max(1, pts.length);
+const polyD = (pts: P2[]) => pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+/** Smooth polyline through waypoints with quadratic curves (midpoint scheme). */
+const smoothD = (pts: P2[]) => {
+  if (pts.length < 3) return polyD(pts);
+  let d = `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const c = pts[i]!;
+    const n = pts[i + 1]!;
+    const mx = (c.x + n.x) / 2;
+    const my = (c.y + n.y) / 2;
+    d += ` Q ${c.x.toFixed(1)} ${c.y.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+  }
+  const last = pts[pts.length - 1]!;
+  d += ` L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
+  return d;
+};
 const depthOpacity = (depth: number) => 0.4 + 0.6 * (1 - Math.min(1, Math.max(0, (depth + 1400) / 2800)));
 
 export function VehicleSketch3D(props: VehicleSketch3DProps) {
-  const { style, suffix, info, selectedEntityId, onSelect, sourcingFilter, markers, circuitId, wiring, markMode, onMark, onWireSelect, hoverDetails, cameraRequest, instant = false } = props;
+  const { style, suffix, info, selectedEntityId, onSelect, sourcingFilter, markers, circuitId, wiring, markMode, layer, onMark, onWireSelect, hoverDetails, cameraRequest, instant = false } = props;
   const [cam, setCam] = useState<Camera>(DEFAULT_CAMERA);
   const camRef = useRef<Camera>(DEFAULT_CAMERA);
   camRef.current = cam;
@@ -147,7 +155,6 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
     }
     if (e.key === "Escape") onSelect(null);
   };
-
   const showTip = (kind: "part" | "wire", id: string, target: HoverTarget, e: { clientX: number; clientY: number }) => {
     const detail = hoverDetails?.(target) ?? null;
     if (!detail) return;
@@ -170,27 +177,32 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
     return [top, ...PARTS.filter((p) => p.parent === top).map((p) => p.slot)];
   }, [selected]);
 
+  const inLayer = (p: PartSlot) => (layer === "outside" ? isExteriorSlot(p.slot) : !isExteriorSlot(p.slot));
   const visibleParts = PARTS.filter((p) => {
     if (!partBox(p.slot, style)) return false;
+    if (!inLayer(p) && !(selectedTop && (p.slot === selectedTop || p.parent === selectedTop))) return false;
     if (!p.parent) return true;
     return selectedTop === p.parent || cam.scale > 0.45;
   });
+  const visibleSlots = new Set(visibleParts.map((p) => p.slot));
 
   /** Global wiring shows everything; zooming onto a part reveals the wires attached to it and its children. */
   const wiresToShow = wiring ? WIRES : selected && zoomed ? wiresNear(neighbourhood) : [];
   const labelFor = (p: PartSlot, entityId: string, isSel: boolean, meta: HotspotInfo | undefined) =>
     isSel || hover === entityId || (meta?.openIssueCount ?? 0) > 0 || markers.some((m) => m.entityId === entityId) || cam.scale > 0.3 || (Boolean(selectedTop) && p.parent === selectedTop);
   const highlightedWireIds = new Set(markers.filter((m) => m.wireId).map((m) => m.wireId!));
+  const bodyOpacityScale = layer === "inside" ? 0.22 : 1;
 
   return (
     <div className="rrx-sketch-wrap" ref={wrap}>
       <svg
         viewBox={`0 0 ${VIEW.w} ${VIEW.h}`}
         role="img"
-        aria-label={`${style} 3D sketch`}
+        aria-label={`${style} 3D sketch, ${layer} view`}
         data-testid="vehicle-sketch"
         data-zoomed={zoomed}
         data-mark-mode={markMode}
+        data-layer={layer}
         data-wires-visible={wiresToShow.length}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -204,20 +216,24 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
         onDoubleClick={() => animateTo({ ...DEFAULT_CAMERA })}
         style={{ cursor: markMode ? "crosshair" : drag.current ? "grabbing" : "grab" }}
       >
-        <g key={`${style}-${suffix}`}>
+        <g key={`${style}-${suffix}-${layer}`} className={`rrx-layer rrx-layer--${layer}`}>
           {body.map((l, i) => {
-            const { d, depth } = pathD(l.points, cam);
-            return <path key={i} d={d} className={`rrx-sketch-line${l.cls ? ` rrx-sketch-line--${l.cls}` : ""}`} style={{ opacity: l.cls === "dashed" ? 0.5 : depthOpacity(depth) }} vectorEffect="non-scaling-stroke" />;
+            const pts = proj(l.points, cam);
+            return <path key={i} d={polyD(pts)} className={`rrx-sketch-line${l.cls ? ` rrx-sketch-line--${l.cls}` : ""}`} style={{ opacity: (l.cls === "dashed" ? 0.5 : depthOpacity(avgDepth(pts))) * bodyOpacityScale }} vectorEffect="non-scaling-stroke" />;
           })}
 
           {wiresToShow.map((w) => {
-            const pts = wirePath(w, style);
-            if (pts.length < 2) return null;
-            const { d, depth } = pathD(pts, cam);
+            const pts3 = wirePath(w, style);
+            if (pts3.length < 2) return null;
+            const pts = proj(pts3, cam);
+            const d = smoothD(pts);
             const inCircuit = circuitId ? w.circuitId === circuitId : true;
             const marked = highlightedWireIds.has(w.id);
             const hovered = tip?.kind === "wire" && tip.id === w.id;
             const cls = `rrx-wire rrx-wire--${w.voltageClass.toLowerCase()}${inCircuit ? " rrx-wire--active" : " rrx-wire--dim"}${marked ? " rrx-wire--marked" : ""}${hovered ? " rrx-wire--hover" : ""}`;
+            const a = pts[1] ?? pts[0]!;
+            const b = pts[pts.length - 2] ?? pts[pts.length - 1]!;
+            const width = wireWidth(w);
             return (
               <g
                 key={w.id}
@@ -235,7 +251,13 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
                 onPointerLeave={() => setTip((t) => (t?.id === w.id ? null : t))}
               >
                 <path d={d} className="rrx-wire-hit" vectorEffect="non-scaling-stroke" />
-                <path d={d} className={cls} style={{ opacity: inCircuit ? Math.max(0.55, depthOpacity(depth)) : 0.12 }} vectorEffect="non-scaling-stroke" />
+                <path d={d} className={cls} style={{ opacity: inCircuit ? Math.max(0.55, depthOpacity(avgDepth(pts))) : 0.12, strokeWidth: hovered || marked ? width + 1.6 : width }} vectorEffect="non-scaling-stroke" />
+                {inCircuit ? (
+                  <>
+                    <circle className="rrx-wire-end" cx={a.x} cy={a.y} r={2.6} />
+                    <circle className="rrx-wire-end" cx={b.x} cy={b.y} r={2.6} />
+                  </>
+                ) : null}
               </g>
             );
           })}
@@ -248,10 +270,12 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
             const dimmed = sourcingFilter !== "all" && (sourcing ?? "unknown") !== sourcingFilter;
             const isSel = selectedEntityId === entityId;
             const inNeighbourhood = neighbourhood.includes(p.slot);
+            const featured = isSel || hover === entityId || (meta?.openIssueCount ?? 0) > 0 || markers.some((m) => m.entityId === entityId) || inNeighbourhood;
             const c = project(box.center, cam);
             const r = Math.max(9, Math.min(110, Math.max(box.size[0], box.size[1], box.size[2]) * cam.scale * 0.5));
-            const edges = boxEdges(box).map((e) => pathD(e.points, cam));
+            const edges = boxEdges(box).map((e) => proj(e.points, cam));
             const depthOp = depthOpacity(c.depth);
+            const baseOp = featured || zoomed ? depthOp : layer === "inside" ? depthOp * 0.7 : depthOp * 0.5;
             const showLabel = labelFor(p, entityId, isSel, meta);
             return (
               <g
@@ -266,7 +290,7 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
                 tabIndex={0}
                 aria-label={`${p.label} (${entityId})`}
                 aria-pressed={isSel}
-                opacity={dimmed ? 0.18 : selected && !inNeighbourhood && zoomed ? Math.min(depthOp, 0.55) : depthOp}
+                opacity={dimmed ? 0.18 : selected && !inNeighbourhood && zoomed ? Math.min(baseOp, 0.5) : baseOp}
                 onClick={(e) => {
                   e.stopPropagation();
                   tapPart(p, entityId);
@@ -283,7 +307,7 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
                 }}
               >
                 {edges.map((e, i) => (
-                  <path key={i} d={e.d} className={`rrx-part-edge${isSel ? " rrx-part-edge--selected" : ""}${p.parent ? " rrx-part-edge--child" : ""}${inNeighbourhood && !isSel ? " rrx-part-edge--near" : ""}`} vectorEffect="non-scaling-stroke" />
+                  <path key={i} d={polyD(e)} className={`rrx-part-edge${isSel ? " rrx-part-edge--selected" : ""}${p.parent ? " rrx-part-edge--child" : ""}${inNeighbourhood && !isSel ? " rrx-part-edge--near" : ""}${featured ? " rrx-part-edge--featured" : ""}`} vectorEffect="non-scaling-stroke" />
                 ))}
                 <circle className="rrx-hot-hit" cx={c.x} cy={c.y} r={r} />
                 {!isSel && (meta?.openIssueCount ?? 0) > 0 ? <circle className="rrx-hot-pulse" cx={c.x} cy={c.y} r={10} vectorEffect="non-scaling-stroke" /> : null}
@@ -302,15 +326,12 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
             let center: Vec3 | null = null;
             if (m.entityId) {
               const hit = slotForEntityId(m.entityId);
+              if (hit && !visibleSlots.has(hit.slot.slot) && !wiring) return null;
               center = hit ? (partBox(hit.slot.slot, style)?.center ?? null) : null;
             } else if (m.wireId) {
               const w = WIRES.find((x) => x.id === m.wireId);
               const pts = w ? wirePath(w, style) : [];
-              if (pts.length >= 2) {
-                const a = pts[Math.floor((pts.length - 1) / 2)]!;
-                const b = pts[Math.ceil((pts.length - 1) / 2)]!;
-                center = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
-              }
+              if (pts.length >= 2) center = pts[Math.floor(pts.length / 2)]!;
             }
             if (!center) return null;
             const c = project(center, cam);

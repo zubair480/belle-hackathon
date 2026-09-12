@@ -4,7 +4,7 @@ import type { IssueInput, ReferenceCatalog } from "@/contracts/issues";
 import type { AgentContext, UiAction } from "../../agent/types";
 import type { RecallClient } from "./api/types";
 import type { CatalogLookup } from "./format";
-import type { CAMERA_PRESETS } from "./sketches/car3d";
+import type { CAMERA_PRESETS, ViewLayer } from "./sketches/car3d";
 
 export type WorkspaceView = "vehicles" | "issues" | "resolutions" | "insights";
 
@@ -23,6 +23,8 @@ export type ExplorerState = {
   circuitId: string | null;
   wiring: boolean;
   markMode: boolean;
+  /** "outside": body shell and exterior parts; "inside": cabin, electrical and powertrain with a ghosted body. */
+  layer: ViewLayer;
   cameraRequest: { preset: CameraPreset; seq: number } | null;
 };
 
