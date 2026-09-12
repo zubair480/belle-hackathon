@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "RecallRadius",
   description:
-    "Recall investigation workspace for food co-packers: trace a suspect ingredient through mixing, split batches and rework to candidate holds and shipments.",
+    "Issue, investigation and reusable-resolution workspace for EV vehicle assembly: purchased and in-house parts, reviewed causes, verified fixes.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

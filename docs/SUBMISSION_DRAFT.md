@@ -29,7 +29,7 @@ The graph retrieves a compatible prior verified fix with its reasons and evidenc
 | Claim | Evidence required | Status |
 | --- | --- | --- |
 | Manual issue persists across restart | acceptance runner run twice with `--issue` after a server restart, REAL mode | unverified |
-| Both origin paths on issue detail | runner steps "connector shows supplier origin" / "bracket shows in-house origin" | verified on double only |
+| Both origin paths on issue detail | runner steps "connector shows supplier origin" / "bracket shows in-house origin"; browser detail view | verified on double only (API + integrated UI) |
 | Stale writes rejected, premature closure blocked | runner steps STALE_VERSION / VERIFICATION_REQUIRED | verified on double only |
 | Fail then pass verification, closure, reopen history | runner steps 7-8 | verified on double only |
 | Resolution retrievable from a later issue | runner step 9 | verified on double only |

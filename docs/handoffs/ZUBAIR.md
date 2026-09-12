@@ -176,3 +176,35 @@ real key); run `npm run typecheck`, `npm run build`, `npm test`, `npm run test:i
   check; it is development evidence only, not integration evidence.
 - Docker Desktop launched its processes but the engine still did not answer; no Neo4j
   credentials; real database checks remain blocked on this machine.
+
+## Integration progress with Ali's lane (2026-09-12, later)
+
+- `origin/codex/ali-ui-pitch` appeared at `fe5900a` (handoff `docs/handoffs/ALI.md`). Merged into
+  `codex/final-integration` with no conflicts. Ali's shared-config edits were taken as-is:
+  `vitest.config.mts` include for `frontend/tests/**`, `package.json` `test:ui`, the
+  `src/features/recall/index.ts` re-export shim, and the `src/app/page.tsx` mount of
+  `RecallWorkspace`. `src/app/layout.tsx` metadata was updated to the EV description.
+- Answers to Ali's API assumptions: (1) `request_verification` with `fixRevisionId` now marks the
+  fix `applied`, sets `appliedAt`, `currentFixRevisionId` and logs `fix_applied` (implemented in
+  the double; Codey must implement the same rule); recording a verification against a `proposed`
+  fix also moves it to `applied`. (2) Repeated query keys and comma lists are both accepted.
+  (3) Header and body idempotency keys are both accepted. (4) The API never returns unverified
+  suggestions from the double; if Codey returns any, use the literal `NONE` as Ali does.
+  (5) `teamRole` without `teamId` is ignored by the filter. (6/7) Sketch-only ids (BATT-0005,
+  CELL-0005, ...) return NOT_FOUND from the double; the UI shows "not in backend". (8) No shipment
+  DTO in `EntityContext` yet. (9) Drilldown fetches details per id; fine for the demo.
+- Vehicles have `origin: null` in the double and render as "Unknown origin" in Ali's affected-items
+  table. Codey may give vehicles an in-house final-assembly origin; otherwise Ali should label
+  vehicles as "assembled here" rather than unknown.
+- Merged-branch checks: `npm run typecheck` passed; `npx vitest run` 69 passed / 4 skipped
+  (contract 16, API 37, Ali UI 16; Neo4j suites skipped); HTTP acceptance runner on the
+  integrated dev server (double, mocks disabled in the UI): 22/22 (development evidence only).
+- Browser check on the integrated build with `NEXT_PUBLIC_RECALL_UI_MOCKS=false` against the real
+  routes (service double behind them): "Live API (mocks disabled)" badge, vehicles explorer,
+  issues board, prior issue detail with reporter / assigned / confirmed-cause labels and "no
+  confirmed supplier fault", and the insights view with N/A rate all rendered from the API.
+  Console shows 404s only for sketch-only entity ids. Full browser checklist
+  (`tests/integration/BROWSER_ACCEPTANCE.md`) still to be run against the real database.
+- Still missing: `codex/codey-data-graph` (no branch under any name on origin). Real Neo4j
+  remains blocked locally (no credentials; Docker Desktop engine never answered and its
+  processes exit).

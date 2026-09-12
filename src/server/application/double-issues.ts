@@ -625,6 +625,14 @@ export function createIssueDouble(options: IssueDoubleOptions = {}): IssueServic
           if (!latest || latest.outcome !== "pass") throw new DomainError("VERIFICATION_REQUIRED", "A passed verification for this fix revision is required before closure.", { fixRevisionId: fix.id, latestOutcome: latest?.outcome ?? null });
           issue.currentFixRevisionId = fix.id;
         }
+        if (command.action === "request_verification" && command.fixRevisionId) {
+          const fix = fixes.find((f) => f.id === command.fixRevisionId && f.issueId === issueId);
+          if (!fix) throw new DomainError("INVALID_REFERENCE", "fixRevisionId does not belong to this issue.");
+          if (fix.state === "proposed") fix.state = "applied";
+          fix.appliedAt ??= now();
+          issue.currentFixRevisionId = fix.id;
+          log(issueId, "fix_applied", ctx.actorId, "Fix " + fix.id + " applied", fix.id);
+        }
         const from = issue.status;
         issue.status = rule.to;
         bump(issue);
