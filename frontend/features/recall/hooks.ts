@@ -54,5 +54,6 @@ export function useMutation<A extends unknown[], T>(fn: (...args: A) => Promise<
     },
     [fn],
   );
-  return { run, pending, error, clearError: () => setError(null) };
+  const clearError = useCallback(() => setError(null), []);
+  return { run, pending, error, clearError };
 }

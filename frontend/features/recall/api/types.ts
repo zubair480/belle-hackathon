@@ -28,6 +28,7 @@ import type {
 import type { EntityContext } from "@/contracts/common";
 import type { TraceRequest, TraceResult } from "@/contracts/recall";
 import type { AgentChatRequest, AgentChatResponse } from "../../../agent/types";
+import type { BackendHealth } from "./health";
 
 /** `NETWORK` is client-side only: the request never produced a valid envelope. */
 export type ClientErrorCode = ErrorCode | "NETWORK";
@@ -40,6 +41,8 @@ export interface RecallClient {
   readonly mode: ClientMode;
   /** Human-readable label shown in the top bar (e.g. "Sample data (mock mode)"). */
   readonly modeLabel: string;
+  /** GET /api/health: which backend answers the real routes (graph vs double) and whether it is wired. */
+  getHealth(): Promise<ClientResult<BackendHealth>>;
   getCatalog(): Promise<ClientResult<ReferenceCatalog>>;
   getEntityContext(entityId: string, configurationAsOf?: string): Promise<ClientResult<EntityContext>>;
   createIssue(command: CreateIssueCommand): Promise<ClientResult<Issue>>;

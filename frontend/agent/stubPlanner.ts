@@ -3,7 +3,7 @@
  * Runs in the browser in mock mode and on the server when RECALL_AGENT_PROVIDER=stub, so the
  * harness (tools + UI actions) can be demonstrated without any credential.
  */
-import { SKETCH_VEHICLES, searchCircuits, searchParts, wiresForCircuit } from "../features/recall/sketches/car3d";
+import { SKETCH_VEHICLES, searchCircuits, searchParts, slotForEntityId, wiresForCircuit } from "../features/recall/sketches/car3d";
 import { runTool, type ToolContext } from "./tools";
 import type { AgentChatRequest, AgentChatResponse, ToolCallRecord } from "./types";
 
@@ -27,7 +27,17 @@ export async function runStubTurn(ctx: ToolContext, request: AgentChatRequest): 
     ctx.context = { ...ctx.context, vehicleBuildId: vehicleMention };
   }
   const issueMention = last.match(/ISS-[A-Z0-9-]+/i)?.[0]?.toUpperCase() ?? null;
-  const wantsImpact = /\b(suppl(y|ied|ier)|customer|business|ship|deliver|ground|fleet|dealer|recall|affected|other (cars|vehicles))\b/i.test(last);
+  // A sketch entity id named in the message (e.g. BRKT-0005, WHL-0006-FR) beats a fuzzy part search.
+  const entityMention = (last.match(/\b[A-Z]{2,5}-\d{4}(?:-[A-Z]{1,2})?\b/gi) ?? []).map((x) => x.toUpperCase()).find((id) => slotForEntityId(id)) ?? null;
+  if (entityMention && !vehicleMention) {
+    const hit = slotForEntityId(entityMention);
+    const v = hit ? SKETCH_VEHICLES.find((x) => x.suffix === hit.suffix) : null;
+    if (v && v.buildId !== ctx.context.vehicleBuildId) {
+      await call("select_vehicle", { buildId: v.buildId });
+      ctx.context = { ...ctx.context, vehicleBuildId: v.buildId };
+    }
+  }
+  const wantsImpact = /\b(suppl(y|ied|ier)|customer|business|ship|deliver|ground|fleet|dealer|recall|affected|impact|exposure|other (cars|vehicles)|(which|what|how many) (cars|vehicles|builds)|same (batch|lot)|(batch|lot) of|from (the|this|that|its) (batch|lot))\b/i.test(last);
   const wantsMark = /\b(mark|circle|flag|highlight|ring)\b/i.test(last);
   const wantsDraft = /\b(open|create|raise|report|start|new|draft)\b.*\bissue\b/i.test(last) && !/\b(list|show|what|which|any|see|find)\b.*\bissues?\b/i.test(last);
   const wantsSimilar = /\b(similar|prior|previous|fix|resolution|solved before)\b/i.test(last);
@@ -49,17 +59,21 @@ export async function runStubTurn(ctx: ToolContext, request: AgentChatRequest): 
       const c = circuits[0]!;
       for (const w of wiresForCircuit(c.id)) await call("mark", { wireId: w.id, note: `Agent: possible fault path on ${c.name}` });
     }
-  } else if (bestPart) {
-    const focus = await call("focus_part", { query: last });
-    const entityId = (focus.data as { entityId?: string } | undefined)?.entityId ?? null;
-    if (entityId) {
+  } else if (bestPart || entityMention) {
+    const focus = await call("focus_part", entityMention ? { entityId: entityMention } : { query: last });
+    const entityId = (focus.data as { entityId?: string } | undefined)?.entityId ?? entityMention;
+    // A sketch slot without a backend record can still be zoomed and marked; nothing is listed or traced for it.
+    const known = focus.ok !== false;
+    if (entityId && !known && wantsMark) await call("mark", { entityId, note: `Agent: marked from "${last.slice(0, 80)}" (no backend record)` });
+    if (entityId && known) {
       await call("list_issues_for_part", { entityId });
       if (wantsWires) await call("wires_of_part", { entityId });
       if (wantsImpact) await call("impact_of_part", { entityId });
       if (wantsMark) {
         const strong = partMatches.filter((m) => m.score >= 10);
         const targets = strong.length ? strong : partMatches.slice(0, 1);
-        for (const m of targets) await call("mark", { slot: m.slot.slot, note: `Agent: marked from "${last.slice(0, 80)}"` });
+        if (targets.length) for (const m of targets) await call("mark", { slot: m.slot.slot, note: `Agent: marked from "${last.slice(0, 80)}"` });
+        else await call("mark", { entityId, note: `Agent: marked from "${last.slice(0, 80)}"` });
       }
       if (wantsDraft) await call("draft_issue", { entityIds: [entityId], note: `Drafted from chat: ${last.slice(0, 200)}` });
     }

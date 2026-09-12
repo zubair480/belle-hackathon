@@ -11,7 +11,7 @@ import { newIdempotencyKey } from "../../features/recall/api/types";
 import { useWorkspace, type NewIssuePrefill } from "../../features/recall/context";
 import { nowLocalInput, toUtcIso } from "../../features/recall/format";
 import { useMutation } from "../../features/recall/hooks";
-import { ErrorBanner } from "./primitives";
+import { Banner, ErrorBanner } from "./primitives";
 
 export type NewIssueFormProps = { prefill?: NewIssuePrefill; onCreated: (issueId: string) => void; onCancel: () => void };
 
@@ -36,6 +36,14 @@ export function NewIssueForm({ prefill, onCreated, onCancel }: NewIssueFormProps
   const [suppliers, setSuppliers] = useState<string[]>(prefill?.linkedSupplierIds ?? []);
   const [evidence, setEvidence] = useState<EvidenceDraft[]>(prefill?.contextNote ? [{ sourceName: "Operator note", text: prefill.contextNote }] : []);
   const create = useMutation((cmd: CreateIssueCommand) => ws.client.createIssue(cmd));
+
+  /** INVALID_REFERENCE details from the server, e.g. { invalid: ["entity:BATT-0005"] } (sketch-only ids have no backend record). */
+  const invalidRefs = useMemo(() => {
+    if (create.error?.code !== "INVALID_REFERENCE") return [];
+    const d = create.error.details as { invalid?: unknown } | undefined;
+    return Array.isArray(d?.invalid) ? d.invalid.filter((x): x is string => typeof x === "string") : [];
+  }, [create.error]);
+  const invalidEntityIds = invalidRefs.filter((x) => x.startsWith("entity:")).map((x) => x.slice("entity:".length));
 
   const addEntity = () => {
     const v = entityDraft.trim();
@@ -81,6 +89,20 @@ export function NewIssueForm({ prefill, onCreated, onCancel }: NewIssueFormProps
         <span className="rrx-badge rrx-badge--muted">origin: manual</span>
       </div>
       {create.error ? <ErrorBanner error={create.error} /> : null}
+      {invalidRefs.length ? (
+        <Banner
+          kind="warning"
+          action={
+            invalidEntityIds.length ? (
+              <button type="button" className="rrx-btn rrx-btn--sm" onClick={() => setEntityIds(entityIds.filter((id) => !invalidEntityIds.includes(id)))} data-testid="remove-unknown-ids">
+                Remove unknown ids
+              </button>
+            ) : undefined
+          }
+        >
+          The server has no record for: <span className="rrx-mono">{invalidRefs.join(", ")}</span>. Sketch-only slots (for example BATT-0005) are drawn from the platform design and are not backend entities; remove them or keep the note in the description. Nothing was saved.
+        </Banner>
+      ) : null}
       <div className="rrx-form-grid">
         <div className="rrx-field rrx-field--full">
           <label htmlFor="ni-title">Title *</label>

@@ -1,6 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
-import type { SourcingType } from "@/contracts/common";
+import type { EntityKind, SourcingType } from "@/contracts/common";
 import type { CauseState, FixState, IssueStatus, Severity } from "@/contracts/issues";
 import type { ClientError } from "../../features/recall/api/types";
 import { CAUSE_STATE_LABEL, FIX_STATE_LABEL, SEVERITY_LABEL, SOURCING_LABEL, STATUS_LABEL, errorHint, severityBadgeClass, statusBadgeClass } from "../../features/recall/format";
@@ -13,7 +13,19 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
   return <span className={severityBadgeClass(severity)}>{SEVERITY_LABEL[severity]}</span>;
 }
 
-export function SourcingBadge({ sourcing, compact = false }: { sourcing: SourcingType | null | undefined; compact?: boolean }) {
+/**
+ * Origin label. Vehicles carry no origin record by design (they are assembled builds; origin is
+ * recorded per installed part), so `kind: "vehicle"` renders a neutral badge instead of the
+ * "Unknown origin" styling that would read as a supplier gap.
+ */
+export function SourcingBadge({ sourcing, compact = false, kind }: { sourcing: SourcingType | null | undefined; compact?: boolean; kind?: EntityKind | null }) {
+  if (kind === "vehicle" && !sourcing) {
+    return (
+      <span className="rrx-badge rrx-badge--muted" title="Vehicle build: no origin record applies; provenance lives on the installed parts" data-testid="vehicle-origin-badge">
+        {compact ? "Build" : "Vehicle build · no origin record"}
+      </span>
+    );
+  }
   const s: SourcingType = sourcing ?? "unknown";
   return (
     <span className={`rrx-badge rrx-badge--${s}`} title={SOURCING_LABEL[s]}>

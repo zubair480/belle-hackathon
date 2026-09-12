@@ -66,7 +66,11 @@ export function AgentChat() {
       <div className="rrx-chat-head">
         <div>
           <strong>Assistant</strong>
-          <div className="rrx-muted rrx-small">{local ? "Deterministic stub planner (no model) · tools run against the mock" : "Server agent · /api/agent/chat"}</div>
+          <div className="rrx-muted rrx-small" data-testid="chat-backend-label">
+            {local
+              ? "Deterministic stub planner (no model) · tools run against the mock"
+              : `Server agent · /api/agent/chat · tools read ${ws.backend.health ? (ws.backend.health.servicesMode === "graph" ? "Neo4j graph services" : "demo data (service double)") : "the real routes"}`}
+          </div>
         </div>
         <button type="button" className="rrx-btn rrx-btn--sm rrx-btn--ghost" onClick={() => ws.setChatOpen(false)} aria-label="Close assistant">
           ×

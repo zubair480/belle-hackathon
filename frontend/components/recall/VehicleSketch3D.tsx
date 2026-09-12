@@ -10,7 +10,8 @@ import type { SourcingType } from "@/contracts/common";
 import type { CameraPreset, SketchMarker } from "../../features/recall/context";
 import { CAMERA_PRESETS, DEFAULT_CAMERA, PARTS, VIEW, WIRES, bodyLines, boxEdges, cameraForPart, entityIdFor, lerpCamera, partBox, project, slotForEntityId, wirePath, type BodyStyle, type Camera, type PartSlot, type Vec3 } from "../../features/recall/sketches/car3d";
 
-export type HotspotInfo = { sourcing: SourcingType | null; openIssueCount: number; recorded: boolean };
+/** `recorded`: true = backend record (or still loading), false = backend answered NOT_FOUND, null = request failed. */
+export type HotspotInfo = { sourcing: SourcingType | null; openIssueCount: number; recorded: boolean | null };
 
 export type VehicleSketch3DProps = {
   style: BodyStyle;
@@ -207,7 +208,9 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
           const entityId = entityIdFor(p, suffix);
           const meta = info[entityId];
           const sourcing = meta?.sourcing ?? null;
-          const dimmed = sourcingFilter !== "all" && (sourcing ?? "unknown") !== sourcingFilter;
+          const record = meta?.recorded === false ? "absent" : meta?.recorded === null ? "error" : sourcing ? "recorded" : "pending";
+          // Only a recorded origin can match a sourcing filter; unrecorded slots are never shown as "unknown origin".
+          const dimmed = sourcingFilter !== "all" && sourcing !== sourcingFilter;
           const isSel = selectedEntityId === entityId;
           const c = project(box.center, cam);
           const r = Math.max(9, Math.min(110, Math.max(box.size[0], box.size[1], box.size[2]) * cam.scale * 0.5));
@@ -219,13 +222,14 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
               key={p.slot}
               className="rrx-hotspot"
               data-selected={isSel}
-              data-sourcing={sourcing ?? "unknown"}
+              data-sourcing={sourcing ?? "none"}
+              data-record={record}
               data-has-issue={(meta?.openIssueCount ?? 0) > 0}
               data-entity-id={entityId}
               data-testid={`hotspot-${p.slot}`}
               role="button"
               tabIndex={0}
-              aria-label={`${p.label} (${entityId})`}
+              aria-label={`${p.label} (${entityId})${record === "absent" ? ", no backend record" : ""}`}
               aria-pressed={isSel}
               opacity={dimmed ? 0.18 : depthOp}
               onClick={(e) => {
@@ -243,9 +247,10 @@ export function VehicleSketch3D(props: VehicleSketch3DProps) {
               {!isSel && (meta?.openIssueCount ?? 0) > 0 ? <circle className="rrx-hot-pulse" cx={c.x} cy={c.y} r={10} vectorEffect="non-scaling-stroke" /> : null}
               {isSel ? <circle className="rrx-hot-ring" cx={c.x} cy={c.y} r={r + 6} vectorEffect="non-scaling-stroke" /> : null}
               {showLabel ? (
-                <text className="rrx-hot-label" x={c.x + r * 0.7 + 4} y={c.y - 4} fontSize={12}>
+                <text className={`rrx-hot-label${record === "absent" ? " rrx-hot-label--muted" : ""}`} x={c.x + r * 0.7 + 4} y={c.y - 4} fontSize={12}>
                   {p.label}
                   {(meta?.openIssueCount ?? 0) > 0 ? <tspan fill="#ff6b7a"> · {meta!.openIssueCount} open</tspan> : null}
+                  {record === "absent" ? <tspan className="rrx-hot-label--muted"> · no record</tspan> : null}
                 </text>
               ) : null}
             </g>

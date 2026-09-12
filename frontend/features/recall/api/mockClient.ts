@@ -42,6 +42,7 @@ export function createMockClient(options: MockClientOptions = {}): { client: Rec
   const client: RecallClient = {
     mode: "mock",
     modeLabel: "Sample data (mock mode)",
+    getHealth: async () => clientFail("BACKEND_UNAVAILABLE", "Mock mode has no backend: there is no health report to show."),
     getCatalog: () => run("getCatalog", () => server.getCatalog()),
     getEntityContext: (id, asOf) => run("getEntityContext", () => server.getEntityContext(id, asOf ?? null)),
     createIssue: (cmd) => run("createIssue", () => server.createIssue(cmd).issue),

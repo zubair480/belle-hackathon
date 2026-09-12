@@ -198,7 +198,13 @@ export const impactOfPart = def({
     const shipped = current.filter((row) => row.locationState === "shipped");
     const byCustomer = new Map<string, string[]>();
     for (const row of shipped) byCustomer.set(custName(row.customerId), [...(byCustomer.get(custName(row.customerId)) ?? []), row.buildId ?? row.entityId]);
-    const rootLabel = root.kind === "supplier_batch" ? `supplier batch ${root.id} (${supplierName(ctx, o?.supplierId)})` : root.kind === "manufacturing_lot" ? `in-house lot ${root.id}` : `serial ${root.id}`;
+    // The trace root is the canonical production lot id; the operator-facing label also names the batch/lot code as written on the record.
+    const rootLabel =
+      root.kind === "supplier_batch"
+        ? `supplier batch ${o?.supplierBatchCode ?? root.id}${o?.supplierBatchCode && o.supplierBatchCode !== root.id ? ` [lot id ${root.id}]` : ""} (${supplierName(ctx, o?.supplierId)})`
+        : root.kind === "manufacturing_lot"
+          ? `in-house lot ${o?.manufacturingLotCode ?? root.id}${o?.manufacturingLotCode && o.manufacturingLotCode !== root.id ? ` [lot id ${root.id}]` : ""}`
+          : `serial ${root.id}`;
     const lines = [
       `Root: ${rootLabel}.`,
       `Vehicles currently containing parts from it: ${current.length} (${t.counts.currentOnsiteVehicleCount} on site, ${t.counts.currentShippedVehicleCount} shipped). Historical-only: ${t.counts.historicalOnlyVehicleCount}. Quarantined components: ${t.counts.quarantinedComponentCount}. Unresolved origin: ${t.counts.unresolvedOnlyVehicleCount}.`,
