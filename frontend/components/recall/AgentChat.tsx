@@ -68,7 +68,11 @@ export function AgentChat() {
       <div className="rrx-chat-head">
         <div>
           <strong>Assistant</strong>
-          <div className="rrx-muted rrx-small">{local ? "Built-in assistant" : "Server agent"}</div>
+          <div className="rrx-muted rrx-small" data-testid="chat-backend-label">
+            {local
+              ? "Built-in assistant · sample data"
+              : `Server agent · reads ${ws.backend.health ? (ws.backend.health.servicesMode === "graph" ? "Neo4j graph services" : "demo data (service double)") : "the real routes"}`}
+          </div>
         </div>
         <button type="button" className="rrx-btn rrx-btn--sm rrx-btn--ghost" onClick={() => ws.setChatOpen(false)} aria-label="Close assistant">
           ×

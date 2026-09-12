@@ -3,6 +3,9 @@
  * Right rail of the vehicle explorer: vehicle identity and shipment, markers, the selected
  * part's provenance, wiring connections, and every issue on it (tap one to open), then every
  * recorded part grouped by "Bought from supplier" / "Made in-house" / "Unknown origin".
+ * Sketch slots the backend does not know (NOT_FOUND) are listed as "no backend record" and
+ * never get invented provenance. Vehicles carry no origin record by design and are labelled
+ * neutrally (build id, VIN not assigned), not as a supplier gap.
  */
 import type { EntityContext, SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
@@ -10,9 +13,10 @@ import type { ClientError } from "../../features/recall/api/types";
 import { useWorkspace } from "../../features/recall/context";
 import { ATTRIBUTION, SOURCING_LABEL, fmtDate } from "../../features/recall/format";
 import { CIRCUITS, PARTS, SYSTEMS, ZONES, entityIdFor, isExteriorSlot, slotById, slotForEntityId, wiresForSlot, type PartSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
-import { Empty, ErrorBanner, KV, Loading, SeverityBadge, SourcingBadge, StatusBadge } from "./primitives";
+import { Banner, Empty, ErrorBanner, KV, Loading, SeverityBadge, SourcingBadge, StatusBadge } from "./primitives";
 
-export type PartLoad = { status: "loading" | "ready" | "error"; data: EntityContext | null; error: ClientError | null };
+/** queued/loading: not answered yet · ready: record · absent: backend answered NOT_FOUND · error: any other failure. */
+export type PartLoad = { status: "queued" | "loading" | "ready" | "absent" | "error"; data: EntityContext | null; error: ClientError | null };
 
 export type PartPanelProps = {
   vehicle: SketchVehicle;
@@ -30,19 +34,22 @@ const GROUPS: Array<{ key: SourcingType; label: string }> = [
 
 const SIDE_LABEL: Record<string, string> = { L: "left", R: "right", C: "centre", FL: "front left", FR: "front right", RL: "rear left", RR: "rear right" };
 
+type Bucket = SourcingType | "pending" | "absent" | "error";
+
 export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter }: PartPanelProps) {
   const ws = useWorkspace();
   const ex = ws.explorer;
   const parts = PARTS.filter((slot) => isExteriorSlot(slot.slot)).map((slot) => ({ slot, id: entityIdFor(slot, vehicle.suffix) }));
   const vehicleLoad = contexts[vehicle.entityId];
-  const sourcingOf = (id: string): SourcingType | "unrecorded" => {
+  const bucketOf = (id: string): Bucket => {
     const c = contexts[id];
-    if (!c || c.status === "loading") return "unknown";
-    if (c.status === "error" || !c.data) return "unrecorded";
+    if (!c || c.status === "queued" || c.status === "loading") return "pending";
+    if (c.status === "absent") return "absent";
+    if (c.status === "error" || !c.data) return "error";
     return c.data.entity.origin?.sourcingType ?? "unknown";
   };
-  const counts = { supplier: 0, in_house: 0, unknown: 0, unrecorded: 0 };
-  for (const p of parts) counts[sourcingOf(p.id)] += 1;
+  const counts: Record<Bucket, number> = { supplier: 0, in_house: 0, unknown: 0, pending: 0, absent: 0, error: 0 };
+  for (const p of parts) counts[bucketOf(p.id)] += 1;
   const recordedTotal = counts.supplier + counts.in_house + counts.unknown;
   const issuesFor = (id: string) => issues.filter((i) => i.entityIds.includes(id));
   const openIssues = issues.filter((i) => i.status !== "closed");
@@ -55,39 +62,56 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
   const select = (id: string | null) => ws.setExplorer({ selectedEntityId: id });
   const markerEntityIds = ex.markers.map((m) => m.entityId).filter((x): x is string => Boolean(x));
   const markerWireIds = ex.markers.map((m) => m.wireId).filter((x): x is string => Boolean(x));
+  /** Only ids the backend knows can be marked on an issue (unknown ids are INVALID_REFERENCE). */
+  const recordedOnly = (ids: string[]) => ids.filter((id) => contexts[id]?.status !== "absent");
 
   const reportFromMarkers = () => {
-    const ids = [...new Set([...markerEntityIds, vehicle.entityId])];
+    const ids = [...new Set([...recordedOnly(markerEntityIds), vehicle.entityId])];
+    const dropped = markerEntityIds.filter((id) => !ids.includes(id));
     const zones = ex.markers.filter((m) => m.zoneLabel).map((m) => `${m.zoneLabel} (${m.entityId})`);
-    ws.openNewIssue({ entityIds: ids, contextNote: `Marked on the sketch of ${vehicle.buildId}: ${ex.markers.map((m) => m.entityId ?? m.wireId).join(", ")}${zones.length ? `. Suspected locations: ${zones.join("; ")}` : ""}${markerWireIds.length ? `. Wires under suspicion: ${markerWireIds.join(", ")}` : ""}` });
+    ws.openNewIssue({ entityIds: ids, contextNote: `Marked on the sketch of ${vehicle.buildId}: ${ex.markers.map((m) => m.entityId ?? m.wireId).join(", ")}${zones.length ? `. Suspected locations: ${zones.join("; ")}` : ""}${markerWireIds.length ? `. Wires under suspicion: ${markerWireIds.join(", ")}` : ""}${dropped.length ? `. Sketch slots without a backend record (not marked as entities): ${dropped.join(", ")}` : ""}` });
   };
+
+  const vehicleRecord = vehicleLoad?.status === "ready" ? vehicleLoad.data : null;
 
   return (
     <aside className="rrx-panel" aria-label="Vehicle parts and provenance">
-      <section className="rrx-card rrx-panel-section">
+      <section className="rrx-card rrx-panel-section" data-testid="vehicle-card">
         <div className="rrx-card-head">
           <div>
             <h2 style={{ marginBottom: 2 }}>{vehicle.buildId}</h2>
             <div className="rrx-muted rrx-small">
-              {vehicle.modelName} · {vehicle.platform} · {vehicle.style}
+              {vehicle.modelName} · {vehicle.platform} · {vehicle.style} · sketch model
             </div>
           </div>
+          {vehicleRecord ? (
+            <span className="rrx-badge rrx-badge--ok" title="The backend has an entity record for this build">Backend record</span>
+          ) : vehicleLoad?.status === "absent" ? (
+            <span className="rrx-badge rrx-badge--warning">No backend record</span>
+          ) : vehicleLoad?.status === "error" ? (
+            <span className="rrx-badge rrx-badge--blocking">Record unavailable</span>
+          ) : (
+            <span className="rrx-badge rrx-badge--muted">Loading record</span>
+          )}
         </div>
-        {vehicleLoad?.status === "loading" ? <Loading label="Loading vehicle record" /> : null}
+        {!vehicleLoad || vehicleLoad.status === "queued" || vehicleLoad.status === "loading" ? <Loading label="Loading vehicle record" /> : null}
         {vehicleLoad?.status === "error" && vehicleLoad.error ? <ErrorBanner error={vehicleLoad.error} /> : null}
-        {vehicleLoad?.status === "ready" && vehicleLoad.data ? (
+        {vehicleLoad?.status === "absent" ? <Banner kind="warning">The backend has no entity record for build {vehicle.buildId}. The sketch is design geometry only; no identity, location or parts are shown for it.</Banner> : null}
+        {vehicleRecord ? (
           <KV
             rows={[
-              ["Build ID", <span className="rrx-mono" key="b">{vehicleLoad.data.entity.vehicle?.buildId ?? vehicle.buildId}</span>],
-              ["VIN", vehicleLoad.data.entity.vehicle?.vin ? <span className="rrx-mono">{vehicleLoad.data.entity.vehicle.vin}</span> : <span className="rrx-muted">Not assigned yet (build ID is the working identifier)</span>],
-              ["Location state", vehicleLoad.data.entity.locationState],
-              ["Shipment", vehicleLoad.data.limitations.find((l) => l.startsWith("Shipped")) ?? <span className="rrx-muted">not shipped</span>],
+              ["Build ID", <span className="rrx-mono" key="b">{vehicleRecord.entity.vehicle?.buildId ?? vehicle.buildId}</span>],
+              ["VIN", vehicleRecord.entity.vehicle?.vin ? <span className="rrx-mono">{vehicleRecord.entity.vehicle.vin}</span> : <span className="rrx-muted">VIN not assigned (build ID is the working identifier)</span>],
+              ["Origin record", <span className="rrx-muted" title="Vehicle builds are assembled here; supplier/lot origin is recorded per installed part, not per vehicle.">none for a vehicle build (provenance lives on its parts)</span>],
+              ["Location state", vehicleRecord.entity.locationState],
+              ["Shipment", vehicleRecord.limitations.find((l) => l.startsWith("Shipped")) ?? <span className="rrx-muted">not shipped</span>],
+              ["Recorded parts", vehicleRecord.currentChildren.length ? vehicleRecord.currentChildren.map((c) => <button key={c.id} type="button" className="rrx-count-btn rrx-mono" onClick={() => select(c.id)}>{c.id}</button>) : <span className="rrx-muted">no installation recorded</span>],
               ["Open issues", openIssues.length ? <button type="button" className="rrx-count-btn" onClick={() => ws.navigate("issues")}>{openIssues.length}</button> : "0"],
             ]}
           />
         ) : null}
         <div className="rrx-row" style={{ marginTop: 10 }}>
-          <button type="button" className="rrx-btn rrx-btn--primary" onClick={() => ws.openNewIssue({ entityIds: [vehicle.entityId], contextNote: `Reported from vehicle ${vehicle.buildId}` })}>
+          <button type="button" className="rrx-btn rrx-btn--primary" disabled={vehicleLoad?.status === "absent"} onClick={() => ws.openNewIssue({ entityIds: [vehicle.entityId], contextNote: `Reported from vehicle ${vehicle.buildId}` })}>
             + Report issue on this vehicle
           </button>
           <button type="button" className="rrx-btn" onClick={() => ws.setChatOpen(true)}>
@@ -126,7 +150,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
       ) : null}
 
       {selected ? (
-        <section className="rrx-card rrx-panel-section rrx-part-detail" data-testid="part-detail" aria-live="polite">
+        <section className="rrx-card rrx-panel-section rrx-part-detail" data-testid="part-detail" aria-live="polite" data-record={selectedLoad?.status ?? "queued"}>
           <div className="rrx-origin-head">
             <div>
               <h3 style={{ marginBottom: 0 }}>{selected.slot.label}</h3>
@@ -143,11 +167,24 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
             {selected.slot.parent ? <span className="rrx-muted rrx-small">inside {slotById(selected.slot.parent)?.label}</span> : null}
             {!isExteriorSlot(selected.slot.slot) ? <span className="rrx-badge rrx-badge--warning">Interior part: recorded, not drawn on the exterior sketch</span> : null}
           </div>
-          {selectedLoad?.status === "loading" || !selectedLoad ? <Loading label="Loading part record" /> : null}
+          {!selectedLoad || selectedLoad.status === "queued" || selectedLoad.status === "loading" ? <Loading label="Loading part record" /> : null}
+          {selectedLoad?.status === "absent" ? (
+            <div className="rrx-stack" data-testid="part-absent">
+              <Banner kind="warning">
+                <strong>No backend record.</strong> {selected.id} is drawn on the sketch, but the backend has no entity for it (NOT_FOUND). No origin, containment, evidence or issues are shown; nothing is invented.
+              </Banner>
+              {selected.slot.spec ? (
+                <div>
+                  <div className="rrx-label">Design details (platform design data, not a record)</div>
+                  <KV rows={Object.entries(selected.slot.spec as Record<string, unknown>).map(([k, v]) => [k, Array.isArray(v) ? v.join(", ") : String(v)])} />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {selectedLoad?.status === "error" && selectedLoad.error ? (
             <>
               <ErrorBanner error={selectedLoad.error} />
-              <p className="rrx-muted rrx-small">This part is drawn on the sketch but the backend has no record for it. No provenance is shown.</p>
+              <p className="rrx-muted rrx-small">The record for this part could not be read. No provenance is shown.</p>
             </>
           ) : null}
           {selectedLoad?.status === "ready" && selectedLoad.data ? <PartProvenance ctx={selectedLoad.data} issues={issuesFor(selected.id)} slot={selected.slot} /> : null}
@@ -155,15 +192,19 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
             <button
               type="button"
               className="rrx-btn rrx-btn--primary"
+              disabled={!selectedLoad || selectedLoad.status === "queued" || selectedLoad.status === "loading"}
               onClick={() => {
                 const e = selectedLoad?.data?.entity;
                 const parentIds = selectedLoad?.data?.currentParents.map((p) => p.id) ?? [];
+                const absent = selectedLoad?.status !== "ready";
                 ws.openNewIssue({
-                  entityIds: [...new Set([selected.id, ...parentIds.filter((id) => id !== selected.id), ...markerEntityIds])],
+                  entityIds: absent ? [...new Set([vehicle.entityId, ...recordedOnly(markerEntityIds)])] : [...new Set([selected.id, ...parentIds.filter((id) => id !== selected.id), ...recordedOnly(markerEntityIds)])],
                   partNumber: e?.partNumber ?? null,
                   partRevision: e?.partRevision ?? null,
                   linkedSupplierIds: e?.origin?.supplierId ? [e.origin.supplierId] : [],
-                  contextNote: `Reported from ${selected.slot.label} ${selected.id} on ${vehicle.buildId}${markerWireIds.length ? `. Wires under suspicion: ${markerWireIds.join(", ")}` : ""}`,
+                  contextNote: absent
+                    ? `Reported from sketch slot ${selected.slot.label} (${selected.id}) on ${vehicle.buildId}; the backend has no entity record for this slot, so only the vehicle is marked.${markerWireIds.length ? ` Wires under suspicion: ${markerWireIds.join(", ")}` : ""}`
+                    : `Reported from ${selected.slot.label} ${selected.id} on ${vehicle.buildId}${markerWireIds.length ? `. Wires under suspicion: ${markerWireIds.join(", ")}` : ""}`,
                 });
               }}
             >
@@ -176,14 +217,16 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
         </section>
       ) : (
         <section className="rrx-card rrx-panel-section">
-          <Empty>Tap a part on the 3D sketch to zoom in, or ask the assistant ("the right front tire has an issue"). Use Mark to circle parts or wires before opening an issue.</Empty>
+          <Empty>Tap a part on the 3D sketch to zoom in, or ask the assistant (&quot;the right front tire has an issue&quot;). Use Mark to circle parts or wires before opening an issue.</Empty>
         </section>
       )}
 
-      <section className="rrx-card rrx-panel-section">
+      <section className="rrx-card rrx-panel-section" data-testid="recorded-parts">
         <div className="rrx-card-head">
           <h3>Exterior parts on this sketch</h3>
-          <span className="rrx-muted rrx-small">{recordedTotal} recorded{counts.unrecorded ? `, ${counts.unrecorded} not in backend` : ""}</span>
+          <span className="rrx-muted rrx-small">
+            {recordedTotal} recorded{counts.absent ? `, ${counts.absent} no backend record` : ""}{counts.error ? `, ${counts.error} unavailable` : ""}{counts.pending ? `, ${counts.pending} loading` : ""}
+          </span>
         </div>
         <div className="rrx-sourcing-bar" aria-hidden="true">
           <span style={{ width: `${recordedTotal ? (counts.supplier / recordedTotal) * 100 : 0}%`, background: "var(--rr-supplier)" }} />
@@ -198,7 +241,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
           ))}
         </div>
         {GROUPS.map((g) => {
-          const list = parts.filter((p) => sourcingOf(p.id) === g.key && (sourcingFilter === "all" || sourcingFilter === g.key));
+          const list = parts.filter((p) => bucketOf(p.id) === g.key && (sourcingFilter === "all" || sourcingFilter === g.key));
           if (!list.length) return null;
           return (
             <div key={g.key} style={{ marginTop: 10 }}>
@@ -224,7 +267,28 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
             </div>
           );
         })}
-        {counts.unrecorded ? <p className="rrx-muted rrx-small" style={{ marginTop: 8 }}>Parts drawn on the sketch but not recorded in the backend are listed as "not in backend"; nothing is invented for them.</p> : null}
+        {counts.absent && sourcingFilter === "all" ? (
+          <details style={{ marginTop: 10 }} data-testid="absent-parts">
+            <summary className="rrx-muted rrx-small" style={{ cursor: "pointer" }}>
+              No backend record · {counts.absent} sketch slot(s) — drawn from the platform design, not recorded in this workspace; nothing is invented for them
+            </summary>
+            <ul className="rrx-partlist">
+              {parts
+                .filter((p) => bucketOf(p.id) === "absent")
+                .map((p) => (
+                  <li key={p.id} data-selected={ex.selectedEntityId === p.id} onClick={() => select(p.id)} data-testid={`partlist-${p.slot.slot}`} className="rrx-partlist-absent">
+                    <span className="rrx-dot rrx-dot--absent" />
+                    <span className="rrx-part-name rrx-muted">
+                      {p.slot.parent ? <span className="rrx-muted">↳ </span> : null}
+                      {p.slot.label}
+                    </span>
+                    <span className="rrx-part-id rrx-mono">{p.id}</span>
+                  </li>
+                ))}
+            </ul>
+          </details>
+        ) : null}
+        {counts.error ? <p className="rrx-small" style={{ marginTop: 8, color: "var(--rr-blocking)" }}>{counts.error} part record(s) could not be read from the backend (not NOT_FOUND). Tap a part to see the error.</p> : null}
       </section>
     </aside>
   );
@@ -234,6 +298,7 @@ export function PartProvenance({ ctx, issues, slot }: { ctx: EntityContext; issu
   const ws = useWorkspace();
   const e = ctx.entity;
   const o = e.origin;
+  const isVehicle = e.kind === "vehicle";
   const sourcing = o?.sourcingType ?? "unknown";
   const evidenceById = new Map(ctx.evidence.map((x) => [x.id, x]));
   const originEvidence = (o?.evidenceIds ?? []).map((id) => evidenceById.get(id)).filter(Boolean);
@@ -245,11 +310,20 @@ export function PartProvenance({ ctx, issues, slot }: { ctx: EntityContext; issu
   return (
     <div className="rrx-stack">
       <div className="rrx-row">
-        <SourcingBadge sourcing={sourcing} />
+        <SourcingBadge sourcing={o?.sourcingType} kind={e.kind} />
         <span className="rrx-badge rrx-badge--muted">{e.kind}</span>
         <span className="rrx-badge rrx-badge--muted">{e.locationState}</span>
       </div>
-      {sourcing === "supplier" && o ? (
+      {isVehicle ? (
+        <KV
+          rows={[
+            ["Build ID", <span className="rrx-mono" key="b">{e.vehicle?.buildId ?? e.id}</span>],
+            ["VIN", e.vehicle?.vin ? <span className="rrx-mono">{e.vehicle.vin}</span> : <span className="rrx-muted">VIN not assigned</span>],
+            ["Origin record", <span className="rrx-muted">none for a vehicle build; supplier and in-house origins are recorded on the installed parts</span>],
+          ]}
+        />
+      ) : null}
+      {!isVehicle && sourcing === "supplier" && o ? (
         <KV
           rows={[
             ["Supplier", <button type="button" className="rrx-count-btn" key="s" onClick={() => ws.navigate("insights")}>{ws.lookup.supplier(o.supplierId)}</button>],
@@ -260,7 +334,7 @@ export function PartProvenance({ ctx, issues, slot }: { ctx: EntityContext; issu
           ]}
         />
       ) : null}
-      {sourcing === "in_house" && o ? (
+      {!isVehicle && sourcing === "in_house" && o ? (
         <KV
           rows={[
             ["Internal part / revision", `${o.partNumber}${o.partRevision ? ` rev ${o.partRevision}` : ""}`],
@@ -272,7 +346,7 @@ export function PartProvenance({ ctx, issues, slot }: { ctx: EntityContext; issu
           ]}
         />
       ) : null}
-      {sourcing === "unknown" ? <div className="rrx-banner">Origin not recorded for {e.partNumber}. Neither a supplier nor an internal lot is known. This stays a review item; nothing is assumed.</div> : null}
+      {!isVehicle && sourcing === "unknown" ? <div className="rrx-banner">Origin not recorded for {e.partNumber}. Neither a supplier nor an internal lot is known. This stays a review item; nothing is assumed.</div> : null}
       {spec.length ? (
         <div>
           <div className="rrx-label">Design details</div>
@@ -326,7 +400,7 @@ export function PartProvenance({ ctx, issues, slot }: { ctx: EntityContext; issu
           <div className="rrx-chips">
             {ctx.currentChildren.map((c) => (
               <button key={c.id} type="button" className="rrx-chip" onClick={() => ws.openEntity(c.id)}>
-                <SourcingBadge sourcing={c.origin?.sourcingType} compact /> {c.id}
+                <SourcingBadge sourcing={c.origin?.sourcingType} kind={c.kind} compact /> {c.id}
               </button>
             ))}
           </div>

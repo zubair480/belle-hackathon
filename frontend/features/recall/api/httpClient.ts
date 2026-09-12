@@ -22,6 +22,7 @@ import {
 } from "@/contracts/issues";
 import { ROUTES, TraceResultSchema } from "@/contracts/recall";
 import { AGENT_CHAT_ROUTE, AgentChatResponseSchema } from "../../../agent/types";
+import { BackendHealthSchema } from "./health";
 import { clientFail, clientOk, type ClientResult, type RecallClient } from "./types";
 
 type Method = "GET" | "POST" | "PATCH";
@@ -77,7 +78,8 @@ export function createHttpClient(baseUrl = ""): RecallClient {
   const b = baseUrl;
   return {
     mode: "live",
-    modeLabel: "Live API (mocks disabled)",
+    modeLabel: "Live API",
+    getHealth: () => call("GET", ROUTES.health.path, BackendHealthSchema, undefined, undefined, b),
     getCatalog: () => call("GET", ISSUE_ROUTES.catalog.path, ReferenceCatalogSchema, undefined, undefined, b),
     getEntityContext: (entityId, configurationAsOf) =>
       call("GET", ISSUE_ROUTES.entityContext.path(entityId) + toQuery({ configurationAsOf }), EntityContextSchema, undefined, undefined, b),

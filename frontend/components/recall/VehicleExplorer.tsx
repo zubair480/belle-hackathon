@@ -3,8 +3,14 @@
  * Vehicles view: three model cards, the 3D sketch stage with camera/wiring/marker controls and
  * the provenance rail. Explorer state (vehicle, selection, markers, circuit, wiring) is owned by
  * the workspace so the chat harness can drive the same screen.
+ *
+ * Entity records are loaded through a small prioritised queue (a few requests in flight, not
+ * one burst per sketch slot): the vehicle first, then whatever the backend reports as installed
+ * in it (the recorded containment tree, e.g. the charge-port path), then the selected part, then
+ * the remaining sketch slots. A NOT_FOUND answer is kept as an explicit "no backend record"
+ * state; nothing is invented for it.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
 import { useWorkspace, type CameraPreset } from "../../features/recall/context";
@@ -14,6 +20,9 @@ import { Banner } from "./primitives";
 import { VehicleSketch3D, type HotspotInfo, type HoverDetail, type HoverTarget } from "./VehicleSketch3D";
 
 export type VehicleExplorerProps = { instantZoom?: boolean };
+
+/** Entity requests in flight at once. Enough to fill the charge-port path quickly without a 57-request burst. */
+const ENTITY_CONCURRENCY = 4;
 
 function ModelThumb({ style }: { style: SketchVehicle["style"] }) {
   const cam = { ...DEFAULT_CAMERA, scale: 0.13 };
@@ -38,20 +47,42 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [issuesError, setIssuesError] = useState<string | null>(null);
   const [wireInfo, setWireInfo] = useState<string | null>(null);
+  const queueRef = useRef<{ promote: (ids: string[]) => void } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const ids = [vehicle.entityId, ...PARTS.map((p) => entityIdFor(p, vehicle.suffix))];
-    // Every part is loaded so an interior part selected via an issue or the assistant still shows its record.
-    setContexts(Object.fromEntries(ids.map((id) => [id, { status: "loading", data: null, error: null } as PartLoad])));
-    Promise.all(
-      ids.map(async (id) => {
+    // Every part (interior slots included) is queued so a part selected via an issue or the assistant still shows its record.
+    setContexts(Object.fromEntries(ids.map((id) => [id, { status: "queued", data: null, error: null } as PartLoad])));
+    const queued = new Set(ids);
+    const queue = [...ids];
+    const promote = (list: string[]) => {
+      for (const id of [...list].reverse()) {
+        if (!queued.has(id)) continue;
+        const i = queue.indexOf(id);
+        if (i > 0) queue.splice(i, 1);
+        if (i !== 0) queue.unshift(id);
+      }
+    };
+    queueRef.current = { promote };
+    const worker = async () => {
+      while (!cancelled) {
+        const id = queue.shift();
+        if (!id) return;
+        queued.delete(id);
+        setContexts((s) => ({ ...s, [id]: { status: "loading", data: null, error: null } }));
         const r = await ws.client.getEntityContext(id);
-        return [id, r.ok ? ({ status: "ready", data: r.data, error: null } as PartLoad) : ({ status: "error", data: null, error: r.error } as PartLoad)] as const;
-      }),
-    ).then((entries) => {
-      if (!cancelled) setContexts(Object.fromEntries(entries));
-    });
+        if (cancelled) return;
+        if (r.ok) {
+          // Recorded children (module -> connector/bracket) are the reliable path: load them next.
+          promote(r.data.currentChildren.map((c) => c.id));
+          setContexts((s) => ({ ...s, [id]: { status: "ready", data: r.data, error: null } }));
+        } else {
+          setContexts((s) => ({ ...s, [id]: { status: r.error.code === "NOT_FOUND" ? "absent" : "error", data: null, error: r.error } }));
+        }
+      }
+    };
+    for (let i = 0; i < ENTITY_CONCURRENCY; i++) void worker();
     ws.client.listIssues({ entityId: vehicle.entityId, limit: 200 }).then((r) => {
       if (cancelled) return;
       if (r.ok) {
@@ -64,14 +95,24 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
     });
     return () => {
       cancelled = true;
+      queueRef.current = null;
     };
   }, [vehicle, ws.client]);
+
+  // A tapped part jumps the queue so the panel fills without waiting for the whole sketch.
+  useEffect(() => {
+    if (ex.selectedEntityId) queueRef.current?.promote([ex.selectedEntityId]);
+  }, [ex.selectedEntityId]);
 
   const info = useMemo(() => {
     const out: Record<string, HotspotInfo> = {};
     for (const [id, c] of Object.entries(contexts)) {
       if (!c) continue;
-      out[id] = { sourcing: c.status === "ready" ? (c.data?.entity.origin?.sourcingType ?? "unknown") : null, recorded: c.status !== "error", openIssueCount: issues.filter((i) => i.status !== "closed" && i.entityIds.includes(id)).length };
+      out[id] = {
+        sourcing: c.status === "ready" ? (c.data?.entity.origin?.sourcingType ?? "unknown") : null,
+        recorded: c.status === "absent" ? false : c.status === "error" ? null : true,
+        openIssueCount: issues.filter((i) => i.status !== "closed" && i.entityIds.includes(id)).length,
+      };
     }
     return out;
   }, [contexts, issues]);
@@ -110,7 +151,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
     const lines = [
       `${SYSTEMS[slot.system] ?? slot.system} · ${ZONES[slot.zone] ?? slot.zone}${slot.side !== "C" ? ` · ${slot.side}` : ""}`,
       `Part ${slot.partNumber}${slot.partRevision ? ` rev ${slot.partRevision}` : ""}${slot.parent ? ` · inside ${slotById(slot.parent)?.label}` : ""}`,
-      c?.status === "error" ? "Not recorded in backend" : o?.sourcingType === "supplier" ? `Bought from ${ws.lookup.supplier(o.supplierId)} · batch ${o.supplierBatchCode}` : o?.sourcingType === "in_house" ? `Made in-house · lot ${o.manufacturingLotCode} · ${ws.lookup.process(o.processStepId)}` : "Unknown origin",
+      c?.status === "absent" ? "No backend record (sketch slot only; nothing invented)" : c?.status === "error" ? `Record unavailable (${c.error?.code ?? "error"})` : o?.sourcingType === "supplier" ? `Bought from ${ws.lookup.supplier(o.supplierId)} · batch ${o.supplierBatchCode}` : o?.sourcingType === "in_house" ? `Made in-house · lot ${o.manufacturingLotCode} · ${ws.lookup.process(o.processStepId)}` : "Unknown origin",
       ...spec.slice(0, 3),
       wires.length ? `${wires.length} wire(s): ${wires.slice(0, 3).map((w) => `${w.id} ${w.signal}`).join("; ")}${wires.length > 3 ? " …" : ""}` : "No wires in the wiring design",
       open.length ? `${open.length} open issue(s): ${open.map((i) => i.id).join(", ")}` : "No open issues",
@@ -198,7 +239,8 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
             <div className="rrx-stage-legend" aria-hidden="true">
               <span><span className="rrx-legend-swatch" style={{ background: "var(--rr-supplier)" }} />Bought from supplier</span>
               <span><span className="rrx-legend-swatch" style={{ background: "var(--rr-inhouse)" }} />Made in-house</span>
-              <span><span className="rrx-legend-swatch" style={{ background: "var(--rr-unknown)" }} />Unknown origin</span>
+              <span><span className="rrx-legend-swatch" style={{ background: "var(--rr-unknown)" }} />Unknown origin (recorded, origin unknown)</span>
+              <span><span className="rrx-legend-swatch rrx-legend-swatch--absent" />No backend record (sketch only)</span>
               <span><span className="rrx-legend-swatch" style={{ background: "var(--rr-blocking)" }} />Open issue / marker</span>
               {ex.wiring ? (
                 <>
@@ -225,7 +267,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
             </div>
           ) : null}
           <p className="rrx-muted rrx-small" style={{ marginTop: 8 }}>
-            Wireframe is illustrative geometry; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded data. Left/right follow the driver's seat on the left.
+            Wireframe is illustrative geometry; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded data. Sketch slots without a backend record are shown as such. Left/right follow the driver&apos;s seat on the left.
           </p>
           {issuesError ? <Banner kind="error">Issue list unavailable for this vehicle: {issuesError}</Banner> : null}
         </div>

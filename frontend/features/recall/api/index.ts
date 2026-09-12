@@ -7,6 +7,7 @@ import { createMockClient } from "./mockClient";
 import type { RecallClient } from "./types";
 
 export * from "./types";
+export { BackendHealthSchema, describeBackend, type BackendHealth, type BackendServicesMode } from "./health";
 export { createHttpClient } from "./httpClient";
 export { createMockClient, type MockControls } from "./mockClient";
 

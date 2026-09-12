@@ -2,7 +2,8 @@
 import { createContext, useContext } from "react";
 import type { IssueInput, ReferenceCatalog } from "@/contracts/issues";
 import type { AgentContext, UiAction } from "../../agent/types";
-import type { RecallClient } from "./api/types";
+import type { BackendHealth } from "./api/health";
+import type { ClientError, RecallClient } from "./api/types";
 import type { CatalogLookup } from "./format";
 import type { CAMERA_PRESETS } from "./sketches/car3d";
 
@@ -26,8 +27,13 @@ export type ExplorerState = {
   cameraRequest: { preset: CameraPreset; seq: number } | null;
 };
 
+/** Backend wiring as reported by GET /api/health (live mode only; the mock never reports one). */
+export type BackendState = { status: "idle" | "loading" | "ready" | "error"; health: BackendHealth | null; error: ClientError | null };
+
 export type WorkspaceApi = {
   client: RecallClient;
+  /** Live mode: the health report behind the mode badge. Mock mode: status "idle", health null. */
+  backend: BackendState;
   catalog: ReferenceCatalog | null;
   lookup: CatalogLookup;
   view: WorkspaceView;

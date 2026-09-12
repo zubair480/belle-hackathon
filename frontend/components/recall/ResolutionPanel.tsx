@@ -31,7 +31,8 @@ export function ResolutionPanel({ detail, onChanged }: { detail: IssueDetail; on
       partNumber: issue.partNumber ?? "",
       partRevision: issue.partRevision ?? "",
       processStepId: issue.processStepId ?? "",
-      limitations: r.applicabilityWarnings.join("\n"),
+      // Warnings are server prose ("limitation: ..."); keep the bare limitation text so it is not re-prefixed on save.
+      limitations: r.applicabilityWarnings.map((w) => w.replace(/^limitation:\s*/i, "")).join("\n"),
       workInstructionRef: "",
       sourceFixRevisionId: r.sourceFixRevisionId,
       sourceIssueId: r.sourceIssueId,
@@ -39,7 +40,7 @@ export function ResolutionPanel({ detail, onChanged }: { detail: IssueDetail; on
     void ws.client.getIssue(r.sourceIssueId).then((res) => {
       if (!res.ok) return;
       const src = res.data.fixes.find((f) => f.id === r.sourceFixRevisionId);
-      if (src) setDraft((d) => (d && d.sourceFixRevisionId === src.id ? { ...d, steps: src.steps.map((s) => s.instruction), workInstructionRef: src.workInstructionRef ?? "", partNumber: d.partNumber || src.applicability.partNumber || "", partRevision: d.partRevision || src.applicability.partRevision || "", processStepId: d.processStepId || src.applicability.processStepId || "" } : d));
+      if (src) setDraft((d) => (d && d.sourceFixRevisionId === src.id ? { ...d, steps: src.steps.map((s) => s.instruction), workInstructionRef: src.workInstructionRef ?? "", partNumber: d.partNumber || src.applicability.partNumber || "", partRevision: d.partRevision || src.applicability.partRevision || "", processStepId: d.processStepId || src.applicability.processStepId || "", limitations: src.applicability.limitations.length ? src.applicability.limitations.join("\n") : d.limitations } : d));
     });
   };
 
@@ -167,8 +168,11 @@ function StatusActions({ detail, onChanged }: { detail: IssueDetail; onChanged: 
   const issue = detail.issue;
   const [reason, setReason] = useState("");
   const m = useMutation((cmd: TransitionCommand) => ws.client.transition(issue.id, cmd));
-  const passedFixIds = new Set(detail.verifications.filter((v) => v.outcome === "pass").map((v) => v.fixRevisionId));
-  const closableFix = [...detail.fixes].sort((a, b) => b.version - a.version).find((f) => passedFixIds.has(f.id)) ?? null;
+  // Contract rule: close needs a fix whose LATEST verification passed (a later failure re-blocks it).
+  const latestByFix = new Map<string, (typeof detail.verifications)[number]>();
+  for (const v of [...detail.verifications].sort((a, b) => a.verifiedAt.localeCompare(b.verifiedAt) || a.id.localeCompare(b.id))) latestByFix.set(v.fixRevisionId, v);
+  const closableFix = [...detail.fixes].sort((a, b) => b.version - a.version).find((f) => latestByFix.get(f.id)?.outcome === "pass") ?? null;
+  const appliedFix = [...detail.fixes].sort((a, b) => b.version - a.version).find((f) => f.state === "applied" || f.id === issue.currentFixRevisionId) ?? null;
   const act = async (action: TransitionAction, fixRevisionId: string | null = null) => {
     const r = await m.run({ idempotencyKey: newIdempotencyKey("tr"), action, expectedVersion: issue.version, reason, fixRevisionId });
     if (r?.ok) {
@@ -202,7 +206,22 @@ function StatusActions({ detail, onChanged }: { detail: IssueDetail; onChanged: 
         </button>
       </div>
       {issue.status === "pending_verification" ? <Banner kind="warning">Pending review: record the verification result of the applied fix below. A failed verification returns the issue to work.</Banner> : null}
-      {issue.status !== "closed" && !closableFix ? <p className="rrx-muted rrx-small" style={{ margin: "8px 0 0" }}>Close is available only after a verification of an applied fix passes on this issue.</p> : null}
+      {allowed("close") && !closableFix ? (
+        <div style={{ marginTop: 8 }}>
+          <Banner kind="warning">
+            <strong>Close is blocked (VERIFICATION_REQUIRED).</strong>{" "}
+            {appliedFix
+              ? latestByFix.get(appliedFix.id)?.outcome === "fail"
+                ? `The latest verification of fix v${appliedFix.version} failed; the issue stays open. Record a passed verification before closing.`
+                : appliedFix.state === "proposed"
+                  ? `Fix v${appliedFix.version} is only proposed. Mark it applied (request verification), then record a passed verification; the server enforces the same rule.`
+                  : `Fix v${appliedFix.version} is applied but has no passed verification yet. Record one below; the server enforces the same rule.`
+              : "No fix has been applied and verified on this issue. Propose or reuse a fix, mark it applied, then record a passed verification."}
+          </Banner>
+        </div>
+      ) : issue.status !== "closed" && !closableFix ? (
+        <p className="rrx-muted rrx-small" style={{ margin: "8px 0 0" }} data-testid="close-hint">Close is available only after a verification of an applied fix passes on this issue.</p>
+      ) : null}
     </section>
   );
 }

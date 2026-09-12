@@ -119,3 +119,73 @@ No dependency or alias changes; frontend files import contracts via the existing
 - No CAD/photo drawing. No agent/AI panel in the UI (the `agent*` routes are unused).
 - Screenshots were taken in mock mode and must be recaptured from the integrated build.
 - Qoder usage: this lane's code was written in this session's editor. The submission must list only Qoder sessions that actually happened.
+
+## Integrated run against real routes (2026-09-12, branch `codex/frontend-backend-integration` from `cb359a2`)
+
+Backend mode used: the real HTTP routes under `src/app/api/**` answered by the in-memory service double
+(`RECALL_SERVICES=double`, `RECALL_AI_PROVIDER=stub`, `RECALL_AGENT_PROVIDER=stub`,
+`NEXT_PUBLIC_RECALL_UI_MOCKS=false`). `GET /api/health` reported `servicesMode: "double"`,
+`servicesRegistered: true`, `aiProvider: "stub"`. This is development evidence: the same routes are meant
+to be backed by Neo4j later; nothing below was run against a database. No screenshots were captured
+(the run was driven through the Browser pane; `docs/pitch/screenshots/` is unchanged).
+
+### What changed (frontend only; `src/server/**`, `src/contracts/**`, `scripts/neo4j/**` untouched)
+
+| Area | Files | Change |
+| --- | --- | --- |
+| Backend mode badge | `frontend/features/recall/api/health.ts` (new), `api/types.ts`, `api/httpClient.ts`, `api/mockClient.ts`, `api/index.ts`, `features/recall/context.tsx`, `features/recall/RecallWorkspace.tsx` | `RecallClient.getHealth()` reads `GET /api/health` (Zod-validated). The badge now reads "Live API · demo data (service double)" or "Live API · Neo4j graph services", "· <mode> services not wired" or "· backend unreachable" (with re-check), plus "AI: <provider>". A warning banner explains the double; a blocking banner explains unwired services. "Live API" alone never implies Neo4j. Mock mode keeps "Sample data (mock mode)" and never calls health. `WorkspaceApi.backend` exposes the report; the chat header says which backend its tools read. |
+| URL routing | `RecallWorkspace.tsx` | View and open issue are mirrored into `location.hash` (`#/issues/<id>/<tab>`, `#/insights`, ...) so F5 reopens the same issue; back/forward work. On by default for the page mount (no injected client); off when a client is injected (tests). `parseRouteHash`/`routeToHash` exported. |
+| Entity loading | `VehicleExplorer.tsx` | Replaced the 57-parallel-request burst with a prioritised queue (4 in flight): vehicle first, then whatever the backend reports as installed in it (the charge-port path), then the tapped part, then the rest. `NOT_FOUND` is kept as an explicit `absent` state. |
+| No-backend-record state | `PartPanel.tsx`, `VehicleSketch3D.tsx`, `recall.css` | Sketch-only slots render with `data-record="absent"`, faint dotted edges, no origin colour, label "· no record", aria-label suffix; the panel shows a "No backend record" banner and design details only (marked as design data), lists them under a collapsible "No backend record" group, never under "Unknown origin"; the sourcing filter never matches them. "Report issue on this part" from such a slot marks only the vehicle and notes the slot in the evidence text, so the server does not answer INVALID_REFERENCE. Marker-based reports drop absent ids the same way. |
+| Vehicle identity | `primitives.tsx` (`SourcingBadge kind`), `PartPanel.tsx`, `IssueDetail.tsx`, `AssemblyContext.tsx` | Vehicles (`origin: null`) show "Vehicle build · no origin record" / "Build", "VIN not assigned", "assembled build · no origin record applies"; never the amber "Unknown origin" styling. The vehicle card shows "Backend record" / "No backend record" / "Record unavailable" and the recorded children. |
+| INVALID_REFERENCE on create | `NewIssueForm.tsx` | Shows the server's `details.invalid` list and a "Remove unknown ids" action; the draft and idempotency key are kept. |
+| Close rule | `ResolutionPanel.tsx` | Closable fix = the fix whose *latest* verification passed (a later failure re-blocks). When status allows `close` but no fix qualifies, a "Close is blocked (VERIFICATION_REQUIRED)" banner explains what is missing (proposed / applied-unverified / latest failed). Reuse prefill takes limitations from the source fix instead of the server's "limitation: ..." prose (was being double-prefixed). |
+| Overview save | `IssueDetail.tsx`, `hooks.ts` | PATCH sends only changed fields (audit now names what was edited). After STALE_VERSION -> "Reload latest", the operator's unsaved selection is kept, untouched fields refresh from the server and the conflict banner clears (`clearError` is now stable). |
+| Agent | `frontend/agent/stubPlanner.ts`, `frontend/agent/tools.ts` | The stub planner recognises a sketch entity id in the message (e.g. `BRKT-0005`, switching vehicle if needed) and treats "which vehicles contain parts from the ... lot/batch", "same lot", "impact", "exposure" as an impact question. `impact_of_part` labels the root with the batch/lot code as recorded plus `[lot id ...]` (the trace root stays `ProductionOrigin.productionLotId`; `revisionId: "current"`). This also repairs the pre-existing `agent.test.tsx` failure introduced when the root switched to the lot id. |
+| Tests | `frontend/tests/ui/integration-labels.test.tsx` (new, 10 tests) | Badge for double / graph / unwired / unreachable / mock; neutral vehicle labels; absent hotspot + report-from-absent; INVALID_REFERENCE handling; stub impact turn for the bracket lot question; vehicle switch by entity id; hash routing. |
+
+### Commands run
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | ok |
+| `npm run dev -- --port 3210`; `GET /api/health` | `servicesMode: "double"`, `servicesRegistered: true`, `aiProvider: "stub"` |
+| `npm run typecheck` | passed |
+| `npm run test:ui` | 4 files, 36 passed (26 existing + 10 new) |
+| `npm test` | 12 files, 91 passed, 4 skipped (Neo4j suites: no credentials) |
+| `POST /api/agent/chat` "which vehicles contain parts from the bracket lot of BRKT-0005" (stub) | tool calls `focus_part`, `list_issues_for_part`, `impact_of_part`; reply: root in-house lot DEMO-MFG-LOT-01 [lot id LOT-MFG-01], 4 vehicles (2 on site DEMO-EV-004/005, 2 shipped to CUST-DEALER-1: DEMO-EV-002/003), 1 quarantined component. Before the fix the stub only zoomed to the bracket. |
+
+### Browser journey (Browser pane, real routes, double behind them)
+
+| # | Step | Result |
+| --- | --- | --- |
+| 1 | New issue: title, reporting team Final Inspection, station Final inspection, defect Connector misaligned, severity major, part CP-BRKT-200 rev A, marked CPM-0005, CONN-0005, BRKT-0005, DEMO-EV-005; save | PASS: `ISS-0001`, status Open, v1, `created` audit entry; connector "Supplier · DEMO-SUP-LOT-01", bracket "In-house · DEMO-MFG-LOT-01 · WO-DEMO-0001", vehicle "Build · assembled build · no origin record applies", "VIN not assigned" |
+| 2 | Reload (`#/issues/ISS-0001`) | PASS: same record reloaded from the server |
+| 3 | Assembly context tab | PASS: connector "Bought from supplier" with batch and receipt evidence; bracket "Made in-house" with lot, work order, team "(producer, not a confirmed cause)"; vehicle "Vehicle build · no origin record", build id, VIN not assigned |
+| 4 | Assign to In-house Manufacturing, save; then a teammate PATCH via curl and a stale save from the tab | PASS: v2 "Issue saved"; stale save -> `STALE_VERSION` banner, selection kept; "Reload latest" -> latest description, selection still In-house Manufacturing, banner cleared; save again -> success |
+| 5 | Hypothesis supplier_component (SUP-CONNECTOR), then confirmed in_house_manufacturing (TEAM-INHOUSE-MFG, ST-BRACKET-CELL, bracket-forming, supersedes CAUSE-0001) | PASS: hypothesis listed without "current", confirmed cause current; header Reporter = Final Inspection, Assigned = In-house Manufacturing, Confirmed cause = In-house Manufacturing / Bracket forming cell; supplier shown as "Suspected supplier cause (hypothesis)", "no confirmed supplier fault" |
+| 6 | Resolution tab | PASS: `FIX-BRKT-PRIOR-V1` listed, Verified 2026-09-08, reasons "same part family CP-BRKT-200", "same confirmed cause type in_house_manufacturing", "same process step bracket-forming", warning "Synthetic placeholder" |
+| 7 | Reuse as new proposal, save | PASS: `FIX-0001` Proposed, "Proposed from a verified prior resolution", steps copied; source `ISS-BRKT-PRIOR` still closed, `FIX-BRKT-PRIOR-V1` still verified (checked over HTTP) |
+| 8 | Close before verification | PASS: Close disabled with hint while Open; after Start work (v6) the "Close is blocked (VERIFICATION_REQUIRED)" banner appears; `POST .../transitions close` sent by hand -> HTTP 409 `VERIFICATION_REQUIRED` |
+| 8b | Mark applied and request verification | PASS: pending_verification v7, fix "Applied (awaiting verification)", `fix_applied` audit |
+| 9 | Record failed verification | PASS: issue back to In progress v8, "Failed" row, close still blocked with "latest verification ... failed" |
+| 10 | Record passed verification, close | PASS: fix Verified, "Close with verified fix v1" enabled, Closed v10 |
+| 11 | Reopen | PASS: In progress v11; history shows created, updated, both causes, fix created, start_work, fix applied, request_verification, fail transition, both verifications, close, reopen |
+| 12 | New issue `ISS-0002` (CP-BRKT-200 rev A, BRACKET_OUT_OF_TOLERANCE, BRKT-0004/CPM-0004/DEMO-EV-004), Resolution tab | PASS: `FIX-0001` (verified, from ISS-0001) and `FIX-BRKT-PRIOR-V1` both listed with reasons |
+| 13 | Insights and drilldown | PASS: Final Inspection reported 3 / confirmed 0; In-house Manufacturing assigned open 1 / confirmed cause 2; connector supplier linked 1, confirmed 1, rate N/A "no complete cohort"; drilldown on "Confirmed cause: In-house Manufacturing" lists ISS-0001 and ISS-BRKT-PRIOR with evidence |
+| 14 | Vehicles view | PASS: badge "Live API · demo data (service double)" + banner; DEMO-EV-005 "Backend record", VIN not assigned, recorded parts CPM-0005; "3 recorded, 53 no backend record"; BATT-0005 hotspot `data-record="absent"`, "No backend record" panel with design details only; charge-port module/connector/bracket coloured from their records |
+| 15 | Assistant: "which vehicles contain parts from the bracket lot of BRKT-0005" | PASS: chips focus_part, list_issues_for_part, impact_of_part; sketch zooms to the bracket; trace-backed answer as above; header "Server agent · /api/agent/chat · tools read demo data (service double)" |
+| Console | | only 404s for sketch-only entity ids (expected NOT_FOUND); no script errors after the final edit |
+
+Not run: `RECALL_SERVICES=graph`, server restart persistence (BROWSER_ACCEPTANCE 15), `RECALL_AI_PROVIDER=none` draft button (16; the UI has no AI draft button), database stop (17).
+
+### Merge with `codex/final-integration` @ `8dda91b`
+
+Conflicts were resolved keeping both sides: Ali's exterior-only 3D sketch, hover tooltips, smoothed wires, fault-zone markers, layers dialog, sectioned New Issue dialog and `Dialog` primitive, plus the fixes above. Two deliberate decisions: (1) the mode badge stays opt-in in mock mode (`NEXT_PUBLIC_RECALL_SHOW_MODE`, Ali's test asserts it is absent) but is always rendered in live mode with the health-derived label, because "Live API" must never imply Neo4j; (2) the stub planner's `locate_fault` call is kept and runs only for parts the backend knows. After the merge: `npm run typecheck` passed, `npm run test:ui` 48 passed (6 files), `npm test` 114 passed / 8 skipped (17 files). The no-backend-record test now uses an exterior slot (left headlamp) because interior slots such as the battery pack are no longer drawn.
+
+### Backend observations (routes owned by the API lane; not changed here)
+
+1. `POST /api/issues/:id/fixes` on the double sets `issue.currentFixRevisionId` to the new fix while its state is still `proposed`. The contract comment says "fix revision currently applied/verified, if any". The UI now derives its close guidance from fix state and verifications, not from this field, but the "current fix" badge follows the server value.
+2. `PATCH /api/issues/:id` audit summary lists every field in the body ("Updated description, assignedTeamId") even when a value is unchanged; the UI now sends only changed fields.
+3. `SimilarResolution.applicabilityWarnings` carries the fix's limitations as "limitation: <text>"; saving that text back as a limitation produced "limitation: limitation: ..." on the next retrieval. The UI now copies the source fix's `applicability.limitations` instead.
+4. Everything else matched the contract: envelopes, 201/200 on create, `Idempotency-Key` header + body, repeated query keys, `STALE_VERSION` 409 with `currentVersion`, `INVALID_REFERENCE` 400 with `details.invalid` (e.g. `entity:BATT-0005`), `VERIFICATION_REQUIRED` 409, `request_verification` applying the fix, fail-while-pending returning to `in_progress`, `revisionId: "current"` resolving to `ev-r1` on `POST /api/incidents/:id/traces`, `GET /api/health` envelope.

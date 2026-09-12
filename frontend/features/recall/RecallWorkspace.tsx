@@ -2,7 +2,10 @@
 /**
  * RecallWorkspace: the EV assembly quality workspace shell. Vehicles (3D sketch explorer),
  * Issues, Resolutions, Team/Supplier Insights and the assistant chat. Explorer state lives
- * here so the agent's UI actions and the screens share it. Mock mode is announced visibly.
+ * here so the agent's UI actions and the screens share it. Mock mode is announced visibly;
+ * in live mode the backend behind the real routes is read from GET /api/health and labelled
+ * ("Neo4j graph services" vs "demo data (service double)"); "Live API" alone never implies Neo4j.
+ * The current view and open issue are mirrored into the URL hash so a page reload reopens them.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReferenceCatalog } from "@/contracts/issues";
@@ -16,19 +19,26 @@ import { NewIssueForm } from "../../components/recall/NewIssueForm";
 import { VehicleExplorer } from "../../components/recall/VehicleExplorer";
 import { Banner, Dialog, ErrorBanner, Loading } from "../../components/recall/primitives";
 import type { AgentContext, UiAction } from "../../agent/types";
-import { getDefaultClient, type RecallClient } from "./api";
-import { WorkspaceContext, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
+import { describeBackend, getDefaultClient, type RecallClient } from "./api";
+import { WorkspaceContext, type BackendState, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
 import { makeLookup } from "./format";
 import { SKETCH_VEHICLES, slotForEntityId } from "./sketches/car3d";
 
 export type RecallWorkspaceProps = {
   /** Injected client (tests / integration). Defaults to env-selected live or mock client. */
   client?: RecallClient;
+  /** Landing view. When omitted the view (and open issue) come from the URL hash, see `syncUrl`. */
   initialView?: WorkspaceView;
   /** Disables the sketch zoom tween (tests). */
   instantZoom?: boolean;
   /** Start with the assistant panel open. */
   chatOpen?: boolean;
+  /**
+   * Mirror the view / open issue into `location.hash` (`#/issues/<id>/<tab>`) so a reload reopens
+   * the same issue. Default: on for the real page mount (no injected `client`), off when a client
+   * is injected (tests render many workspaces in one document and must not share a hash).
+   */
+  syncUrl?: boolean;
 };
 
 type Route = { view: WorkspaceView; issueId: string | null; issueTab: IssueDetailTab };
@@ -39,21 +49,41 @@ const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "resolutions", label: "Resolutions" },
   { id: "insights", label: "Team & supplier insights" },
 ];
+const VIEWS = new Set<string>(NAV.map((n) => n.id));
+const TABS = new Set<string>(["overview", "investigation", "resolution", "assembly", "history"]);
+
+/** `#/issues/<id>/<tab>` <-> Route. Unknown hashes fall back to the vehicles view. */
+export function parseRouteHash(hash: string): Route | null {
+  const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+  if (!parts.length) return null;
+  const view = parts[0]!;
+  if (!VIEWS.has(view)) return null;
+  const issueId = view === "issues" && parts[1] ? parts[1] : null;
+  const tab = issueId && parts[2] && TABS.has(parts[2]) ? (parts[2] as IssueDetailTab) : "overview";
+  return { view: view as WorkspaceView, issueId, issueTab: tab };
+}
+export function routeToHash(r: Route): string {
+  if (r.view === "issues" && r.issueId) return `#/issues/${encodeURIComponent(r.issueId)}${r.issueTab !== "overview" ? `/${r.issueTab}` : ""}`;
+  return `#/${r.view}`;
+}
 
 /** Mode badge is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE=true); the screens carry no mock/sample wording by default. */
 const SHOW_MODE = process.env.NEXT_PUBLIC_RECALL_SHOW_MODE === "true";
 
 const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
 
-export function RecallWorkspace({ client, initialView = "vehicles", instantZoom = false, chatOpen: chatOpenInitial = false }: RecallWorkspaceProps) {
+export function RecallWorkspace({ client, initialView, instantZoom = false, chatOpen: chatOpenInitial = false, syncUrl }: RecallWorkspaceProps) {
   const c = useMemo(() => client ?? getDefaultClient(), [client]);
-  const [route, setRoute] = useState<Route>({ view: initialView, issueId: null, issueTab: "overview" });
+  const urlSync = syncUrl ?? client === undefined;
+  const [route, setRoute] = useState<Route>({ view: initialView ?? "vehicles", issueId: null, issueTab: "overview" });
   const [explorer, setExplorerState] = useState<ExplorerState>(INITIAL_EXPLORER);
   const [chatOpen, setChatOpen] = useState(chatOpenInitial);
   const [newIssue, setNewIssue] = useState<{ open: boolean; prefill?: NewIssuePrefill }>({ open: false });
   const [catalog, setCatalog] = useState<ReferenceCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<{ code: string; message: string } | null>(null);
   const [catalogTick, setCatalogTick] = useState(0);
+  const [backend, setBackend] = useState<BackendState>({ status: "idle", health: null, error: null });
+  const [backendTick, setBackendTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +97,41 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
       cancelled = true;
     };
   }, [c, catalogTick]);
+
+  // Live mode: read which backend answers the routes. Never assumed; the badge waits for the report.
+  useEffect(() => {
+    if (c.mode !== "live") return;
+    let cancelled = false;
+    setBackend((b) => ({ status: "loading", health: b.health, error: null }));
+    c.getHealth().then((r) => {
+      if (cancelled) return;
+      if (r.ok) setBackend({ status: "ready", health: r.data, error: null });
+      else setBackend({ status: "error", health: null, error: r.error });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [c, backendTick]);
+
+  // URL hash <-> route (page reload reopens the same issue; back/forward navigate).
+  useEffect(() => {
+    if (!urlSync || typeof window === "undefined") return;
+    const fromHash = parseRouteHash(window.location.hash);
+    if (fromHash) setRoute(fromHash);
+    const onPop = () => {
+      const r = parseRouteHash(window.location.hash);
+      setRoute(r ?? { view: "vehicles", issueId: null, issueTab: "overview" });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [urlSync]);
+  useEffect(() => {
+    if (!urlSync || typeof window === "undefined") return;
+    const h = routeToHash(route);
+    if (window.location.hash === h) return;
+    if (!window.location.hash && route.view === "vehicles" && !route.issueId) window.history.replaceState(null, "", h);
+    else window.history.pushState(null, "", h);
+  }, [route, urlSync]);
 
   const setExplorer = useCallback((patch: Partial<ExplorerState> | ((s: ExplorerState) => Partial<ExplorerState>)) => {
     setExplorerState((s) => ({ ...s, ...(typeof patch === "function" ? patch(s) : patch) }));
@@ -140,9 +205,19 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
   const agentContext = useCallback((): AgentContext => ({ vehicleBuildId: explorer.vehicleBuildId, selectedEntityId: explorer.selectedEntityId, view: route.view, openIssueId: route.issueId }), [explorer.vehicleBuildId, explorer.selectedEntityId, route.view, route.issueId]);
 
   const api: WorkspaceApi = useMemo(
-    () => ({ client: c, catalog, lookup: makeLookup(catalog), view: route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen, setChatOpen }),
-    [c, catalog, route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen],
+    () => ({ client: c, backend, catalog, lookup: makeLookup(catalog), view: route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen, setChatOpen }),
+    [c, backend, catalog, route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen],
   );
+
+  const backendInfo = backend.health ? describeBackend(backend.health) : null;
+  const badge =
+    c.mode === "mock"
+      ? { text: c.modeLabel, tone: "warning" as const, title: "Browser-side sample data; no backend is called." }
+      : backend.status === "ready" && backendInfo
+        ? { text: `${c.modeLabel} · ${backendInfo.short}`, tone: backendInfo.tone, title: backendInfo.long }
+        : backend.status === "error"
+          ? { text: `${c.modeLabel} · backend unreachable`, tone: "blocking" as const, title: backend.error ? `${backend.error.code}: ${backend.error.message}` : "GET /api/health failed" }
+          : { text: `${c.modeLabel} · checking backend…`, tone: "muted" as const, title: "Waiting for GET /api/health" };
 
   return (
     <WorkspaceContext.Provider value={api}>
@@ -166,15 +241,40 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             <button type="button" className="rrx-btn rrx-btn--primary rrx-btn--sm" onClick={() => openNewIssue()} data-testid="topbar-new-issue">
               + New issue
             </button>
-            {SHOW_MODE ? (
-              <span className={`rrx-badge ${c.mode === "mock" ? "rrx-badge--warning" : "rrx-badge--ok"}`} data-testid="mode-badge">
-                {c.modeLabel}
+            {c.mode === "live" || SHOW_MODE ? (
+              // Live mode always names the backend behind the routes (health report); the mock badge is opt-in for pitch screens.
+              <span className={`rrx-badge rrx-badge--${badge.tone}`} data-testid="mode-badge" data-services-mode={backend.health?.servicesMode ?? (c.mode === "mock" ? "mock" : "unknown")} title={badge.title}>
+                {badge.text}
+              </span>
+            ) : null}
+            {c.mode === "live" && backend.health ? (
+              <span className="rrx-muted rrx-small" data-testid="ai-provider-badge" title="RECALL_AI_PROVIDER as reported by /api/health">
+                AI: {backend.health.aiProvider}
               </span>
             ) : null}
             <span className="rrx-muted rrx-small rrx-mono">{CONTRACT_VERSION}</span>
           </div>
         </header>
         <main className="rrx-main">
+          {c.mode === "mock" && SHOW_MODE ? (
+            <div style={{ marginBottom: 12 }}>
+              <Banner kind="warning">
+                <strong>Sample data (mock mode).</strong> All vehicles, parts, wiring, teams, suppliers, customers and issues on this screen are synthetic development data served from an in-memory mock. Nothing here is a real factory record. Set NEXT_PUBLIC_RECALL_UI_MOCKS=false for the integrated demo.
+              </Banner>
+            </div>
+          ) : null}
+          {c.mode === "live" && backend.status === "ready" && backend.health && backendInfo && backendInfo.tone !== "ok" ? (
+            <div style={{ marginBottom: 12 }}>
+              <Banner kind={backendInfo.tone === "blocking" ? "error" : "warning"} action={backendInfo.tone === "blocking" ? <button type="button" className="rrx-btn rrx-btn--sm" onClick={() => setBackendTick((t) => t + 1)}>Re-check</button> : undefined}>
+                <strong>{backendInfo.tone === "blocking" ? "Backend services not wired." : "Demo data (service double)."}</strong> {backendInfo.long}
+              </Banner>
+            </div>
+          ) : null}
+          {c.mode === "live" && backend.status === "error" && backend.error ? (
+            <div style={{ marginBottom: 12 }}>
+              <ErrorBanner error={{ code: backend.error.code, message: `GET /api/health failed: ${backend.error.message}. The backend mode is unknown; nothing is substituted.` }} onRetry={() => setBackendTick((t) => t + 1)} retryLabel="Re-check" />
+            </div>
+          ) : null}
           {catalogError ? (
             <div style={{ marginBottom: 12 }}>
               <ErrorBanner error={{ code: catalogError.code as never, message: `Reference catalog unavailable: ${catalogError.message}` }} onRetry={() => setCatalogTick((t) => t + 1)} />

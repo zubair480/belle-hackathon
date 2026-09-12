@@ -20,7 +20,7 @@ export function AssemblyContext({ detail }: { detail: IssueDetail }) {
               {ctx.entity.id} <span className="rrx-muted">· {ctx.entity.partNumber}{ctx.entity.partRevision ? ` rev ${ctx.entity.partRevision}` : ""}</span>
             </h3>
             <div className="rrx-row">
-              <SourcingBadge sourcing={ctx.entity.origin?.sourcingType} />
+              <SourcingBadge sourcing={ctx.entity.origin?.sourcingType} kind={ctx.entity.kind} />
               <button type="button" className="rrx-btn rrx-btn--sm" onClick={() => ws.openEntity(ctx.entity.id)}>
                 Show on sketch
               </button>

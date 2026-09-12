@@ -4,7 +4,7 @@
  * shown is what the server saved. Distinct labels for reporter, current owner, detection station,
  * process owner and confirmed cause.
  */
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { IssueCommentInput, IssueDetail as IssueDetailDto, IssueUpdate } from "@/contracts/issues";
 import { newIdempotencyKey } from "../../features/recall/api/types";
 import { useWorkspace } from "../../features/recall/context";
@@ -48,7 +48,7 @@ export function IssueDetailView({ issueId, initialTab = "overview", onBack }: { 
   const issue = d.issue;
   const confirmed = d.causes.find((c) => c.isCurrent && c.state === "confirmed") ?? null;
   const supplierHypotheses = d.causes.filter((c) => c.state === "hypothesis" && c.responsibleSupplierId);
-  const originOf = (id: string) => d.entities.find((e) => e.id === id)?.origin?.sourcingType;
+  const entityOf = (id: string) => d.entities.find((e) => e.id === id);
 
   return (
     <div className="rrx-stack" data-testid="issue-detail">
@@ -110,8 +110,8 @@ export function IssueDetailView({ issueId, initialTab = "overview", onBack }: { 
           <span className="rrx-label">Marked items:</span>
           {issue.entityIds.length ? (
             issue.entityIds.map((id) => (
-              <button key={id} type="button" className="rrx-chip" onClick={() => ws.openEntity(id)} title="Show on sketch">
-                <SourcingBadge sourcing={originOf(id)} compact /> <span className="rrx-mono">{id}</span>
+              <button key={id} type="button" className="rrx-chip" onClick={() => ws.openEntity(id)} title={entityOf(id) ? "Show on sketch" : "No backend record for this id"}>
+                {entityOf(id) ? <SourcingBadge sourcing={entityOf(id)?.origin?.sourcingType} kind={entityOf(id)?.kind} compact /> : <span className="rrx-badge rrx-badge--muted">no record</span>} <span className="rrx-mono">{id}</span>
               </button>
             ))
           ) : (
@@ -144,14 +144,26 @@ function Overview({ d, onChanged }: { d: IssueDetailDto; onChanged: (note?: stri
   const issue = d.issue;
   const [assigned, setAssigned] = useState(issue.assignedTeamId ?? "");
   const [description, setDescription] = useState(issue.description);
-  useEffect(() => {
-    setAssigned(issue.assignedTeamId ?? "");
-    setDescription(issue.description);
-  }, [issue.assignedTeamId, issue.description, issue.version]);
   const update = useMutation((u: IssueUpdate) => ws.client.updateIssue(issue.id, u));
+  const { clearError } = update;
+  // When the server record changes (save, or "Reload latest" after STALE_VERSION), refresh the fields the
+  // operator has not touched and keep their unsaved edits; the conflict banner is cleared by the reload.
+  const base = useRef({ assigned: issue.assignedTeamId ?? "", description: issue.description });
+  useEffect(() => {
+    const next = { assigned: issue.assignedTeamId ?? "", description: issue.description };
+    setAssigned((cur) => (cur === base.current.assigned ? next.assigned : cur));
+    setDescription((cur) => (cur === base.current.description ? next.description : cur));
+    base.current = next;
+    clearError();
+  }, [issue.assignedTeamId, issue.description, issue.version, clearError]);
   const dirty = assigned !== (issue.assignedTeamId ?? "") || description !== issue.description;
   const save = async () => {
-    const r = await update.run({ expectedVersion: issue.version, assignedTeamId: assigned || null, description });
+    // Send only the fields that changed so the audit trail names what the operator actually edited.
+    const r = await update.run({
+      expectedVersion: issue.version,
+      ...(assigned !== (issue.assignedTeamId ?? "") ? { assignedTeamId: assigned || null } : {}),
+      ...(description !== issue.description ? { description } : {}),
+    });
     if (r?.ok) onChanged("Issue saved");
   };
   return (
@@ -216,8 +228,16 @@ function Overview({ d, onChanged }: { d: IssueDetailDto; onChanged: (note?: stri
                       <div className="rrx-muted rrx-small">{e.kind}</div>
                     </td>
                     <td>
-                      <SourcingBadge sourcing={e.origin?.sourcingType} compact />
-                      <div className="rrx-muted rrx-small">{e.origin?.sourcingType === "supplier" ? `${ws.lookup.supplier(e.origin.supplierId)} · ${e.origin.supplierBatchCode}` : e.origin?.sourcingType === "in_house" ? `${e.origin.manufacturingLotCode} · ${e.origin.workOrderId}` : "no origin record"}</div>
+                      <SourcingBadge sourcing={e.origin?.sourcingType} kind={e.kind} compact />
+                      <div className="rrx-muted rrx-small">
+                        {e.origin?.sourcingType === "supplier"
+                          ? `${ws.lookup.supplier(e.origin.supplierId)} · ${e.origin.supplierBatchCode}`
+                          : e.origin?.sourcingType === "in_house"
+                            ? `${e.origin.manufacturingLotCode} · ${e.origin.workOrderId}`
+                            : e.kind === "vehicle"
+                              ? "assembled build · no origin record applies"
+                              : "no origin record"}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -226,7 +246,7 @@ function Overview({ d, onChanged }: { d: IssueDetailDto; onChanged: (note?: stri
           ) : (
             <Empty>No serial or build marked. The issue is still valid; mark items when known.</Empty>
           )}
-          {issue.entityIds.filter((id) => !d.entities.some((e) => e.id === id)).length ? <Banner kind="warning">Marked ids not found in the backend: {issue.entityIds.filter((id) => !d.entities.some((e) => e.id === id)).join(", ")}</Banner> : null}
+          {issue.entityIds.filter((id) => !d.entities.some((e) => e.id === id)).length ? <Banner kind="warning">No backend record for marked id(s): {issue.entityIds.filter((id) => !d.entities.some((e) => e.id === id)).join(", ")}. They stay on the issue as written; no origin or containment is shown for them.</Banner> : null}
         </section>
         <section className="rrx-card">
           <h3>Evidence</h3>

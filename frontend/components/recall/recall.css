@@ -201,11 +201,19 @@
 @keyframes rrx-slideup { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .rrx-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 12px; margin-bottom: 12px; }
 .rrx-legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.rrx-legend-swatch--absent { background: transparent; border: 1px dashed rgba(255,255,255,0.45); }
+.rrx-dot--absent { background: transparent; border: 1px dashed rgba(255,255,255,0.45); box-sizing: border-box; }
+.rrx-partlist-absent { opacity: .7; }
 
 /* ---- 3D sketch ---- */
 .rrx-stage--3d svg { aspect-ratio: 1000 / 560; user-select: none; }
 .rrx-part-edge { fill: none; stroke: rgba(255,255,255,0.3); stroke-width: 1; transition: stroke .15s; }
 .rrx-part-edge--child { stroke-dasharray: 3 3; }
+/* Sketch-only slots (backend NOT_FOUND): faint dotted outline, no origin colour, no pulse. */
+.rrx-hotspot[data-record="absent"] .rrx-part-edge { stroke: rgba(255,255,255,0.14); stroke-dasharray: 2 5; }
+.rrx-hotspot[data-record="absent"] .rrx-hot-pulse { display: none; }
+.rrx-hotspot[data-record="absent"]:hover .rrx-part-edge, .rrx-hotspot[data-record="absent"]:focus .rrx-part-edge { stroke: rgba(255,255,255,0.5); }
+.rrx-hotspot[data-record="error"] .rrx-part-edge { stroke: var(--rr-blocking); stroke-dasharray: 2 5; }
 .rrx-hotspot:hover .rrx-part-edge, .rrx-hotspot:focus .rrx-part-edge { stroke: #fff; stroke-width: 1.6; }
 .rrx-part-edge--selected { stroke: #fff; stroke-width: 2.2; }
 .rrx-hot-hit { fill: rgba(255,255,255,0.001); cursor: pointer; transition: fill .15s; }
