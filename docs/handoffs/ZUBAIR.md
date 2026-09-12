@@ -347,3 +347,8 @@ workspace); real integration suites 5 passed / 1 skipped (per-test timeout raise
 long loop; the shared instance is slower than the first one); HTTP acceptance 22/22 before restart
 (docs/evidence/acceptance-graph-7bd3cbcf-before.json) and 23/23 after a documented restart
 (acceptance-graph-7bd3cbcf-after.json). The earlier instance c5905f5f is no longer used by the app.
+
+### Final integrated head (2026-09-12, ~16:10)
+- Front-end integration agent branch `codex/frontend-backend-integration` @ 8a0c33c merged (its own merge of 8dda91b resolved nine UI conflicts keeping Ali's newest UI and the integration fixes). `codex/final-integration` @ dc32792 pushed.
+- Checks at dc32792: typecheck passed; vitest 114 passed / 8 skipped; next build passed; real-mode HTTP acceptance 22/22 on the shared Aura instance (`docs/evidence/acceptance-graph-final-dc32792.json`); the UI header reads "Live API · Neo4j graph services" from /api/health in graph mode.
+- Backend discrepancies reported by the agent, not yet changed: (1) createFixRevision sets currentFixRevisionId to a still-proposed fix; (2) update audit summary lists every field sent; (3) similar-resolution warnings prefix limitations with "limitation:". None block the demo.
