@@ -303,13 +303,13 @@ describe("insights", () => {
     mount("insights");
     const teams = await screen.findByTestId("team-table");
     const row = within(teams).getByText("Final Inspection").closest("tr")!;
-    expect(row).toHaveTextContent("6");
+    expect(row).toHaveTextContent("9");
     expect(screen.getByTestId("rate-SUP-LAMP")).toHaveTextContent("N/A");
     expect(screen.getByTestId(`rate-${EV_DEMO.suppliers.connector}`)).toHaveTextContent("%");
     fireEvent.click(screen.getByTestId("metric-reported-by-final-inspection"));
     const dialog = await screen.findByTestId("drilldown");
     expect(dialog).toHaveTextContent("Reported by Final Inspection");
-    await waitFor(() => expect(within(dialog).getAllByText(/Evidence:/)).toHaveLength(6));
+    await waitFor(() => expect(within(dialog).getAllByText(/Evidence:/)).toHaveLength(9));
     expect(dialog).toHaveTextContent(EV_DEMO.priorIssueId);
   });
 });
