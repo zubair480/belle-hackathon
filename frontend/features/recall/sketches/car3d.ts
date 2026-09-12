@@ -45,14 +45,16 @@ export function slotForEntityId(entityId: string): { slot: PartSlot; suffix: str
 // Body styles
 // ---------------------------------------------------------------------------
 
-export type BodyStyle = "sedan" | "crossover" | "hatch";
+export type BodyStyle = "sedan" | "suv" | "sports";
 
 type Profile = { pts: Array<[number, number]>; halfWidth: number; wheelX: [number, number]; wheelR: number; roofZ: number };
 
 const PROFILES: Record<BodyStyle, Profile> = {
+  // 12 profile points, rear to front: [0] rear bottom, [1] rear top, [2] tailgate/trunk top, [3] rear deck / C-pillar base,
+  // [4] roof rear, [5..6] roof, [7] A-pillar top, [8] windshield base, [9] hood front, [10] front top, [11] front bottom.
   sedan: { pts: [[-2300, 380], [-2300, 780], [-2150, 930], [-1250, 940], [-850, 1360], [-500, 1440], [600, 1440], [1000, 1330], [1350, 1010], [2150, 930], [2300, 820], [2300, 380]], halfWidth: 920, wheelX: [-1450, 1450], wheelR: 370, roofZ: 1440 },
-  crossover: { pts: [[-2250, 420], [-2250, 900], [-2050, 1150], [-1250, 1180], [-900, 1560], [-500, 1620], [650, 1620], [1050, 1500], [1350, 1150], [2150, 1050], [2300, 900], [2300, 420]], halfWidth: 960, wheelX: [-1450, 1450], wheelR: 400, roofZ: 1620 },
-  hatch: { pts: [[-1950, 380], [-1950, 800], [-1850, 1150], [-1500, 1400], [-1100, 1460], [500, 1460], [900, 1350], [1250, 1020], [1950, 930], [2050, 800], [2050, 380]], halfWidth: 880, wheelX: [-1250, 1300], wheelR: 350, roofZ: 1460 },
+  suv: { pts: [[-2350, 450], [-2350, 1050], [-2250, 1560], [-1350, 1600], [-1000, 1740], [-600, 1760], [800, 1760], [1150, 1660], [1450, 1260], [2200, 1150], [2350, 980], [2350, 450]], halfWidth: 980, wheelX: [-1500, 1500], wheelR: 410, roofZ: 1760 },
+  sports: { pts: [[-2250, 380], [-2250, 700], [-2100, 830], [-1450, 860], [-850, 1180], [-350, 1250], [500, 1250], [900, 1160], [1300, 900], [2100, 780], [2300, 650], [2300, 380]], halfWidth: 960, wheelX: [-1500, 1500], wheelR: 400, roofZ: 1250 },
 };
 
 function circle3(center: Vec3, r: number, plane: "yz" | "xz" | "xy", n = 28): Vec3[] {
@@ -88,8 +90,8 @@ export function bodyLines(style: BodyStyle): Polyline3[] {
   }
   // Doors, B-pillar, windows, hood and tailgate lines.
   const doorTop = p.roofZ - 120;
-  const rearDoorX: [number, number] = style === "hatch" ? [-900, -30] : [-1000, -30];
-  const frontDoorX: [number, number] = style === "hatch" ? [30, 950] : [30, 1050];
+  const rearDoorX: [number, number] = style === "sports" ? [-900, -30] : [-1000, -30];
+  const frontDoorX: [number, number] = style === "sports" ? [30, 1000] : [30, 1050];
   for (const side of [-1, 1]) {
     const y = side * (w + 6);
     for (const [x0, x1] of [rearDoorX, frontDoorX]) {
@@ -184,8 +186,8 @@ const BASE: Record<string, Box3> = {
 
 const STYLE_SCALE: Record<BodyStyle, { x: number; z: number; y: number }> = {
   sedan: { x: 1, z: 1, y: 1 },
-  crossover: { x: 1, z: 1.1, y: 1.04 },
-  hatch: { x: 0.86, z: 1.02, y: 0.96 },
+  suv: { x: 1.02, z: 1.2, y: 1.06 },
+  sports: { x: 1, z: 0.86, y: 1.04 },
 };
 
 export function partBox(slot: string, style: BodyStyle): Box3 | null {
@@ -313,8 +315,8 @@ export type SketchVehicle = { buildId: string; entityId: string; style: BodyStyl
 
 export const SKETCH_VEHICLES: SketchVehicle[] = [
   { buildId: "DEMO-EV-005", entityId: "DEMO-EV-005", style: "sedan", modelName: "Demo Sedan", platform: "EV-PLATFORM-1", suffix: "0005", note: "Story vehicle: charge-port alignment issue reported at Final Inspection" },
-  { buildId: "DEMO-EV-006", entityId: "DEMO-EV-006", style: "crossover", modelName: "Demo Crossover", platform: "EV-PLATFORM-1", suffix: "0006", note: "Connector replaced after confirmed supplier pin damage; two open door issues" },
-  { buildId: "DEMO-EV-007", entityId: "DEMO-EV-007", style: "hatch", modelName: "Demo Compact", platform: "EV-PLATFORM-1", suffix: "0007", note: "Shipped; headlamp condensation and a no-wake (ignition) report" },
+  { buildId: "DEMO-EV-006", entityId: "DEMO-EV-006", style: "suv", modelName: "Demo SUV", platform: "EV-PLATFORM-1", suffix: "0006", note: "Connector replaced after confirmed supplier pin damage; door, mirror and HV contactor issues open" },
+  { buildId: "DEMO-EV-007", entityId: "DEMO-EV-007", style: "sports", modelName: "Demo Sport", platform: "EV-PLATFORM-1", suffix: "0007", note: "Shipped; no-wake (ignition), headlamp and seat-heater reports" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -389,6 +391,27 @@ export function searchCircuits(text: string): CircuitDef[] {
 
 export function wiresForSlot(slot: string): WireDef[] {
   return WIRES.filter((w) => w.from === slot || w.to === slot || w.harness === slot);
+}
+
+/** Wires touching any of the given slots (from, to or routed-in harness). */
+export function wiresNear(slots: string[]): WireDef[] {
+  const set = new Set(slots);
+  return WIRES.filter((w) => set.has(w.from) || set.has(w.to) || (w.harness ? set.has(w.harness) : false));
+}
+
+/** Human-readable description of a wire for tooltips and the agent. */
+export function describeWire(w: WireDef): { title: string; lines: string[] } {
+  const c = CIRCUITS.find((x) => x.id === w.circuitId);
+  return {
+    title: `${w.id} · ${w.signal}`,
+    lines: [
+      `From ${slotById(w.from)?.label ?? w.from}${w.fromConnector ? ` (${w.fromConnector})` : ""}`,
+      `To ${slotById(w.to)?.label ?? w.to}${w.toConnector ? ` (${w.toConnector})` : ""}`,
+      w.harness ? `Routed in ${slotById(w.harness)?.label ?? w.harness}` : "Direct connection (no harness)",
+      `Circuit ${c?.name ?? w.circuitId} (${w.circuitId})`,
+      `${w.voltageClass} · ${w.gauge} · ${w.color}`,
+    ],
+  };
 }
 
 export function wiresForCircuit(circuitId: string): WireDef[] {
