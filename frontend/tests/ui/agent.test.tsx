@@ -38,8 +38,10 @@ describe("stub planner tool loop", () => {
     const r = await runStubTurn(ctx, { messages: [{ role: "user", content: "The right front tire has an issue" }], context: ctx.context, sessionId: null });
     expect(AgentChatResponseSchema.safeParse(r).success).toBe(true);
     expect(r.provider.mode).toBe("stub");
-    expect(r.toolCalls.map((t) => t.name)).toEqual(["focus_part", "list_issues_for_part"]);
+    expect(r.toolCalls.map((t) => t.name)).toEqual(["focus_part", "locate_fault", "list_issues_for_part"]);
     expect(r.uiActions).toContainEqual({ type: "focus_part", entityId: "WHL-0005-FR", slot: "wheel-FR" });
+    expect(r.uiActions.some((a) => a.type === "mark" && a.entityId === "WHL-0005-FR" && a.zoneId === "tpms-valve")).toBe(false);
+    expect(r.uiActions.some((a) => a.type === "mark" && a.entityId === "WHL-0005-FR" && a.zoneId !== null)).toBe(true);
     expect(r.reply).toContain("Front right wheel and tire (WHL-0005-FR");
     expect(r.reply).toContain("Bought from Demo Wheel and Tire Supplier");
     expect(r.reply).toContain("ISS-TIRE-007");
@@ -70,7 +72,7 @@ describe("stub planner tool loop", () => {
     const ctx = await ctxFor();
     const before = (await ctx.client.listIssues({})).ok ? 1 : 0;
     const r1 = await runStubTurn(ctx, { messages: [{ role: "user", content: "Circle the mounting bracket" }], context: ctx.context, sessionId: null });
-    expect(r1.uiActions).toContainEqual({ type: "mark", entityId: "BRKT-0005", slot: "charge-bracket", wireId: null, note: expect.any(String) });
+    expect(r1.uiActions).toContainEqual(expect.objectContaining({ type: "mark", entityId: "BRKT-0005", slot: "charge-bracket", wireId: null }));
     const ctx2 = await ctxFor();
     const r2 = await runStubTurn(ctx2, { messages: [{ role: "user", content: "mark the ignition wiring" }], context: ctx2.context, sessionId: null });
     expect(r2.uiActions.filter((a) => a.type === "mark" && a.wireId).length).toBeGreaterThan(3);
@@ -79,8 +81,21 @@ describe("stub planner tool loop", () => {
     const r3 = await runStubTurn(ctx3, { messages: [{ role: "user", content: "open an issue for this" }], context: ctx3.context, sessionId: null });
     expect(r3.uiActions.some((a) => a.type === "open_new_issue" && a.entityIds.includes("BRKT-0005") && a.entityIds.includes("DEMO-EV-005"))).toBe(true);
     const after = await ctx3.client.listIssues({});
-    expect(after.ok && after.data.total).toBe(8);
+    expect(after.ok && after.data.total).toBe(13);
     expect(before).toBe(1);
+  });
+
+  it("locate_fault marks where inside the part the symptom is likely to sit", async () => {
+    const ctx = await ctxFor();
+    const r = await runStubTurn(ctx, { messages: [{ role: "user", content: "The charge port is misaligned, where should I look?" }], context: ctx.context, sessionId: null });
+    expect(r.toolCalls.map((t) => t.name)).toContain("locate_fault");
+    const marks = r.uiActions.filter((a) => a.type === "mark");
+    expect(marks.some((m) => m.type === "mark" && m.entityId === "CPM-0005" && m.zoneId === "bracket-flange")).toBe(true);
+    expect(r.reply).toContain("Bracket flange (left mount)");
+    expect(r.reply).toContain("not a confirmed cause");
+    const ctx2 = await ctxFor("DEMO-EV-007");
+    const r2 = await runStubTurn(ctx2, { messages: [{ role: "user", content: "left headlamp has condensation" }], context: ctx2.context, sessionId: null });
+    expect(r2.uiActions.some((a) => a.type === "mark" && a.entityId === "LAMP-0007-L" && a.zoneId === "vent-seal")).toBe(true);
   });
 
   it("every tool rejects invalid input without throwing", async () => {
@@ -125,8 +140,8 @@ describe("workspace + chat integration", () => {
     expect(screen.getByTestId("circuit-select")).toHaveValue("C-START");
     expect(screen.getByTestId("wire-W-011")).toHaveAttribute("data-active", "true");
     expect(screen.getByTestId("wire-W-020")).toHaveAttribute("data-active", "false");
-    await waitFor(() => expect(screen.getByTestId("hotspot-start-switch")).toHaveAttribute("data-selected", "true"));
     const panel = await screen.findByTestId("part-detail");
+    expect(panel).toHaveTextContent("Start/stop switch (ignition)");
     await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-IGN-006")).toBeInTheDocument());
     expect(within(panel).getByTestId("part-wires")).toHaveTextContent("W-011");
   });

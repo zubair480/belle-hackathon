@@ -18,6 +18,7 @@ import type { ToolContext } from "../../agent/tools";
 import { clientFail, clientOk, type BackendHealth, type RecallClient } from "../../features/recall/api";
 import { createMockClient } from "../../features/recall/api/mockClient";
 import { RecallWorkspace, parseRouteHash, routeToHash } from "../../features/recall/RecallWorkspace";
+import { entityIdFor, slotById } from "../../features/recall/sketches/car3d";
 
 afterEach(cleanup);
 
@@ -63,11 +64,15 @@ describe("backend mode badge", () => {
     expect(screen.getByText(/GET \/api\/health failed/)).toBeInTheDocument();
   });
 
-  it("keeps the mock label in mock mode without calling health", async () => {
+  it("never shows a backend label in mock mode and does not call health", async () => {
     const { client } = createMockClient({ latencyMs: 0 });
-    render(<RecallWorkspace client={client} initialView="issues" instantZoom />);
-    expect(screen.getByTestId("mode-badge")).toHaveTextContent("Sample data (mock mode)");
-    expect(screen.getByTestId("mode-badge")).toHaveAttribute("data-services-mode", "mock");
+    const spied: RecallClient = { ...client, getHealth: async () => { throw new Error("health must not be called in mock mode"); } };
+    render(<RecallWorkspace client={spied} initialView="issues" instantZoom />);
+    await screen.findByTestId("issue-table");
+    // The mock badge is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE); nothing on screen may claim a live backend or Neo4j.
+    expect(screen.queryByTestId("mode-badge")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Live API|Neo4j|service double/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ai-provider-badge")).not.toBeInTheDocument();
   });
 });
 
@@ -94,31 +99,33 @@ describe("vehicle identity and sketch-only slots", () => {
   });
 
   it("shows an explicit no-backend-record state for a sketch-only id and marks only the vehicle when reporting from it", async () => {
+    // An exterior slot (drawn on the sketch) whose entity the backend does not know: the left headlamp of DEMO-EV-005.
+    const absentId = entityIdFor(slotById("headlamp-L")!, "0005");
     const base = createMockClient({ latencyMs: 0 }).client;
     const { client } = liveLike({
-      getEntityContext: async (id, asOf) => (id === "BATT-0005" ? clientFail("NOT_FOUND", "Entity BATT-0005 does not exist.") : base.getEntityContext(id, asOf)),
+      getEntityContext: async (id, asOf) => (id === absentId ? clientFail("NOT_FOUND", `Entity ${absentId} does not exist.`) : base.getEntityContext(id, asOf)),
     });
     render(<RecallWorkspace client={client} initialView="vehicles" instantZoom />);
-    await waitFor(() => expect(screen.getByTestId("hotspot-battery-pack")).toHaveAttribute("data-record", "absent"));
-    expect(screen.getByTestId("hotspot-battery-pack")).toHaveAttribute("data-sourcing", "none");
-    expect(screen.getByTestId("hotspot-battery-pack")).toHaveAttribute("aria-label", expect.stringContaining("no backend record"));
+    await waitFor(() => expect(screen.getByTestId("hotspot-headlamp-L")).toHaveAttribute("data-record", "absent"));
+    expect(screen.getByTestId("hotspot-headlamp-L")).toHaveAttribute("data-sourcing", "none");
+    expect(screen.getByTestId("hotspot-headlamp-L")).toHaveAttribute("aria-label", expect.stringContaining("no backend record"));
     // The reliable charge-port path is loaded and coloured from the record.
     await waitFor(() => expect(screen.getByTestId("hotspot-charge-port-module")).toHaveAttribute("data-record", "recorded"));
     expect(screen.getByTestId("hotspot-charge-port-module")).toHaveAttribute("data-sourcing", "in_house");
 
-    fireEvent.click(screen.getByTestId("hotspot-battery-pack"));
+    fireEvent.click(screen.getByTestId("hotspot-headlamp-L"));
     const detail = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(detail).getByTestId("part-absent")).toBeInTheDocument());
     expect(detail).toHaveTextContent("No backend record");
     expect(detail).not.toHaveTextContent(/Manufacturing lot|Supplier batch|Unknown origin/);
     expect(screen.getByTestId("recorded-parts")).toHaveTextContent("1 no backend record");
-    expect(screen.getByTestId("absent-parts")).toHaveTextContent("BATT-0005");
+    expect(screen.getByTestId("absent-parts")).toHaveTextContent(absentId);
 
     fireEvent.click(within(detail).getByRole("button", { name: /Report issue on this part/ }));
     const form = await screen.findByTestId("new-issue-form");
     const chips = within(form).getByTestId("entity-chips");
     expect(chips).toHaveTextContent("DEMO-EV-005");
-    expect(chips).not.toHaveTextContent("BATT-0005");
+    expect(chips).not.toHaveTextContent(absentId);
     expect((within(form).getByLabelText(/Evidence 1 text/) as HTMLTextAreaElement).value).toContain("no entity record");
   });
 

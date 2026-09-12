@@ -154,7 +154,7 @@
 .rrx-model span { color: var(--rr-muted); font-size: 12px; }
 .rrx-stage { position: relative; background: #000; border: 1px solid var(--rr-border); border-radius: var(--rr-radius); overflow: hidden; }
 .rrx-stage svg { width: 100%; height: auto; display: block; touch-action: manipulation; }
-.rrx-stage-hud { position: absolute; top: 10px; left: 12px; display: flex; gap: 8px; align-items: center; }
+.rrx-stage-hud { position: absolute; top: 10px; left: 12px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; max-width: 36%; }
 .rrx-stage-hud-right { position: absolute; top: 10px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 62%; }
 .rrx-stage-legend { position: absolute; bottom: 10px; left: 12px; display: flex; gap: 12px; font-size: 12px; color: var(--rr-muted); }
 .rrx-sketch-line { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: rrx-draw 1.8s cubic-bezier(.4,0,.2,1) forwards; }
@@ -228,8 +228,9 @@
 .rrx-wire--marked { stroke: #ff6b7a; stroke-width: 3.2; stroke-dasharray: none; }
 .rrx-wire-hit { fill: none; stroke: transparent; stroke-width: 12; cursor: pointer; }
 .rrx-wire-group:hover .rrx-wire { stroke-width: 3; opacity: 1 !important; }
-.rrx-marker circle { fill: rgba(255,107,122,0.12); stroke: #ff6b7a; stroke-width: 2; }
-.rrx-marker .rrx-marker-outer { fill: none; stroke-dasharray: 4 5; opacity: .7; transform-box: fill-box; transform-origin: center; animation: rrx-marker-pulse 2s ease-in-out infinite; }
+.rrx-marker .rrx-marker-dot { fill: #ff6b7a; stroke: #000; stroke-width: 1; }
+.rrx-marker .rrx-marker-halo { fill: none; stroke: #ff6b7a; stroke-width: 1.4; opacity: .8; transform-box: fill-box; transform-origin: center; animation: rrx-marker-pulse 2s ease-in-out infinite; }
+.rrx-marker .rrx-marker-leader { fill: none; stroke: #ff6b7a; stroke-width: 1.2; }
 @keyframes rrx-marker-pulse { 0%, 100% { transform: scale(1); opacity: .7; } 50% { transform: scale(1.12); opacity: .3; } }
 .rrx-marker text { fill: #ff6b7a; font-family: var(--rr-font, system-ui); }
 
@@ -251,3 +252,49 @@
 .rrx-chip--tool { border-color: var(--rr-accent); color: var(--rr-accent); background: transparent; }
 .rrx-chip--tool-error { border-color: var(--rr-blocking); color: var(--rr-blocking); }
 @media (max-width: 1100px) { .rrx-with-chat .rrx-main { margin-right: 0; } .rrx-chat { width: 100%; } }
+
+/* ---- sketch tooltip and zoom disclosure ---- */
+.rrx-sketch-wrap { position: relative; }
+.rrx-tip { position: absolute; z-index: 4; pointer-events: none; max-width: 340px; background: rgba(8, 8, 12, 0.94); border: 1px solid var(--rr-border-strong); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.4; color: var(--rr-text); box-shadow: 0 8px 24px rgba(0,0,0,.6); animation: rrx-fade .12s ease; }
+.rrx-tip strong { display: block; margin-bottom: 4px; }
+.rrx-tip--wire { border-color: #fb923c; }
+.rrx-tip--wire strong { color: #fb923c; }
+.rrx-tip--part strong { color: var(--rr-accent); }
+.rrx-part-edge--near { stroke: rgba(255,255,255,0.75); stroke-width: 1.4; }
+.rrx-wire--hover { stroke-width: 3.4; opacity: 1 !important; }
+
+/* ---- segmented buttons, layers, wires v2 ---- */
+.rrx-seg { display: inline-flex; border: 1px solid var(--rr-border-strong); border-radius: 8px; overflow: hidden; background: rgba(0,0,0,.6); }
+.rrx-seg-btn { background: transparent; border: 0; color: var(--rr-muted); padding: 5px 12px; cursor: pointer; font: inherit; transition: background .15s, color .15s; }
+.rrx-seg-btn + .rrx-seg-btn { border-left: 1px solid var(--rr-border-strong); }
+.rrx-seg-btn[aria-checked="true"] { background: var(--rr-text); color: #000; font-weight: 600; }
+.rrx-seg-btn--minor[aria-checked="true"] { background: var(--rr-muted); }
+.rrx-seg-btn--major[aria-checked="true"] { background: var(--rr-warning); }
+.rrx-seg-btn--critical[aria-checked="true"] { background: var(--rr-blocking); color: #fff; }
+.rrx-layer--inside .rrx-sketch-line { stroke-width: 1.2; }
+.rrx-part-edge--featured { stroke: rgba(255,255,255,0.8); stroke-width: 1.3; }
+.rrx-wire-end { fill: #000; stroke: currentColor; stroke-width: 1.2; }
+.rrx-wire--hv ~ .rrx-wire-end, .rrx-wire-group:has(.rrx-wire--hv) .rrx-wire-end { stroke: #fb923c; }
+.rrx-wire-group:has(.rrx-wire--lv) .rrx-wire-end { stroke: #7dd3fc; }
+.rrx-wire-group:has(.rrx-wire--signal) .rrx-wire-end { stroke: #a7f3d0; }
+.rrx-wire-group:has(.rrx-wire--marked) .rrx-wire-end { stroke: #ff6b7a; }
+
+/* ---- New issue dialog ---- */
+.rrx-dialog--wide { width: min(1040px, 100%); padding: 0; overflow: hidden; }
+.rrx-overlay { align-items: center; padding: 24px; }
+.rrx-ni { display: flex; flex-direction: column; max-height: min(88vh, 960px); }
+.rrx-ni-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--rr-border); background: var(--rr-surface-2); }
+.rrx-ni-body { overflow: auto; padding: 6px 20px 16px; display: flex; flex-direction: column; gap: 6px; }
+.rrx-ni-section { padding: 14px 0; border-bottom: 1px solid var(--rr-border); }
+.rrx-ni-section:last-child { border-bottom: 0; }
+.rrx-ni-section h3 { color: var(--rr-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.rrx-ni-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.rrx-ni-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--rr-border-strong); border-radius: 8px; padding: 8px 10px; background: var(--rr-surface-2); }
+.rrx-ni-input { flex: 1; background: #000; border: 1px solid var(--rr-border-strong); border-radius: 6px; padding: 7px 9px; outline: none; }
+.rrx-ni-input:focus { border-color: var(--rr-accent); }
+.rrx-ni-evidence { display: grid; grid-template-columns: 220px 1fr auto; gap: 8px; align-items: start; margin-bottom: 8px; }
+.rrx-ni-evidence input, .rrx-ni-evidence textarea { background: #000; border: 1px solid var(--rr-border-strong); border-radius: 6px; padding: 7px 9px; outline: none; width: 100%; }
+.rrx-ni-evidence textarea { min-height: 48px; resize: vertical; }
+.rrx-ni-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--rr-border); background: var(--rr-surface-2); }
+.rrx-chip--on { border-color: var(--rr-accent); color: var(--rr-accent); }
+@media (max-width: 800px) { .rrx-ni-evidence { grid-template-columns: 1fr; } .rrx-form-grid { grid-template-columns: 1fr; } }

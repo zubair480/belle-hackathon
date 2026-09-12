@@ -242,3 +242,98 @@ real key); run `npm run typecheck`, `npm run build`, `npm test`, `npm run test:i
   EV revision is `ev-r1` and Codey's will be whatever his handoff says. Read it from
   `tests/integration/acceptance-expectations.json` or a health/catalog field rather than a literal.
 - Checks on the merged branch: typecheck passed; vitest 80 passed / 5 skipped.
+
+## Neo4j completion (2026-09-12, branch codex/neo4j-completion)
+
+Codey's graph branch never appeared on origin, so the graph services were implemented by Zubair
+under the published contract. Aura free instance created by Zubair on 2026-09-12 (instance id
+c5905f5f, database `neo4j`); credentials live only in `.env.local` and the downloaded Aura file.
+
+### Implemented (src/server/graph)
+- `driver.ts`: driver singleton from NEO4J_URI / NEO4J_USERNAME / NEO4J_PASSWORD / NEO4J_DATABASE.
+- `schema.ts`: per-workspace uniqueness constraints (ws, id) for every label plus (ws, key) for idempotency.
+- `index.ts`: `graphServices` implementing all 20 DomainServices methods. Graph model: catalog
+  nodes; Entity -HAS_ORIGIN-> Origin -FROM_SUPPLIER_LOT-> SupplierLot -SUPPLIED_BY-> Supplier and
+  Origin -PRODUCED_IN-> MfgLot -MADE_BY-> Team; Entity -INSTALLED_IN{installedAt, removedAt}-> Entity;
+  Entity -SHIPPED_TO-> Customer; Issue with REPORTED_BY / ASSIGNED_TO / DETECTED_AT / AT_STEP / AFFECTS /
+  LINKS_SUPPLIER / HAS_DEFECT / HAS_EVIDENCE; Cause -ASSESSES-> Issue with RESPONSIBLE_TEAM /
+  RESPONSIBLE_SUPPLIER / CAUSAL_STATION / CAUSAL_STEP / SUPERSEDES; Fix -FIXES-> Issue and
+  Fix -DERIVED_FROM-> Fix; Verification -VERIFIES-> Fix; Audit -AUDITS-> Issue; Idem nodes; Revision;
+  Preview; immutable TraceRun (stored result JSON). Idempotency keys and expectedVersion are checked
+  inside the same write transaction as the mutation. Similar-resolution retrieval is a graph query
+  (Issue<-FIXES-Fix{verified}<-VERIFIES-Verification{pass} joined with the current confirmed Cause)
+  scored deterministically. Traces walk lot -> Origin -> Entity -INSTALLED_IN*1..6-> vehicle with
+  per-hop interval filters for current (active at configurationAsOf) and historical (overlapping the
+  history window) containment; a vehicle reached twice is counted once. Imports in graph mode only
+  record a revision marker (CSV row ingestion is not implemented); late evidence is PREVIEW_REJECTED.
+- `scripts/neo4j/seed-ev.mts` (`npm run neo4j:seed`): idempotent MERGE seed of catalog, lots,
+  entities/origins, installations, shipments, evidence, revision ev-r1, the prior verified bracket
+  issue/fix/verification and the supplier-caused issue. Runs through scripts/neo4j/alias-loader.mjs.
+- `wiring.ts`: RECALL_SERVICES=graph registers graphServices; the double only when explicitly set.
+- Contract addition: CURRENT_REVISION_ALIAS = "current" resolves to the latest accepted revision.
+  Ali's impact_of_part tool now sends that alias and uses ProductionOrigin.productionLotId as the
+  root (the display label keeps the operator-facing batch/lot code).
+- Ali's frontend/data/ev-platform Neo4j import was NOT loaded: it is design-level platform data
+  (slots, wires, circuits) the UI reads from JSON; loading it is unnecessary for the demo and would
+  mix design slots with the manufacturing seed.
+
+### Setup and run (no secrets)
+1. cp .env.example .env.local and fill NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, NEO4J_DATABASE;
+   set RECALL_SERVICES=graph, NEXT_PUBLIC_RECALL_UI_MOCKS=false, RECALL_AI_PROVIDER=none, RECALL_AGENT_PROVIDER=stub.
+2. npm run neo4j:check
+3. npm run neo4j:seed
+4. npm run dev
+
+### Actual results (this machine, 2026-09-12)
+| Check | Result |
+| --- | --- |
+| npm run neo4j:check | connected to Neo4j/5.27-aura, trivial read ok |
+| npm run neo4j:seed twice | second run left seed counts unchanged (Entity 21, Origin 17, Evidence 24, Team 5, Revision 1) |
+| npm run typecheck | passed |
+| npx vitest run (unit + API + UI) | 81 passed, 4 skipped (integration suites need env) |
+| node --env-file=.env.local node_modules/vitest/vitest.mjs run tests/integration | 5 passed, 1 skipped (legacy robotics regression: fixtures/regression/*.csv absent, importer never delivered; NOT RUN) |
+| npm run acceptance -- --base http://localhost:3111 --out docs/evidence/acceptance-graph-before.json (no --allow-double) | 22/22, mode REAL graph services |
+| dev server stopped and restarted, then --persist-from before.json --out after.json | 23/23; ISS-MTYXQKFKF1DFA6 returned with identical status, version, fix states, verification outcomes, cause states and audit kinds |
+| Browser, UI mocks disabled, graph mode | issues board lists persisted issues; saved issue detail after restart shows supplier vs in-house origins, reporter / assigned / confirmed-cause labels, "no confirmed supplier fault", evidence; Resolution tab lists graph-retrieved verified fixes with reasons |
+
+Runner note: the "prior verified fix retrieved" step now finds the seeded fix in the result list
+instead of requiring it to rank first, because a durable store legitimately accumulates newer
+verified fixes with equal or higher scores. Reasons are still checked and supplier overlap is
+rejected as a reason for every result.
+
+### Remaining limits
+- Graph-mode imports do not ingest CSV rows; the seed script is the ingestion path.
+- Late-evidence preview and the legacy robotics regression are unavailable in graph mode.
+- No inspection cohort is seeded, so supplier rates are N/A by design.
+- Runtime AI and the Qoder agent planner were not exercised; no Qoder development evidence exists
+  for Zubair's lane (built with Claude Code).
+- Ali's full browser checklist (BROWSER_ACCEPTANCE.md) with screenshots against this graph-backed
+  build is still to be recorded.
+
+### Browser run in graph mode (2026-09-12, later)
+`docs/evidence/BROWSER_ACCEPTANCE_RUN_2026-09-12.md`: through Ali's UI against Neo4j, with mocks
+disabled, a manual issue was created, reloaded, assigned, given a confirmed in-house cause, a
+prior verified fix was reused as a new proposal, applied, failed then passed verification, closed
+and reopened with full history; insights showed role-separated counts and an N/A supplier rate.
+Not run in the browser: sketch marking, second-tab stale edit, later-issue retrieval, lot traces,
+AI-off and database-down states (the HTTP runner covers retrieval, stale writes and traces).
+A front-end integration agent is working on codex/frontend-backend-integration (worktree) on
+backend-mode badges, sketch-only entity states and vehicle labelling; merge pending its report.
+
+### Late lanes merged (2026-09-12, ~15:30)
+- Ali `codex/ali-ui-pitch` @ f202d63 merged: adds `@qoder-ai/qoder-agent-sdk` 1.0.39 to the manifest
+  (Ali's agent planner; a server-side PAT is still required to use it) and `agentRules: false` in
+  next.config.ts. Lockfile regenerated.
+- Codey `claude/cody-data-graph` @ 2fcdf6c merged, namespaced under `src/server/graph/cody/`
+  (driver, schema, imports, traces, index) with import paths rewritten; `fixtures/ev`,
+  `src/server/data`, `scripts/neo4j/*.ts`, `tests/data` and `docs/handoffs/CODEY.md` included as
+  delivered. His slice implements TraceServices only (CSV ingestion, late evidence, robotics
+  regression adapter, NHTSA cache) on a different graph model (EntityState / DataRevision /
+  SupplierBatch / ManufacturingLot / Installation / Shipment nodes) and a different Aura instance
+  (7bd3cbcf), and its fixture's expected counts differ from `tests/integration/acceptance-expectations.json`.
+  The active `graphServices` therefore remain Zubair's implementation; Codey's modules are
+  preserved and importable (`@/server/graph/cody/*`) but not wired. His unit tests run in the suite
+  (11 passed, 4 Neo4j tests skip without credentials). Wiring his ingestion as the trace path is a
+  post-hackathon task.
+- Checks at 70f1298: typecheck passed; vitest 104 passed / 8 skipped (one agent UI test is timing
+  sensitive under full-suite load and passes in isolation).

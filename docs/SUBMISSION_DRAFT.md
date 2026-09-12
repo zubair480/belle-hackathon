@@ -9,7 +9,7 @@ acceptance report (`npm run acceptance` output) before the form is filled.
 | --- | --- |
 | Project title | RecallRadius |
 | Track | A - Developers (Builder) |
-| Neo4j bonus | Answer **Yes only if** the merged app ran the acceptance runner against real graph services (`mode: REAL graph services` in the report). Otherwise **No**. |
+| Neo4j bonus | **Yes**: the app ran the acceptance runner against real graph services (mode REAL graph services in docs/evidence/acceptance-graph-*.json). |
 | Qoder use | Answer **Yes only if** Codey's/Ali's handoffs document actual Qoder-assisted development. |
 | GitHub URL | https://github.com/zubair480/belle-hackathon |
 | LinkedIn / X URL | required by the form; a post needs Zubair's explicit go |
@@ -22,20 +22,20 @@ An operator reports a problem on a vehicle build, marks the affected module, com
 
 The graph retrieves a compatible prior verified fix with its reasons and evidence. Reuse creates a new proposal that needs its own verification; closure is blocked until a verification passes, and the original fix is preserved. Team and supplier insights drill down to the issues behind each count and show N/A when the inspection cohort is unknown.
 
-[If verified: Neo4j persists the issues, genealogy and resolutions; Qoder was used for development.] All factory records in the demo are synthetic.
+Neo4j Aura persists the issues, provenance, assemblies and verified resolutions; the app was verified across a server restart against the live database. All factory records in the demo are synthetic.
 
 ## Claims checklist (fill from actual results)
 
 | Claim | Evidence required | Status |
 | --- | --- | --- |
-| Manual issue persists across restart | acceptance runner run twice with `--issue` after a server restart, REAL mode | unverified |
-| Both origin paths on issue detail | runner steps "connector shows supplier origin" / "bracket shows in-house origin"; browser detail view | verified on double only (API + integrated UI) |
-| Stale writes rejected, premature closure blocked | runner steps STALE_VERSION / VERIFICATION_REQUIRED | verified on double only |
-| Fail then pass verification, closure, reopen history | runner steps 7-8 | verified on double only |
-| Resolution retrievable from a later issue | runner step 9 | verified on double only |
-| Linked supplier excluded, N/A rates | runner step 10 | verified on double only |
-| Supplier-lot and manufacturing-lot traces, distinct vehicles | runner step 11 with the EV fixture revision | unverified (needs Codey's fixture) |
-| Neo4j used substantively | Codey handoff + real integration suite output | unverified |
+| Manual issue persists across restart | docs/evidence/acceptance-graph-before.json and -after.json, REAL mode, server restarted between runs | verified 2026-09-12 (23/23) |
+| Both origin paths on issue detail | runner steps and browser detail view in graph mode | verified (Neo4j) |
+| Stale writes rejected, premature closure blocked | runner steps STALE_VERSION / VERIFICATION_REQUIRED | verified (Neo4j) |
+| Fail then pass verification, closure, reopen history | runner steps | verified (Neo4j) |
+| Resolution retrievable from a later issue | runner step | verified (Neo4j) |
+| Linked supplier excluded, N/A rates | runner step | verified (Neo4j) |
+| Supplier-lot and manufacturing-lot traces, distinct vehicles | runner trace steps against revision ev-r1 | verified (Neo4j) |
+| Neo4j used substantively | src/server/graph queries; integration suites 5 passed; acceptance reports | verified |
 | Qoder used in development | Codey/Ali handoffs (Zubair's lane used Claude Code, not Qoder) | unverified |
 
 ## Three-minute demo (from the judge kit, EV story)

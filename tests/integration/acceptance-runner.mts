@@ -219,13 +219,17 @@ async function main(): Promise<void> {
   let sourceFixBefore: Json | null = null;
   await step("prior verified fix retrieved with match reasons and verification evidence", async () => {
     const s = expectOk<Json>(await call("GET", `/api/issues/${issueId}/similar-resolutions`), 200, ["results"]);
-    const top = ((s.results as Json[]) ?? [])[0];
-    if (!top) throw new StepError("no results", { details: s });
+    const results = (s.results as Json[]) ?? [];
+    if (results.length === 0) throw new StepError("no results", { details: s });
+    // A durable store accumulates verified fixes from earlier runs, so the seeded prior fix need not be
+    // first; it must be retrieved, verified, and carry reasons that never rely on supplier overlap.
+    const top = results.find((r) => r.sourceFixRevisionId === S.priorVerifiedFixId);
+    if (!top) throw new StepError(`expected prior fix ${S.priorVerifiedFixId} not retrieved`, { details: results.map((r) => r.sourceFixRevisionId) });
     if (!(top.matchReasons as string[]).length || !top.verificationId) throw new StepError("missing reasons or verification", { details: top });
     if ((top.matchReasons as string[]).some((m) => /supplier/i.test(m))) throw new StepError("supplier overlap used as a match reason", { details: top });
+    for (const r of results) if ((r.matchReasons as string[]).some((m) => /supplier/i.test(m))) throw new StepError("a result used supplier overlap as a match reason", { details: r });
     sourceFixId = top.sourceFixRevisionId as string;
     sourceIssueId = top.sourceIssueId as string;
-    if (sourceFixId !== S.priorVerifiedFixId) throw new StepError(`top fix ${sourceFixId} != expected ${S.priorVerifiedFixId}`, { details: top });
     const src = await getIssue(sourceIssueId);
     sourceFixBefore = ((src.fixes as Json[]) ?? []).find((f) => f.id === sourceFixId) ?? null;
     if (!sourceFixBefore || sourceFixBefore.state !== "verified") throw new StepError("source fix not verified before reuse", { details: sourceFixBefore });

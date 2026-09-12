@@ -9,6 +9,7 @@ import type { Issue, ReferenceCatalog } from "@/contracts/issues";
 import { EV_TRACE_DEMO, CURRENT_REVISION_ALIAS } from "@/contracts/recall";
 import type { RecallClient } from "../features/recall/api/types";
 import { CIRCUITS, PARTS, SKETCH_VEHICLES, entityIdFor, searchCircuits, searchParts, slotById, slotForEntityId, slotsForCircuit, wiresForCircuit, wiresForSlot, type PartSlot } from "../features/recall/sketches/car3d";
+import { faultZonesFor, matchFaultZones } from "../features/recall/sketches/faultZones";
 import type { AgentContext, UiAction } from "./types";
 
 export type ToolContext = {
@@ -198,7 +199,7 @@ export const impactOfPart = def({
     const shipped = current.filter((row) => row.locationState === "shipped");
     const byCustomer = new Map<string, string[]>();
     for (const row of shipped) byCustomer.set(custName(row.customerId), [...(byCustomer.get(custName(row.customerId)) ?? []), row.buildId ?? row.entityId]);
-    // The trace root is the canonical production lot id; the operator-facing label also names the batch/lot code as written on the record.
+    // Display the batch/lot code operators know; the trace root itself uses the canonical lot id, named in brackets when it differs.
     const rootLabel =
       root.kind === "supplier_batch"
         ? `supplier batch ${o?.supplierBatchCode ?? root.id}${o?.supplierBatchCode && o.supplierBatchCode !== root.id ? ` [lot id ${root.id}]` : ""} (${supplierName(ctx, o?.supplierId)})`
@@ -224,13 +225,37 @@ export const markTool = def({
   async execute(ctx, input) {
     if (input.wireId) {
       ctx.ui.push({ type: "show_wiring", on: true });
-      ctx.ui.push({ type: "mark", entityId: null, slot: null, wireId: input.wireId, note: input.note });
+      ctx.ui.push({ type: "mark", entityId: null, slot: null, wireId: input.wireId, note: input.note, zoneId: null, zoneLabel: null });
       return { text: `Marked wire ${input.wireId}.` };
     }
     const p = resolvePart(ctx, input);
     if (!p) return { text: "Could not resolve what to mark.", ok: false };
-    ctx.ui.push({ type: "mark", entityId: p.entityId, slot: p.slot.slot, wireId: null, note: input.note });
+    ctx.ui.push({ type: "mark", entityId: p.entityId, slot: p.slot.slot, wireId: null, note: input.note, zoneId: null, zoneLabel: null });
     return { text: `Marked ${p.slot.label} (${p.entityId}).` };
+  },
+});
+
+export const locateFault = def({
+  name: "locate_fault",
+  description: "Given a part and the symptom described, point to the specific location(s) inside that part where the fault is most likely (e.g. bracket flange for a misaligned charge port, vent membrane for a fogged headlamp, upper seal for door wind noise). Zooms to the part and places a labelled marker on each likely location. Design knowledge, not a confirmed cause.",
+  input: { entityId: z.string().nullable().optional(), slot: z.string().nullable().optional(), query: z.string().nullable().optional(), symptom: z.string().describe("The observed problem in the user's words"), vehicleBuildId: z.string().nullable().optional() },
+  readOnly: false,
+  async execute(ctx, input) {
+    const p = resolvePart(ctx, { ...input, query: input.query ?? input.symptom });
+    if (!p) return { text: "Could not resolve which part the symptom is about.", ok: false };
+    const zones = faultZonesFor(p.slot.slot);
+    if (!zones.length) return { text: `${p.slot.label} (${p.entityId}) has no fault-location map on the exterior sketch; interior parts are recorded but not drawn.`, ok: false };
+    const v = vehicleFor(ctx, input.vehicleBuildId);
+    if (v.buildId !== ctx.context.vehicleBuildId) ctx.ui.push({ type: "select_vehicle", buildId: v.buildId });
+    const last = ctx.ui[ctx.ui.length - 1];
+    if (!(last && last.type === "focus_part" && last.entityId === p.entityId)) ctx.ui.push({ type: "focus_part", entityId: p.entityId, slot: p.slot.slot });
+    const hits = matchFaultZones(p.slot.slot, input.symptom, 2);
+    for (const zone of hits) ctx.ui.push({ type: "mark", entityId: p.entityId, slot: p.slot.slot, wireId: null, note: `Agent: ${zone.why}`, zoneId: zone.id, zoneLabel: zone.label });
+    const matched = zones.some((zn) => zn.symptoms.test(input.symptom));
+    return {
+      text: `${matched ? "Likely location(s)" : "No symptom match; default location"} on ${p.slot.label} (${p.entityId}) for "${input.symptom}": ${hits.map((zn) => `${zn.label} (${zn.why})`).join("; ")}. Other places to check: ${zones.filter((zn) => !hits.includes(zn)).map((zn) => zn.label).join(", ") || "none"}. This is design knowledge to guide inspection, not a confirmed cause.`,
+      data: { entityId: p.entityId, slot: p.slot.slot, zones: hits.map((zn) => zn.id) },
+    };
   },
 });
 
@@ -302,7 +327,7 @@ export const selectVehicleTool = def({
   },
 });
 
-export const ALL_TOOLS: ToolDef[] = [findPart, focusPart, listIssuesForPart, traceCircuit, wiresOfPart, impactOfPart, markTool, openIssueTool, draftIssueTool, similarResolutionsTool, cameraTool, selectVehicleTool] as unknown as ToolDef[];
+export const ALL_TOOLS: ToolDef[] = [findPart, focusPart, listIssuesForPart, locateFault, traceCircuit, wiresOfPart, impactOfPart, markTool, openIssueTool, draftIssueTool, similarResolutionsTool, cameraTool, selectVehicleTool] as unknown as ToolDef[];
 
 export function toolByName(name: string): ToolDef | undefined {
   return ALL_TOOLS.find((t) => t.name === name);
@@ -324,4 +349,5 @@ export async function runTool(ctx: ToolContext, name: string, rawInput: unknown)
 }
 
 export const SYSTEM_PROMPT = `You are the RecallRadius assembly-quality assistant for an EV plant. You help operators and quality engineers locate parts on the 3D vehicle sketch, trace wiring circuits, read part provenance (supplier batch vs in-house lot), list linked issues, find prior verified fixes and see which vehicles and customers are affected by a suspect batch or lot.
+When the user describes a problem on a part, call locate_fault with their words so the sketch marks where inside the part to look, then list_issues_for_part.
 Rules: use the tools for every factual statement; never invent part ids, suppliers, customers or causes. A linked supplier or producing team is not a confirmed cause. You may mark parts and open a prefilled issue draft, but you never save, close or assign issues and never confirm a cause. Keep answers short and operational. All data in this demo is synthetic.`;

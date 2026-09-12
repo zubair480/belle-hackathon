@@ -136,7 +136,7 @@ describe("mock server: similar resolutions and insights", () => {
     expect(InsightsSchema.safeParse(ins.data).success).toBe(true);
     const fi = ins.data.teams.find((t) => t.teamId === EV_DEMO.teams.finalInspection)!;
     const mfg = ins.data.teams.find((t) => t.teamId === EV_DEMO.teams.inHouseManufacturing)!;
-    expect(fi.reportedIssueCount).toBe(6);
+    expect(fi.reportedIssueCount).toBe(9);
     expect(fi.confirmedCauseIssueCount).toBe(0);
     expect(mfg.reportedIssueCount).toBe(0);
     expect(mfg.confirmedCauseIssueCount).toBe(1);

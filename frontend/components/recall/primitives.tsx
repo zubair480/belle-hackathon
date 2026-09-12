@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import type { EntityKind, SourcingType } from "@/contracts/common";
 import type { CauseState, FixState, IssueStatus, Severity } from "@/contracts/issues";
 import type { ClientError } from "../../features/recall/api/types";
@@ -96,5 +96,40 @@ export function KV({ rows }: { rows: Array<[string, ReactNode]> }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+/**
+ * Modal dialog: Esc closes, overlay click closes unless `guardClose` says the content is dirty,
+ * body scroll is locked while open, content scrolls inside a bounded panel.
+ */
+export function Dialog({ label, onClose, children, wide = false, guardClose }: { label: string; onClose: () => void; children: ReactNode; wide?: boolean; guardClose?: () => boolean }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return (
+    <div
+      className="rrx-overlay"
+      role="presentation"
+      data-testid="dialog-overlay"
+      onMouseDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (guardClose && !guardClose()) return;
+        onClose();
+      }}
+    >
+      <div className={`rrx-dialog${wide ? " rrx-dialog--wide" : ""}`} role="dialog" aria-modal="true" aria-label={label}>
+        {children}
+      </div>
+    </div>
   );
 }

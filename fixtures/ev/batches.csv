@@ -1,0 +1,2 @@
+batchId,supplierId,producerOrganizationId,partNumber,partRevision,batchCode,evidenceJson
+LOT-SUP-01,SUP-CONNECTOR,SUP-CONNECTOR,CP-CONN-100,A,DEMO-SUP-LOT-01,"[{""id"":""EVID-SUP-LOT-01"",""sourceName"":""Supplier receipt"",""locator"":""supplier-lot-01"",""text"":""Synthetic supplier batch receipt."",""sourceKind"":""synthetic""}]"

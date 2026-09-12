@@ -17,7 +17,7 @@ import { IssueDetailView, type IssueDetailTab } from "../../components/recall/Is
 import { InsightsView } from "../../components/recall/InsightsView";
 import { NewIssueForm } from "../../components/recall/NewIssueForm";
 import { VehicleExplorer } from "../../components/recall/VehicleExplorer";
-import { Banner, ErrorBanner, Loading } from "../../components/recall/primitives";
+import { Banner, Dialog, ErrorBanner, Loading } from "../../components/recall/primitives";
 import type { AgentContext, UiAction } from "../../agent/types";
 import { describeBackend, getDefaultClient, type RecallClient } from "./api";
 import { WorkspaceContext, type BackendState, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
@@ -66,6 +66,9 @@ export function routeToHash(r: Route): string {
   if (r.view === "issues" && r.issueId) return `#/issues/${encodeURIComponent(r.issueId)}${r.issueTab !== "overview" ? `/${r.issueTab}` : ""}`;
   return `#/${r.view}`;
 }
+
+/** Mode badge is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE=true); the screens carry no mock/sample wording by default. */
+const SHOW_MODE = process.env.NEXT_PUBLIC_RECALL_SHOW_MODE === "true";
 
 const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
 
@@ -163,7 +166,7 @@ export function RecallWorkspace({ client, initialView, instantZoom = false, chat
             });
             break;
           case "mark":
-            setExplorer((s) => ({ markers: [...s.markers, { id: `M-${Date.now().toString(36)}-${s.markers.length + 1}`, entityId: a.entityId, slot: a.slot, wireId: a.wireId, note: a.note, source: "agent" }] }));
+            setExplorer((s) => ({ markers: [...s.markers, { id: `M-${Date.now().toString(36)}-${s.markers.length + 1}`, entityId: a.entityId, slot: a.slot, wireId: a.wireId, note: a.note, source: "agent", zoneId: a.zoneId ?? null, zoneLabel: a.zoneLabel ?? null }] }));
             break;
           case "clear_marks":
             setExplorer({ markers: [] });
@@ -185,7 +188,8 @@ export function RecallWorkspace({ client, initialView, instantZoom = false, chat
             setExplorerState((s) => {
               const markerIds = s.markers.map((m) => m.entityId).filter((x): x is string => Boolean(x));
               const wireIds = s.markers.map((m) => m.wireId).filter((x): x is string => Boolean(x));
-              setNewIssue({ open: true, prefill: { entityIds: [...new Set([...a.entityIds, ...markerIds])], title: a.title ?? undefined, contextNote: `${a.note}${wireIds.length ? ` Wires under suspicion: ${wireIds.join(", ")}.` : ""}` } });
+              const zones = s.markers.filter((m) => m.zoneLabel).map((m) => `${m.zoneLabel} (${m.entityId})`);
+              setNewIssue({ open: true, prefill: { entityIds: [...new Set([...a.entityIds, ...markerIds])], title: a.title ?? undefined, contextNote: `${a.note}${zones.length ? ` Suspected locations: ${zones.join("; ")}.` : ""}${wireIds.length ? ` Wires under suspicion: ${wireIds.join(", ")}.` : ""}` } });
               return s;
             });
             break;
@@ -237,9 +241,12 @@ export function RecallWorkspace({ client, initialView, instantZoom = false, chat
             <button type="button" className="rrx-btn rrx-btn--primary rrx-btn--sm" onClick={() => openNewIssue()} data-testid="topbar-new-issue">
               + New issue
             </button>
-            <span className={`rrx-badge rrx-badge--${badge.tone}`} data-testid="mode-badge" data-services-mode={backend.health?.servicesMode ?? (c.mode === "mock" ? "mock" : "unknown")} title={badge.title}>
-              {badge.text}
-            </span>
+            {c.mode === "live" || SHOW_MODE ? (
+              // Live mode always names the backend behind the routes (health report); the mock badge is opt-in for pitch screens.
+              <span className={`rrx-badge rrx-badge--${badge.tone}`} data-testid="mode-badge" data-services-mode={backend.health?.servicesMode ?? (c.mode === "mock" ? "mock" : "unknown")} title={badge.title}>
+                {badge.text}
+              </span>
+            ) : null}
             {c.mode === "live" && backend.health ? (
               <span className="rrx-muted rrx-small" data-testid="ai-provider-badge" title="RECALL_AI_PROVIDER as reported by /api/health">
                 AI: {backend.health.aiProvider}
@@ -249,7 +256,7 @@ export function RecallWorkspace({ client, initialView, instantZoom = false, chat
           </div>
         </header>
         <main className="rrx-main">
-          {c.mode === "mock" ? (
+          {c.mode === "mock" && SHOW_MODE ? (
             <div style={{ marginBottom: 12 }}>
               <Banner kind="warning">
                 <strong>Sample data (mock mode).</strong> All vehicles, parts, wiring, teams, suppliers, customers and issues on this screen are synthetic development data served from an in-memory mock. Nothing here is a real factory record. Set NEXT_PUBLIC_RECALL_UI_MOCKS=false for the integrated demo.
@@ -283,8 +290,7 @@ export function RecallWorkspace({ client, initialView, instantZoom = false, chat
         {chatOpen ? <AgentChat /> : null}
 
         {newIssue.open ? (
-          <div className="rrx-overlay" role="presentation">
-            <div className="rrx-dialog" role="dialog" aria-modal="true" aria-label="New issue">
+          <Dialog label="New issue" onClose={() => setNewIssue({ open: false })} wide>
               {catalog ? (
                 <NewIssueForm
                   prefill={newIssue.prefill}
@@ -302,8 +308,7 @@ export function RecallWorkspace({ client, initialView, instantZoom = false, chat
                   </button>
                 </div>
               )}
-            </div>
-          </div>
+          </Dialog>
         ) : null}
       </div>
     </WorkspaceContext.Provider>

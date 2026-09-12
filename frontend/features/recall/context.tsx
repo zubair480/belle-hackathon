@@ -14,7 +14,7 @@ export type NewIssuePrefill = Partial<IssueInput> & { contextNote?: string };
 export type CameraPreset = keyof typeof CAMERA_PRESETS;
 
 /** A user- or agent-placed marker on the sketch: a part, or a wire of the platform wiring design. */
-export type SketchMarker = { id: string; entityId: string | null; slot: string | null; wireId: string | null; note: string; source: "user" | "agent" };
+export type SketchMarker = { id: string; entityId: string | null; slot: string | null; wireId: string | null; note: string; source: "user" | "agent"; /** Fault zone inside the part (see sketches/faultZones.ts); null = whole part. */ zoneId?: string | null; zoneLabel?: string | null };
 
 /** Explorer state lives in the workspace so chat tools and screens share one source of truth. */
 export type ExplorerState = {

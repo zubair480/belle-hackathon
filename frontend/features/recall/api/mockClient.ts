@@ -2,6 +2,7 @@
  * Visibly labeled MOCK client (NEXT_PUBLIC_RECALL_UI_MOCKS=true). Same DTOs and error codes as the
  * live client. `controls.failNext` lets UI tests exercise backend-unavailable and conflict states.
  */
+import { createHttpClient } from "./httpClient";
 import { MockError, MockServer, type MockServerOptions } from "./mock/server";
 import { clientFail, clientOk, type ClientError, type ClientResult, type RecallClient } from "./types";
 
@@ -57,7 +58,8 @@ export function createMockClient(options: MockClientOptions = {}): { client: Rec
     findSimilarResolutions: (id) => run("findSimilarResolutions", () => server.findSimilarResolutions(id)),
     getInsights: (f) => run("getInsights", () => server.getInsights(f)),
     runTrace: (incidentId, request) => run("runTrace", () => server.runTrace({ ...request, incidentId })),
-    agentChat: async () => clientFail("AI_UNAVAILABLE", "Mock mode runs the deterministic stub planner in the browser; there is no server agent route to call."),
+    /** Chat is always server-side: even in mock mode the route decides stub vs Qoder (the browser only uses this when NEXT_PUBLIC_RECALL_AGENT=server). */
+    agentChat: (request) => createHttpClient().agentChat(request),
   };
   return { client, controls };
 }

@@ -1,0 +1,21 @@
+{
+  "reviewedAt": "2026-09-12T12:00:00Z",
+  "records": [
+    {
+      "sourceKind": "public_complaint",
+      "sourceRecordId": "NHTSA-DEMO-COMPLAINT-001",
+      "sourceUrl": "https://api.nhtsa.gov/complaints/complaintsByVehicle?make=hyundai&model=ioniq%205&modelYear=2022",
+      "retrievedAt": "2026-09-12T12:00:00Z",
+      "rawSourceHash": "19d27a525291a5ae6416a4a9563980af28b010fe63e9124bffdb4d3dec13f2ee",
+      "text": "Reviewed public complaint sample retained only as external context; it is not evidence of a synthetic factory occurrence, supplier batch, vehicle, or local resolution."
+    },
+    {
+      "sourceKind": "public_recall",
+      "sourceRecordId": "NHTSA-DEMO-RECALL-001",
+      "sourceUrl": "https://api.nhtsa.gov/recalls/recallsByVehicle?make=hyundai&model=ioniq%205&modelYear=2022",
+      "retrievedAt": "2026-09-12T12:00:00Z",
+      "rawSourceHash": "e353a8727090947f962b6bb4a0890ac6299b94007fcc9920b60ef6b063f07572",
+      "text": "Reviewed public recall sample retained only as external context; it does not establish synthetic component genealogy or a passed local verification."
+    }
+  ]
+}

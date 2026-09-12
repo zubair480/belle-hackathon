@@ -117,6 +117,7 @@ describe.skipIf(!hasCreds || !graphMode)("EV acceptance against real graph servi
     const { readFile } = await import("node:fs/promises");
     const names = ["entities.csv", "batches.csv", "manufacturing_lots.csv", "installations.csv", "shipments.csv"];
     const files = await Promise.all(names.map(async (name) => ({ name, text: await readFile(`fixtures/regression/${name}`, "utf8").catch(() => "") })));
+    if (!files.some((f) => f.text)) return ctx.skip("fixtures/regression/*.csv not present (robotics regression importer not delivered); NOT RUN against Neo4j");
     const preview = await unwrap<ImportPreview>(await api.importPreview(post({ contractVersion: "assembly-quality-v4", files: files.filter((f) => f.text), scope: ASSEMBLY_REGRESSION.scope })));
     const rev1 = await unwrap<RevisionInfo>(await api.importAccept(post({}), preview.previewId));
     const req = (revisionId: string) => ({ contractVersion: "assembly-quality-v4", revisionId, root: ASSEMBLY_REGRESSION.root, scope: ASSEMBLY_REGRESSION.scope });
