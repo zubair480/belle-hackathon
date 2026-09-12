@@ -1,0 +1,169 @@
+{
+  "kind": "http-acceptance",
+  "base": "http://localhost:3111",
+  "mode": "REAL graph services (integration evidence)",
+  "realServices": true,
+  "at": "2026-09-12T22:07:18.401Z",
+  "expectationsFile": "C:/Users/zubai/OneDrive/Desktop/job/belle-hackathon/tests/integration/acceptance-expectations.json",
+  "issueId": "ISS-MTYXQKFKF1DFA6",
+  "expectedHistory": {
+    "status": "closed",
+    "version": 11,
+    "currentFixRevisionId": "FIX-MTYXQPN1336529",
+    "confirmedCauseId": "CAUSE-MTYXQN4X046574",
+    "fixStates": [
+      [
+        "FIX-MTYXQPN1336529",
+        "verified"
+      ]
+    ],
+    "verificationOutcomes": [
+      "fail",
+      "pass"
+    ],
+    "auditKinds": [
+      "created:null->open",
+      "updated:null->null",
+      "transition:open->in_progress",
+      "cause_recorded:null->null",
+      "cause_recorded:null->null",
+      "fix_created:null->null",
+      "verification_recorded:null->null",
+      "verification_recorded:null->null",
+      "transition:in_progress->closed",
+      "transition:closed->in_progress",
+      "transition:in_progress->closed"
+    ],
+    "causeStates": [
+      [
+        "CAUSE-MTYXQMQ548C730",
+        "hypothesis",
+        false
+      ],
+      [
+        "CAUSE-MTYXQN4X046574",
+        "confirmed",
+        true
+      ]
+    ]
+  },
+  "persistence": null,
+  "passed": 22,
+  "failed": 0,
+  "results": [
+    {
+      "step": "create manual issue (201, no AI/import)",
+      "ok": true,
+      "detail": "ISS-MTYXQKFKF1DFA6"
+    },
+    {
+      "step": "reload issue detail with audit and evidence",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "connector shows supplier origin with batch code",
+      "ok": true,
+      "detail": "DEMO-SUP-LOT-01"
+    },
+    {
+      "step": "bracket shows in-house origin with lot, work order and team",
+      "ok": true,
+      "detail": "DEMO-MFG-LOT-01 / WO-DEMO-0001 / TEAM-INHOUSE-MFG"
+    },
+    {
+      "step": "vehicle carries build id with nullable VIN",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "assign to In-house Manufacturing (version bumps)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "stale write rejected (STALE_VERSION)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "start work transition",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "hypothesis then confirmed in-house cause; reporter unchanged; supplier stays linked only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "prior verified fix retrieved with match reasons and verification evidence",
+      "ok": true,
+      "detail": "FIX-BRKT-PRIOR-V1: same part family CP-BRKT-200; same confirmed cause type in_house_manufacturing; same process step bracket-forming"
+    },
+    {
+      "step": "reuse creates a NEW proposal linked to the source",
+      "ok": true,
+      "detail": "FIX-MTYXQPN1336529 <- FIX-BRKT-PRIOR-V1"
+    },
+    {
+      "step": "original fix content unchanged after reuse (deep compare)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "premature closure blocked (VERIFICATION_REQUIRED)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "failed verification recorded; issue stays open",
+      "ok": true,
+      "detail": "in_progress"
+    },
+    {
+      "step": "passed verification then closure",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "reopen preserves close event and both verifications",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "new verified resolution retrievable from a later issue",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "insights: reporter vs confirmed cause; linked supplier excluded; N/A rate",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "trace supplier_batch: expected vehicles and counts",
+      "ok": true,
+      "detail": "vehicles=DEMO-EV-002,DEMO-EV-003,DEMO-EV-004,DEMO-EV-005"
+    },
+    {
+      "step": "trace manufacturing_lot: expected vehicles and counts",
+      "ok": true,
+      "detail": "vehicles=DEMO-EV-002,DEMO-EV-003,DEMO-EV-004,DEMO-EV-005"
+    },
+    {
+      "step": "two affected components on one vehicle are counted once",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "trace runs preserved and exportable",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "notes": [
+    "HTTP acceptance only; the browser workflow is checked separately (tests/integration/BROWSER_ACCEPTANCE.md).",
+    "To prove persistence: restart the server, then run again with --persist-from <this report>."
+  ]
+}

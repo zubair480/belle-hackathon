@@ -8,7 +8,7 @@ Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessment
 
 ## Integration status
 
-`codex/final-integration` holds the API lane and Ali's UI lane (RecallWorkspace mounted, UI mocks disabled, real routes). Codey's graph services are not on the remote yet, so the real Neo4j acceptance run has not happened. `npm run acceptance -- --base <url>` (HTTP) plus `tests/integration/BROWSER_ACCEPTANCE.md` (browser) will produce that evidence; fixture expectations live in `tests/integration/acceptance-expectations.json`. The latest dry run on the service double passed 22/22 and its post-restart persistence check failed as expected for an in-memory double. That is development evidence only; nothing below claims Neo4j persistence.
+`codex/neo4j-completion` (merged into `codex/final-integration`) adds real Neo4j graph services (`src/server/graph`), an idempotent EV seed (`npm run neo4j:seed`) and the real-mode acceptance evidence: 22/22 before and 23/23 after a server restart against Neo4j Aura (`docs/evidence/acceptance-graph-*.json`). Setup: fill `NEO4J_*` in `.env.local`, `npm run neo4j:check`, `npm run neo4j:seed`, `npm run dev` with `RECALL_SERVICES=graph`. `npm run acceptance -- --base <url>` (HTTP) plus `tests/integration/BROWSER_ACCEPTANCE.md` (browser) will produce that evidence; fixture expectations live in `tests/integration/acceptance-expectations.json`. The latest dry run on the service double passed 22/22 and its post-restart persistence check failed as expected for an in-memory double. That is development evidence only; nothing below claims Neo4j persistence.
 
 ## Run modes and what each one proves
 
