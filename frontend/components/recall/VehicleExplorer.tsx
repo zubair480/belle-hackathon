@@ -8,10 +8,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
 import { useWorkspace, type CameraPreset } from "../../features/recall/context";
-import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, WIRES, bodyLines, entityIdFor, project, slotById, type SketchVehicle } from "../../features/recall/sketches/car3d";
+import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, SYSTEMS, WIRES, ZONES, bodyLines, describeWire, entityIdFor, layerForEntityId, project, slotById, slotForEntityId, wiresForSlot, type SketchVehicle, type ViewLayer } from "../../features/recall/sketches/car3d";
 import { PartPanel, type PartLoad } from "./PartPanel";
 import { Banner } from "./primitives";
-import { VehicleSketch3D, type HotspotInfo } from "./VehicleSketch3D";
+import { VehicleSketch3D, type HotspotInfo, type HoverDetail, type HoverTarget } from "./VehicleSketch3D";
 
 export type VehicleExplorerProps = { instantZoom?: boolean };
 
@@ -76,6 +76,33 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   }, [contexts, issues]);
 
   const selectedSlot = ex.selectedEntityId ? PARTS.find((p) => entityIdFor(p, vehicle.suffix) === ex.selectedEntityId) : null;
+
+  /** Tooltip content: what a component is for and where a wire goes. */
+  const hoverDetails = (t: HoverTarget): HoverDetail => {
+    if (t.wireId) {
+      const w = WIRES.find((x) => x.id === t.wireId);
+      return w ? describeWire(w) : null;
+    }
+    if (!t.entityId) return null;
+    const hit = slotForEntityId(t.entityId);
+    if (!hit) return null;
+    const slot = hit.slot;
+    const c = contexts[t.entityId];
+    const o = c?.data?.entity.origin;
+    const spec = Object.entries((slot.spec ?? {}) as Record<string, unknown>).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`);
+    const open = issues.filter((i) => i.status !== "closed" && i.entityIds.includes(t.entityId!));
+    const wires = wiresForSlot(slot.slot);
+    const lines = [
+      `${SYSTEMS[slot.system] ?? slot.system} · ${ZONES[slot.zone] ?? slot.zone}${slot.side !== "C" ? ` · ${slot.side}` : ""}`,
+      `Part ${slot.partNumber}${slot.partRevision ? ` rev ${slot.partRevision}` : ""}${slot.parent ? ` · inside ${slotById(slot.parent)?.label}` : ""}`,
+      c?.status === "error" ? "Not recorded in backend" : o?.sourcingType === "supplier" ? `Bought from ${ws.lookup.supplier(o.supplierId)} · batch ${o.supplierBatchCode}` : o?.sourcingType === "in_house" ? `Made in-house · lot ${o.manufacturingLotCode} · ${ws.lookup.process(o.processStepId)}` : "Unknown origin",
+      ...spec.slice(0, 3),
+      wires.length ? `${wires.length} wire(s): ${wires.slice(0, 3).map((w) => `${w.id} ${w.signal}`).join("; ")}${wires.length > 3 ? " …" : ""}` : "No wires in the wiring design",
+      open.length ? `${open.length} open issue(s): ${open.map((i) => i.id).join(", ")}` : "No open issues",
+      "Tap to zoom in and inspect",
+    ];
+    return { title: `${slot.label} · ${t.entityId}`, lines };
+  };
   const setCamera = (preset: CameraPreset) => ws.setExplorer((s) => ({ cameraRequest: { preset, seq: (s.cameraRequest?.seq ?? 0) + 1 } }));
   const addMarker = (t: { entityId: string | null; slot: string | null; wireId: string | null }) =>
     ws.setExplorer((s) => ({ markers: [...s.markers, { id: `M-${Date.now().toString(36)}-${s.markers.length + 1}`, entityId: t.entityId, slot: t.slot, wireId: t.wireId, note: "", source: "user" }] }));
@@ -102,24 +129,35 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               suffix={vehicle.suffix}
               info={info}
               selectedEntityId={ex.selectedEntityId}
-              onSelect={(id) => ws.setExplorer({ selectedEntityId: id })}
+              onSelect={(id) => ws.setExplorer((s) => ({ selectedEntityId: id, layer: id ? (layerForEntityId(id) ?? s.layer) : s.layer }))}
               sourcingFilter={filter}
               markers={ex.markers}
               circuitId={ex.circuitId}
               wiring={ex.wiring}
               markMode={ex.markMode}
+              layer={ex.layer}
               onMark={addMarker}
               onWireSelect={(wireId) => {
                 const w = WIRES.find((x) => x.id === wireId);
                 if (!w) return;
-                setWireInfo(`${w.id} · ${CIRCUITS.find((c) => c.id === w.circuitId)?.name} · ${w.signal}: ${slotById(w.from)?.label} → ${slotById(w.to)?.label}${w.harness ? ` via ${slotById(w.harness)?.label}` : ""} · ${w.voltageClass} ${w.gauge} ${w.color}${w.fromConnector ? ` · ${w.fromConnector}` : ""}${w.toConnector ? ` → ${w.toConnector}` : ""}`);
+                const d = describeWire(w);
+                setWireInfo(`${d.title} · ${d.lines.join(" · ")}`);
+                ws.setExplorer({ wiring: true, circuitId: w.circuitId });
               }}
+              hoverDetails={hoverDetails}
               cameraRequest={ex.cameraRequest}
               instant={instantZoom}
             />
             <div className="rrx-stage-hud">
-              <span className="rrx-badge rrx-badge--muted">{vehicle.modelName} · 3D</span>
-              {selectedSlot ? <span className="rrx-badge rrx-badge--accent">Zoomed: {selectedSlot.label}</span> : <span className="rrx-muted rrx-small">Drag to rotate · wheel to zoom · tap a part</span>}
+              <div className="rrx-seg" role="radiogroup" aria-label="View layer">
+                {(["outside", "inside"] as ViewLayer[]).map((l) => (
+                  <button key={l} type="button" role="radio" aria-checked={ex.layer === l} className="rrx-seg-btn" onClick={() => ws.setExplorer((s) => ({ layer: l, selectedEntityId: s.selectedEntityId && layerForEntityId(s.selectedEntityId) !== l ? null : s.selectedEntityId }))} data-testid={`layer-${l}`}>
+                    {l === "outside" ? "Outside" : "Inside"}
+                  </button>
+                ))}
+              </div>
+              <span className="rrx-badge rrx-badge--muted">{vehicle.modelName} · 3D · {ex.layer === "outside" ? "body and exterior parts" : "cabin, electrical and powertrain"}</span>
+              {selectedSlot ? <span className="rrx-badge rrx-badge--accent">Zoomed: {selectedSlot.label} · attached wires shown · hover for details</span> : <span className="rrx-muted rrx-small">Drag to rotate · wheel to zoom · tap a part to inspect · hover for details</span>}
             </div>
             <div className="rrx-stage-hud-right" role="group" aria-label="Sketch controls">
               {(Object.keys(CAMERA_PRESETS) as CameraPreset[]).map((p) => (
@@ -153,7 +191,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               ) : null}
             </div>
           </div>
-          {ex.wiring ? (
+          {ex.wiring || wireInfo ? (
             <div className="rrx-row" style={{ marginTop: 8 }}>
               <label className="rrx-label" htmlFor="circuit-select">Circuit</label>
               <select id="circuit-select" value={ex.circuitId ?? ""} onChange={(e) => ws.setExplorer({ circuitId: e.target.value || null })} style={{ background: "#000", border: "1px solid var(--rr-border-strong)", borderRadius: 6, padding: "4px 8px" }} data-testid="circuit-select">

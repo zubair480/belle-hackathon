@@ -9,7 +9,7 @@ import type { Issue } from "@/contracts/issues";
 import type { ClientError } from "../../features/recall/api/types";
 import { useWorkspace } from "../../features/recall/context";
 import { ATTRIBUTION, SOURCING_LABEL, fmtDate } from "../../features/recall/format";
-import { CIRCUITS, PARTS, SYSTEMS, ZONES, entityIdFor, slotById, wiresForSlot, type PartSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
+import { CIRCUITS, PARTS, SYSTEMS, ZONES, entityIdFor, layerForEntityId, slotById, wiresForSlot, type PartSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
 import { Empty, ErrorBanner, KV, Loading, SeverityBadge, SourcingBadge, StatusBadge } from "./primitives";
 
 export type PartLoad = { status: "loading" | "ready" | "error"; data: EntityContext | null; error: ClientError | null };
@@ -48,7 +48,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
   const openIssues = issues.filter((i) => i.status !== "closed");
   const selected = parts.find((p) => p.id === ex.selectedEntityId) ?? null;
   const selectedLoad = ex.selectedEntityId ? contexts[ex.selectedEntityId] : undefined;
-  const select = (id: string | null) => ws.setExplorer({ selectedEntityId: id });
+  const select = (id: string | null) => ws.setExplorer((s) => ({ selectedEntityId: id, layer: id ? (layerForEntityId(id) ?? s.layer) : s.layer }));
   const markerEntityIds = ex.markers.map((m) => m.entityId).filter((x): x is string => Boolean(x));
   const markerWireIds = ex.markers.map((m) => m.wireId).filter((x): x is string => Boolean(x));
 

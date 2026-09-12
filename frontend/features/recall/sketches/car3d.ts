@@ -41,18 +41,36 @@ export function slotForEntityId(entityId: string): { slot: PartSlot; suffix: str
   return null;
 }
 
+export type ViewLayer = "outside" | "inside";
+
+const EXTERIOR_SLOTS = new Set(["charge-port-module", "charge-connector", "charge-bracket", "door-FL", "door-FR", "door-RL", "door-RR", "hood", "tailgate", "windshield", "rear-glass", "mirror-L", "mirror-R", "headlamp-L", "headlamp-R", "taillamp-L", "taillamp-R", "bumper-front", "bumper-rear", "wheel-FL", "wheel-FR", "wheel-RL", "wheel-RR"]);
+
+/** Exterior parts are visible from outside the car; everything else is an interior/underbody component. */
+export function isExteriorSlot(slot: string): boolean {
+  return EXTERIOR_SLOTS.has(slot);
+}
+export function layerForSlot(slot: string): ViewLayer {
+  return isExteriorSlot(slot) ? "outside" : "inside";
+}
+export function layerForEntityId(entityId: string): ViewLayer | null {
+  const hit = slotForEntityId(entityId);
+  return hit ? layerForSlot(hit.slot.slot) : null;
+}
+
 // ---------------------------------------------------------------------------
 // Body styles
 // ---------------------------------------------------------------------------
 
-export type BodyStyle = "sedan" | "crossover" | "hatch";
+export type BodyStyle = "sedan" | "suv" | "sports";
 
 type Profile = { pts: Array<[number, number]>; halfWidth: number; wheelX: [number, number]; wheelR: number; roofZ: number };
 
 const PROFILES: Record<BodyStyle, Profile> = {
+  // 12 profile points, rear to front: [0] rear bottom, [1] rear top, [2] tailgate/trunk top, [3] rear deck / C-pillar base,
+  // [4] roof rear, [5..6] roof, [7] A-pillar top, [8] windshield base, [9] hood front, [10] front top, [11] front bottom.
   sedan: { pts: [[-2300, 380], [-2300, 780], [-2150, 930], [-1250, 940], [-850, 1360], [-500, 1440], [600, 1440], [1000, 1330], [1350, 1010], [2150, 930], [2300, 820], [2300, 380]], halfWidth: 920, wheelX: [-1450, 1450], wheelR: 370, roofZ: 1440 },
-  crossover: { pts: [[-2250, 420], [-2250, 900], [-2050, 1150], [-1250, 1180], [-900, 1560], [-500, 1620], [650, 1620], [1050, 1500], [1350, 1150], [2150, 1050], [2300, 900], [2300, 420]], halfWidth: 960, wheelX: [-1450, 1450], wheelR: 400, roofZ: 1620 },
-  hatch: { pts: [[-1950, 380], [-1950, 800], [-1850, 1150], [-1500, 1400], [-1100, 1460], [500, 1460], [900, 1350], [1250, 1020], [1950, 930], [2050, 800], [2050, 380]], halfWidth: 880, wheelX: [-1250, 1300], wheelR: 350, roofZ: 1460 },
+  suv: { pts: [[-2350, 450], [-2350, 1050], [-2250, 1560], [-1350, 1600], [-1000, 1740], [-600, 1760], [800, 1760], [1150, 1660], [1450, 1260], [2200, 1150], [2350, 980], [2350, 450]], halfWidth: 980, wheelX: [-1500, 1500], wheelR: 410, roofZ: 1760 },
+  sports: { pts: [[-2250, 380], [-2250, 700], [-2100, 830], [-1450, 860], [-850, 1180], [-350, 1250], [500, 1250], [900, 1160], [1300, 900], [2100, 780], [2300, 650], [2300, 380]], halfWidth: 960, wheelX: [-1500, 1500], wheelR: 400, roofZ: 1250 },
 };
 
 function circle3(center: Vec3, r: number, plane: "yz" | "xz" | "xy", n = 28): Vec3[] {
@@ -88,8 +106,8 @@ export function bodyLines(style: BodyStyle): Polyline3[] {
   }
   // Doors, B-pillar, windows, hood and tailgate lines.
   const doorTop = p.roofZ - 120;
-  const rearDoorX: [number, number] = style === "hatch" ? [-900, -30] : [-1000, -30];
-  const frontDoorX: [number, number] = style === "hatch" ? [30, 950] : [30, 1050];
+  const rearDoorX: [number, number] = style === "sports" ? [-900, -30] : [-1000, -30];
+  const frontDoorX: [number, number] = style === "sports" ? [30, 1000] : [30, 1050];
   for (const side of [-1, 1]) {
     const y = side * (w + 6);
     for (const [x0, x1] of [rearDoorX, frontDoorX]) {
@@ -113,8 +131,28 @@ export function bodyLines(style: BodyStyle): Polyline3[] {
     lines.push({ points: [[p.pts[10]![0] - 20, side * (w - 120), 900], [p.pts[10]![0] - 20, side * (w - 520), 940], [p.pts[10]![0] - 140, side * (w - 520), 990], [p.pts[10]![0] - 140, side * (w - 120), 960], [p.pts[10]![0] - 20, side * (w - 120), 900]], cls: "thin" });
     lines.push({ points: [[p.pts[1]![0] + 10, side * (w - 100), 880], [p.pts[1]![0] + 10, side * (w - 480), 900], [p.pts[1]![0] + 120, side * (w - 480), 960], [p.pts[1]![0] + 120, side * (w - 100), 940], [p.pts[1]![0] + 10, side * (w - 100), 880]], cls: "thin" });
   }
-  // Floor / underbody outline (dashed) so the battery reads as under the cabin.
+  // Pillars: A (windshield base to roof front), B (between doors), C (rear deck to roof rear).
+  for (const side of [-1, 1]) {
+    const y = side * (w - 40);
+    lines.push({ points: [[ws0[0], y, ws0[1]], [ws1[0], y, ws1[1]]], cls: "thin" });
+    lines.push({ points: [[0, side * (w + 4), 430], [0, side * (w - 60), doorTop]], cls: "thin" });
+    lines.push({ points: [[rg0[0], y, rg0[1]], [rg1[0], y, rg1[1]]], cls: "thin" });
+  }
+  // Bumper skirts and wheel spokes.
+  for (const [x, dir] of [[p.pts[11]![0], 1], [p.pts[0]![0], -1]] as Array<[number, number]>) {
+    lines.push({ points: [[x - dir * 30, -w + 60, 380], [x - dir * 30, w - 60, 380], [x - dir * 30, w - 60, 620], [x - dir * 30, -w + 60, 620], [x - dir * 30, -w + 60, 380]], cls: "thin" });
+  }
+  for (const wx of p.wheelX) {
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2;
+        lines.push({ points: [[wx, side * (w - 110), 400], [wx + Math.cos(a) * p.wheelR * 0.55, side * (w - 110), 400 + Math.sin(a) * p.wheelR * 0.55]], cls: "thin" });
+      }
+    }
+  }
+  // Floor / underbody outline (dashed) so the battery reads as under the cabin, and a ground shadow.
   lines.push({ points: [[-1900, -w + 80, 340], [1900, -w + 80, 340], [1900, w - 80, 340], [-1900, w - 80, 340], [-1900, -w + 80, 340]], cls: "dashed" });
+  lines.push({ points: circle3([0, 0, 20], 1, "xy", 40).map(([cx, cy, cz]) => [cx * (p.pts[11]![0] + 250), cy * (w + 250), cz] as Vec3), cls: "dashed" });
   return lines;
 }
 
@@ -184,8 +222,8 @@ const BASE: Record<string, Box3> = {
 
 const STYLE_SCALE: Record<BodyStyle, { x: number; z: number; y: number }> = {
   sedan: { x: 1, z: 1, y: 1 },
-  crossover: { x: 1, z: 1.1, y: 1.04 },
-  hatch: { x: 0.86, z: 1.02, y: 0.96 },
+  suv: { x: 1.02, z: 1.2, y: 1.06 },
+  sports: { x: 1, z: 0.86, y: 1.04 },
 };
 
 export function partBox(slot: string, style: BodyStyle): Box3 | null {
@@ -211,18 +249,58 @@ export function boxEdges(b: Box3): Polyline3[] {
   ];
 }
 
-/** Wire path through the harness position when the wire has one. */
+/** Lane index of a wire among wires sharing the same harness (or the same end points), for fan-out. */
+export function wireLane(w: WireDef): { index: number; count: number } {
+  const key = w.harness ?? `${w.from}>${w.to}`;
+  const group = WIRES.filter((x) => (x.harness ?? `${x.from}>${x.to}`) === key);
+  return { index: group.findIndex((x) => x.id === w.id), count: group.length };
+}
+
+/**
+ * Wire route: leaves the source part from its side face, runs along the harness spine in its own
+ * lane, and enters the destination part. Returned as 3D waypoints; the renderer smooths them.
+ */
 export function wirePath(w: WireDef, style: BodyStyle): Vec3[] {
   const a = partBox(w.from, style);
   const b = partBox(w.to, style);
   if (!a || !b) return [];
-  const pts: Vec3[] = [a.center];
+  const { index, count } = wireLane(w);
+  const lane = (index - (count - 1) / 2) * 36; // mm offset between parallel wires
+  const dirY = Math.sign(b.center[1] - a.center[1]) || 1;
+  const exitA: Vec3 = [a.center[0], a.center[1] + (dirY * a.size[1]) / 2, a.center[2]];
+  const entryB: Vec3 = [b.center[0], b.center[1] - (dirY * b.size[1]) / 2, b.center[2]];
+  const pts: Vec3[] = [a.center, exitA];
   if (w.harness && w.harness !== w.from && w.harness !== w.to) {
     const h = partBox(w.harness, style);
-    if (h) pts.push([h.center[0], h.center[1], h.center[2]]);
+    if (h) {
+      // Two points along the harness spine so the wire visibly runs inside the harness.
+      const spineDir = h.size[0] >= h.size[1] ? 0 : 1;
+      const p1: Vec3 = [h.center[0], h.center[1], h.center[2] + lane * 0.4];
+      const p2: Vec3 = [...p1] as Vec3;
+      const towardA = Math.sign(a.center[spineDir] - h.center[spineDir]) || 1;
+      const towardB = Math.sign(b.center[spineDir] - h.center[spineDir]) || -1;
+      const half = h.size[spineDir] * 0.35;
+      p1[spineDir] = h.center[spineDir] + towardA * half;
+      p2[spineDir] = h.center[spineDir] + towardB * half;
+      const other = spineDir === 0 ? 1 : 0;
+      p1[other] += lane;
+      p2[other] += lane;
+      pts.push(p1, p2);
+    }
+  } else {
+    // Direct connection: bow the midpoint by the lane offset so parallel wires do not overlap.
+    const mid: Vec3 = [(exitA[0] + entryB[0]) / 2, (exitA[1] + entryB[1]) / 2 + lane, (exitA[2] + entryB[2]) / 2 + 60 + Math.abs(lane) * 0.5];
+    pts.push(mid);
   }
-  pts.push(b.center);
+  pts.push(entryB, b.center);
   return pts;
+}
+
+/** Stroke width from gauge text ("70 mm2" -> thick, "0.35 mm2" -> thin). */
+export function wireWidth(w: WireDef): number {
+  const m = w.gauge.match(/([\d.]+)\s*mm2/);
+  const g = m ? Number(m[1]) : 1;
+  return g >= 50 ? 3.2 : g >= 10 ? 2.4 : g >= 2 ? 1.8 : 1.3;
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +322,10 @@ export const CAMERA_PRESETS: Record<string, Pick<Camera, "yaw" | "pitch">> = {
 
 export const DEFAULT_CAMERA: Camera = { ...CAMERA_PRESETS.iso!, scale: 0.155, target: [0, 0, 700] };
 
-/** Orthographic projection: returns screen x, y (SVG units) and depth (larger = further away). */
+/** Perspective strength: distance of the eye from the target in model units (larger = flatter). */
+export const PERSPECTIVE_DISTANCE = 9000;
+
+/** Perspective projection: returns screen x, y (SVG units) and depth (larger = further away). */
 export function project(p: Vec3, cam: Camera): { x: number; y: number; depth: number } {
   const dx = p[0] - cam.target[0];
   const dy = p[1] - cam.target[1];
@@ -258,7 +339,8 @@ export function project(p: Vec3, cam: Camera): { x: number; y: number; depth: nu
   const sp = Math.sin(cam.pitch);
   const up = dz * cp + y1 * sp; // screen up
   const depth = y1 * cp - dz * sp;
-  return { x: VIEW.w / 2 + x1 * cam.scale, y: VIEW.h / 2 - up * cam.scale, depth };
+  const k = PERSPECTIVE_DISTANCE / Math.max(PERSPECTIVE_DISTANCE * 0.2, PERSPECTIVE_DISTANCE + depth);
+  return { x: VIEW.w / 2 + x1 * k * cam.scale, y: VIEW.h / 2 - up * k * cam.scale, depth };
 }
 
 /** Scale that fits a box comfortably in the stage. */
@@ -313,8 +395,8 @@ export type SketchVehicle = { buildId: string; entityId: string; style: BodyStyl
 
 export const SKETCH_VEHICLES: SketchVehicle[] = [
   { buildId: "DEMO-EV-005", entityId: "DEMO-EV-005", style: "sedan", modelName: "Demo Sedan", platform: "EV-PLATFORM-1", suffix: "0005", note: "Story vehicle: charge-port alignment issue reported at Final Inspection" },
-  { buildId: "DEMO-EV-006", entityId: "DEMO-EV-006", style: "crossover", modelName: "Demo Crossover", platform: "EV-PLATFORM-1", suffix: "0006", note: "Connector replaced after confirmed supplier pin damage; two open door issues" },
-  { buildId: "DEMO-EV-007", entityId: "DEMO-EV-007", style: "hatch", modelName: "Demo Compact", platform: "EV-PLATFORM-1", suffix: "0007", note: "Shipped; headlamp condensation and a no-wake (ignition) report" },
+  { buildId: "DEMO-EV-006", entityId: "DEMO-EV-006", style: "suv", modelName: "Demo SUV", platform: "EV-PLATFORM-1", suffix: "0006", note: "Connector replaced after confirmed supplier pin damage; door, mirror and HV contactor issues open" },
+  { buildId: "DEMO-EV-007", entityId: "DEMO-EV-007", style: "sports", modelName: "Demo Sport", platform: "EV-PLATFORM-1", suffix: "0007", note: "Shipped; no-wake (ignition), headlamp and seat-heater reports" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -389,6 +471,27 @@ export function searchCircuits(text: string): CircuitDef[] {
 
 export function wiresForSlot(slot: string): WireDef[] {
   return WIRES.filter((w) => w.from === slot || w.to === slot || w.harness === slot);
+}
+
+/** Wires touching any of the given slots (from, to or routed-in harness). */
+export function wiresNear(slots: string[]): WireDef[] {
+  const set = new Set(slots);
+  return WIRES.filter((w) => set.has(w.from) || set.has(w.to) || (w.harness ? set.has(w.harness) : false));
+}
+
+/** Human-readable description of a wire for tooltips and the agent. */
+export function describeWire(w: WireDef): { title: string; lines: string[] } {
+  const c = CIRCUITS.find((x) => x.id === w.circuitId);
+  return {
+    title: `${w.id} · ${w.signal}`,
+    lines: [
+      `From ${slotById(w.from)?.label ?? w.from}${w.fromConnector ? ` (${w.fromConnector})` : ""}`,
+      `To ${slotById(w.to)?.label ?? w.to}${w.toConnector ? ` (${w.toConnector})` : ""}`,
+      w.harness ? `Routed in ${slotById(w.harness)?.label ?? w.harness}` : "Direct connection (no harness)",
+      `Circuit ${c?.name ?? w.circuitId} (${w.circuitId})`,
+      `${w.voltageClass} · ${w.gauge} · ${w.color}`,
+    ],
+  };
 }
 
 export function wiresForCircuit(circuitId: string): WireDef[] {
