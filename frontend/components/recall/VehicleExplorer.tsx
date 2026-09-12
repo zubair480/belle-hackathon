@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
 import { useWorkspace, type CameraPreset } from "../../features/recall/context";
-import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, SYSTEMS, WIRES, ZONES, bodyLines, describeWire, entityIdFor, layerForEntityId, project, slotById, slotForEntityId, wiresForSlot, type SketchVehicle, type ViewLayer } from "../../features/recall/sketches/car3d";
+import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, SYSTEMS, WIRES, ZONES, bodyLines, describeWire, entityIdFor, isExteriorSlot, project, slotById, slotForEntityId, wiresForSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
 import { PartPanel, type PartLoad } from "./PartPanel";
 import { Banner } from "./primitives";
 import { VehicleSketch3D, type HotspotInfo, type HoverDetail, type HoverTarget } from "./VehicleSketch3D";
@@ -42,6 +42,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   useEffect(() => {
     let cancelled = false;
     const ids = [vehicle.entityId, ...PARTS.map((p) => entityIdFor(p, vehicle.suffix))];
+    // Every part is loaded so an interior part selected via an issue or the assistant still shows its record.
     setContexts(Object.fromEntries(ids.map((id) => [id, { status: "loading", data: null, error: null } as PartLoad])));
     Promise.all(
       ids.map(async (id) => {
@@ -129,13 +130,12 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               suffix={vehicle.suffix}
               info={info}
               selectedEntityId={ex.selectedEntityId}
-              onSelect={(id) => ws.setExplorer((s) => ({ selectedEntityId: id, layer: id ? (layerForEntityId(id) ?? s.layer) : s.layer }))}
+              onSelect={(id) => ws.setExplorer({ selectedEntityId: id })}
               sourcingFilter={filter}
               markers={ex.markers}
               circuitId={ex.circuitId}
               wiring={ex.wiring}
               markMode={ex.markMode}
-              layer={ex.layer}
               onMark={addMarker}
               onWireSelect={(wireId) => {
                 const w = WIRES.find((x) => x.id === wireId);
@@ -149,15 +149,12 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               instant={instantZoom}
             />
             <div className="rrx-stage-hud">
-              <div className="rrx-seg" role="radiogroup" aria-label="View layer">
-                {(["outside", "inside"] as ViewLayer[]).map((l) => (
-                  <button key={l} type="button" role="radio" aria-checked={ex.layer === l} className="rrx-seg-btn" onClick={() => ws.setExplorer((s) => ({ layer: l, selectedEntityId: s.selectedEntityId && layerForEntityId(s.selectedEntityId) !== l ? null : s.selectedEntityId }))} data-testid={`layer-${l}`}>
-                    {l === "outside" ? "Outside" : "Inside"}
-                  </button>
-                ))}
-              </div>
-              <span className="rrx-badge rrx-badge--muted">{vehicle.modelName} · 3D · {ex.layer === "outside" ? "body and exterior parts" : "cabin, electrical and powertrain"}</span>
-              {selectedSlot ? <span className="rrx-badge rrx-badge--accent">Zoomed: {selectedSlot.label} · attached wires shown · hover for details</span> : <span className="rrx-muted rrx-small">Drag to rotate · wheel to zoom · tap a part to inspect · hover for details</span>}
+              <span className="rrx-badge rrx-badge--muted">{vehicle.modelName} · 3D · exterior parts</span>
+              {selectedSlot ? (
+                isExteriorSlot(selectedSlot.slot) ? <span className="rrx-badge rrx-badge--accent">Zoomed: {selectedSlot.label} · attached wires shown · hover for details</span> : <span className="rrx-badge rrx-badge--warning">{selectedSlot.label}: interior part, recorded but not drawn on the exterior sketch</span>
+              ) : (
+                <span className="rrx-muted rrx-small">Drag to rotate · wheel to zoom · tap a part to inspect · hover for details</span>
+              )}
             </div>
             <div className="rrx-stage-hud-right" role="group" aria-label="Sketch controls">
               {(Object.keys(CAMERA_PRESETS) as CameraPreset[]).map((p) => (

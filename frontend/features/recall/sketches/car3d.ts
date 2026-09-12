@@ -41,20 +41,15 @@ export function slotForEntityId(entityId: string): { slot: PartSlot; suffix: str
   return null;
 }
 
-export type ViewLayer = "outside" | "inside";
-
 const EXTERIOR_SLOTS = new Set(["charge-port-module", "charge-connector", "charge-bracket", "door-FL", "door-FR", "door-RL", "door-RR", "hood", "tailgate", "windshield", "rear-glass", "mirror-L", "mirror-R", "headlamp-L", "headlamp-R", "taillamp-L", "taillamp-R", "bumper-front", "bumper-rear", "wheel-FL", "wheel-FR", "wheel-RL", "wheel-RR"]);
 
-/** Exterior parts are visible from outside the car; everything else is an interior/underbody component. */
+/** Exterior parts are drawn on the sketch; interior/underbody parts are recorded but not drawn. */
 export function isExteriorSlot(slot: string): boolean {
   return EXTERIOR_SLOTS.has(slot);
 }
-export function layerForSlot(slot: string): ViewLayer {
-  return isExteriorSlot(slot) ? "outside" : "inside";
-}
-export function layerForEntityId(entityId: string): ViewLayer | null {
+export function isExteriorEntity(entityId: string): boolean {
   const hit = slotForEntityId(entityId);
-  return hit ? layerForSlot(hit.slot.slot) : null;
+  return hit ? isExteriorSlot(hit.slot.slot) : false;
 }
 
 // ---------------------------------------------------------------------------

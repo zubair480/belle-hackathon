@@ -37,7 +37,7 @@ describe("zoom disclosure and hover details", () => {
   it("shows no wires at full view, reveals attached wires and children after tapping the charge port", async () => {
     mount();
     const sketch = screen.getByTestId("vehicle-sketch");
-    await waitFor(() => expect(screen.getByText(/Recorded parts on this sketch/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Exterior parts on this sketch/)).toBeInTheDocument());
     expect(sketch).toHaveAttribute("data-wires-visible", "0");
     expect(screen.queryByTestId("hotspot-charge-connector")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("hotspot-charge-port-module"));
@@ -51,7 +51,7 @@ describe("zoom disclosure and hover details", () => {
 
   it("hovering a wire says where it comes from and goes to; hovering a part says what it is and its origin", async () => {
     mount();
-    await waitFor(() => expect(screen.getByText(/Recorded parts on this sketch/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Exterior parts on this sketch/)).toBeInTheDocument());
     fireEvent.click(screen.getByTestId("hotspot-charge-port-module"));
     const wire = await screen.findByTestId("wire-W-034");
     fireEvent.pointerEnter(wire, { clientX: 100, clientY: 100 });
@@ -76,21 +76,18 @@ describe("zoom disclosure and hover details", () => {
     mount();
     fireEvent.click(screen.getByRole("tab", { name: /DEMO-EV-006/ }));
     await waitFor(() => expect(screen.getByText(/DEMOVIN0000000006/)).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId("layer-inside"));
-    fireEvent.click(screen.getByTestId("hotspot-hv-junction"));
-    let panel = await screen.findByTestId("part-detail");
-    await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-HVJ-008")).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId("layer-outside"));
     fireEvent.click(screen.getByTestId("hotspot-mirror-R"));
-    panel = await screen.findByTestId("part-detail");
+    let panel = await screen.findByTestId("part-detail");
     await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-MIRROR-011")).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId("hotspot-door-FL"));
+    panel = await screen.findByTestId("part-detail");
+    await waitFor(() => expect(within(panel).getByTestId("part-issues")).toHaveTextContent("Issues on this part (2)"));
 
     fireEvent.click(screen.getByRole("tab", { name: /DEMO-EV-007/ }));
     await waitFor(() => expect(screen.getByText(/DEMOVIN0000000007/)).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId("layer-inside"));
-    fireEvent.click(screen.getByTestId("hotspot-seat-FL"));
+    fireEvent.click(screen.getByTestId("hotspot-headlamp-L"));
     panel = await screen.findByTestId("part-detail");
-    await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-SEAT-010")).toBeInTheDocument());
-    expect(within(panel).getByTestId("part-wires")).toHaveTextContent("W-080");
+    await waitFor(() => expect(within(panel).getByTestId("part-issue-ISS-LAMP-002")).toBeInTheDocument());
+    expect(within(panel).getByTestId("part-wires")).toHaveTextContent("W-051");
   });
 });

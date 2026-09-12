@@ -32,6 +32,8 @@ export async function runStubTurn(ctx: ToolContext, request: AgentChatRequest): 
   const wantsDraft = /\b(open|create|raise|report|start|new|draft)\b.*\bissue\b/i.test(last) && !/\b(list|show|what|which|any|see|find)\b.*\bissues?\b/i.test(last);
   const wantsSimilar = /\b(similar|prior|previous|fix|resolution|solved before)\b/i.test(last);
   const wantsWires = /\b(wire|wires|wiring|cable|harness|connector pin|electrical)\b/i.test(last);
+  // Word-start match so "misaligned", "condensation", "leaking" all count as symptoms.
+  const describesSymptom = /\b(issue|problem|fault|broken|wrong|noise|leak|loose|misalign|proud|flush|gap|condens|fog|stuck|grind|rattle|won'?t|doesn'?t|not (working|closing|charging)|damage|bent|crack|where)/i.test(last);
   const camera = /\b(top view|from (the )?top|underneath|from below)\b/i.test(last) ? "top" : /\b(left side|from the left)\b/i.test(last) ? "left" : /\b(right side|from the right)\b/i.test(last) ? "right" : /\b(front view|from the front)\b/i.test(last) ? "front" : /\b(rear view|from the (rear|back))\b/i.test(last) ? "rear" : /\b(iso|reset view|whole car|full car)\b/i.test(last) ? "iso" : null;
 
   const circuits = searchCircuits(last);
@@ -53,6 +55,7 @@ export async function runStubTurn(ctx: ToolContext, request: AgentChatRequest): 
     const focus = await call("focus_part", { query: last });
     const entityId = (focus.data as { entityId?: string } | undefined)?.entityId ?? null;
     if (entityId) {
+      if (describesSymptom && !wantsMark) await call("locate_fault", { entityId, symptom: last });
       await call("list_issues_for_part", { entityId });
       if (wantsWires) await call("wires_of_part", { entityId });
       if (wantsImpact) await call("impact_of_part", { entityId });

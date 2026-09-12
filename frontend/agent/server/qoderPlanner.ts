@@ -4,6 +4,7 @@
  *
  * The SDK is loaded dynamically so the app typechecks and builds without it; when it is not
  * installed, or QODER_PERSONAL_ACCESS_TOKEN is missing, the handler answers AI_UNAVAILABLE.
+ * The SDK launches the local `qodercli` binary (found on PATH or bundled with the package).
  * Install: npm install @qoder-ai/qoder-agent-sdk (Zubair owns dependency changes).
  * Docs consulted 2026-09-12: https://docs.qoder.com/cli/sdk/quick-start.md,
  * .../references-typescript.md, .../tools.md, .../mcp.md, .../authentication.md.
@@ -94,13 +95,18 @@ export async function runQoderTurn(ctx: ToolContext, request: AgentChatRequest):
 
   let reply = "";
   let sessionId: string | null = request.sessionId ?? null;
-  const q = sdk.query({ prompt: transcriptPrompt(request), options });
-  for await (const raw of q) {
-    const msg = raw as { type?: string; session_id?: string; sessionId?: string; subtype?: string; is_error?: boolean; error?: unknown };
-    if (msg.session_id) sessionId = msg.session_id;
-    if (msg.sessionId) sessionId = msg.sessionId;
-    if (msg.type === "assistant") reply += textOf(raw);
-    if (msg.type === "result" && msg.is_error) throw new Error(`Qoder agent returned an error result: ${JSON.stringify(msg.error ?? msg.subtype ?? "unknown")}`);
+  const q = sdk.query({ prompt: transcriptPrompt(request), options }) as AsyncIterable<unknown> & { close?: () => Promise<void> };
+  try {
+    for await (const raw of q) {
+      // Verified against @qoder-ai/qoder-agent-sdk 1.0.39 types: `type`, `session_id`, and for
+      // assistant messages `message.content[]` text blocks.
+      const msg = raw as { type?: string; session_id?: string; subtype?: string; is_error?: boolean; error?: unknown };
+      if (msg.session_id) sessionId = msg.session_id;
+      if (msg.type === "assistant") reply += textOf(raw);
+      if (msg.type === "result" && msg.is_error) throw new Error(`Qoder agent returned an error result: ${JSON.stringify(msg.error ?? msg.subtype ?? "unknown")}`);
+    }
+  } finally {
+    await q.close?.().catch(() => undefined);
   }
   return {
     reply: reply.trim() || (records.length ? records.map((r) => r.summary).join("\n") : "The agent returned no text."),

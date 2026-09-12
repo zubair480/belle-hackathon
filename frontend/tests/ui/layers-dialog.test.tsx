@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-/** Inside/Outside layers, wire routing helpers, and the New Issue dialog behaviour. */
+/** Exterior-only sketch, real tap sequence, wire routing helpers, and the New Issue dialog behaviour. */
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { createMockClient } from "../../features/recall/api/mockClient";
 import { RecallWorkspace } from "../../features/recall";
-import { WIRES, isExteriorSlot, layerForEntityId, wireLane, wirePath, wireWidth } from "../../features/recall/sketches/car3d";
+import { WIRES, isExteriorEntity, isExteriorSlot, wireLane, wirePath, wireWidth } from "../../features/recall/sketches/car3d";
 
 afterEach(cleanup);
 
@@ -15,14 +15,14 @@ function mount(opts: { chatOpen?: boolean } = {}) {
   return { client, controls };
 }
 
-describe("layers and wiring helpers", () => {
-  it("classifies exterior vs interior slots and derives the layer from an entity id", () => {
+describe("exterior classification and wiring helpers", () => {
+  it("classifies exterior vs interior slots and entity ids", () => {
     expect(isExteriorSlot("door-FL")).toBe(true);
     expect(isExteriorSlot("charge-connector")).toBe(true);
     expect(isExteriorSlot("start-switch")).toBe(false);
-    expect(layerForEntityId("SEAT-0005-FL")).toBe("inside");
-    expect(layerForEntityId("LAMP-0005-R")).toBe("outside");
-    expect(layerForEntityId("NOPE-1")).toBeNull();
+    expect(isExteriorEntity("LAMP-0005-R")).toBe(true);
+    expect(isExteriorEntity("SEAT-0005-FL")).toBe(false);
+    expect(isExteriorEntity("NOPE-1")).toBe(false);
   });
 
   it("routes wires with lanes so parallel wires in one harness do not overlap, and widths follow gauge", () => {
@@ -38,43 +38,57 @@ describe("layers and wiring helpers", () => {
   });
 });
 
-describe("Inside / Outside view", () => {
-  it("outside shows exterior parts only; inside shows cabin and electrical parts only; selection switches layers", async () => {
+describe("exterior-only sketch and tap-to-zoom", () => {
+  it("draws exterior parts only; interior parts are not on the sketch but still open in the rail", async () => {
     mount();
-    const sketch = screen.getByTestId("vehicle-sketch");
-    expect(sketch).toHaveAttribute("data-layer", "outside");
     expect(screen.getByTestId("hotspot-door-FL")).toBeInTheDocument();
+    expect(screen.getByTestId("hotspot-headlamp-L")).toBeInTheDocument();
     expect(screen.queryByTestId("hotspot-seat-FL")).not.toBeInTheDocument();
     expect(screen.queryByTestId("hotspot-start-switch")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("layer-inside"));
-    expect(sketch).toHaveAttribute("data-layer", "inside");
-    expect(screen.getByTestId("hotspot-seat-FL")).toBeInTheDocument();
-    expect(screen.getByTestId("hotspot-start-switch")).toBeInTheDocument();
-    expect(screen.queryByTestId("hotspot-door-FL")).not.toBeInTheDocument();
-
-    // Selecting an exterior part from the list switches back to outside.
-    await waitFor(() => expect(screen.getByTestId("partlist-headlamp-L")).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId("partlist-headlamp-L"));
-    await waitFor(() => expect(sketch).toHaveAttribute("data-layer", "outside"));
-    expect(screen.getByTestId("hotspot-headlamp-L")).toHaveAttribute("data-selected", "true");
+    expect(screen.queryByTestId("partlist-start-switch")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Exterior parts on this sketch/)).toBeInTheDocument());
   });
 
-  it("the assistant focusing an interior part switches to the inside view", async () => {
+  it("a real tap (pointerdown, pointerup, click on the part) zooms in; a drag does not deselect", async () => {
+    mount();
+    const sketch = screen.getByTestId("vehicle-sketch");
+    const lamp = screen.getByTestId("hotspot-headlamp-L");
+    fireEvent.pointerDown(sketch, { button: 0, clientX: 300, clientY: 300 });
+    fireEvent.pointerUp(sketch, { clientX: 300, clientY: 300 });
+    fireEvent.click(lamp);
+    await waitFor(() => expect(sketch).toHaveAttribute("data-zoomed", "true"));
+    expect(lamp).toHaveAttribute("data-selected", "true");
+    // Drag: pointer moves far, then the click that follows must not clear the selection.
+    fireEvent.pointerDown(sketch, { button: 0, clientX: 300, clientY: 300 });
+    fireEvent.pointerMove(sketch, { clientX: 380, clientY: 320 });
+    fireEvent.pointerUp(sketch, { clientX: 380, clientY: 320 });
+    fireEvent.click(sketch);
+    expect(screen.getByTestId("hotspot-headlamp-L")).toHaveAttribute("data-selected", "true");
+    // A plain tap on the background deselects.
+    await new Promise((r) => setTimeout(r, 5));
+    fireEvent.pointerDown(sketch, { button: 0, clientX: 300, clientY: 300 });
+    fireEvent.pointerUp(sketch, { clientX: 300, clientY: 300 });
+    fireEvent.click(sketch);
+    await waitFor(() => expect(sketch).toHaveAttribute("data-zoomed", "false"));
+  });
+
+  it("the assistant focusing an interior part shows its record with an interior note and no zoom", async () => {
     mount({ chatOpen: true });
     const chat = await screen.findByTestId("agent-chat");
     fireEvent.change(within(chat).getByTestId("chat-input"), { target: { value: "show me the driver seat" } });
     fireEvent.click(within(chat).getByTestId("chat-send"));
     await within(chat).findByTestId("toolcall-focus_part");
-    await waitFor(() => expect(screen.getByTestId("vehicle-sketch")).toHaveAttribute("data-layer", "inside"));
-    await waitFor(() => expect(screen.getByTestId("hotspot-seat-FL")).toHaveAttribute("data-selected", "true"));
+    const panel = await screen.findByTestId("part-detail");
+    expect(panel).toHaveTextContent("Driver seat");
+    expect(panel).toHaveTextContent("Interior part: recorded, not drawn on the exterior sketch");
+    expect(screen.getByTestId("vehicle-sketch")).toHaveAttribute("data-zoomed", "false");
   });
 });
 
 describe("New issue dialog", () => {
   it("opens with sections and a live summary, closes on Escape, and prefilled items are described", async () => {
     mount();
-    await waitFor(() => expect(screen.getByText(/Recorded parts on this sketch/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Exterior parts on this sketch/)).toBeInTheDocument());
     fireEvent.click(screen.getByTestId("hotspot-charge-port-module"));
     fireEvent.click(await screen.findByRole("button", { name: /Report issue on this part/ }));
     const form = await screen.findByTestId("new-issue-form");
