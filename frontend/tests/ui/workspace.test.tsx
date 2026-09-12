@@ -7,8 +7,8 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { EV_DEMO } from "@/contracts/issues";
-import { createMockClient } from "@/features/recall/api/mockClient";
-import { RecallWorkspace } from "@/features/recall";
+import { createMockClient } from "../../features/recall/api/mockClient";
+import { RecallWorkspace } from "../../features/recall";
 
 afterEach(cleanup);
 

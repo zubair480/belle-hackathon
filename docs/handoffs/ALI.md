@@ -1,5 +1,7 @@
 # Ali handoff (frontend, typed client + mocks, pitch)
 
+**Layout:** the whole UI lane lives under `/frontend` (`frontend/components/recall`, `frontend/features/recall`, `frontend/tests/ui`). `src/features/recall/index.ts` is a one-line re-export shim so the agreed mount `import { RecallWorkspace } from "@/features/recall"` keeps working. Two root-config edits were needed and are listed under "Shared config changes requested through Zubair".
+
 Contract version: `assembly-quality-v4` (as published on `main` at 71e4773).
 Base commit: `main` @ 71e4773 (foundation dfdaae5 plus the v4 source contract).
 Branch: `codex/ali-ui-pitch`. Code commit: `fcc8b25`. The branch head at push time (this handoff commit) is the SHA to merge; Zubair receives it in the team message.
@@ -10,16 +12,16 @@ Note on the branch layout: `origin/codex/zubair-api-integration` @ 1f92bb8 still
 
 | Area | Files | Notes |
 | --- | --- | --- |
-| Workspace shell and export | `src/features/recall/RecallWorkspace.tsx`, `src/features/recall/index.ts` | `export { RecallWorkspace }`; props `client?`, `initialView?`, `instantZoom?`. Mock-mode banner and top-bar badge. |
-| Typed client | `src/features/recall/api/types.ts`, `httpClient.ts`, `index.ts` | One method per frozen `ISSUE_ROUTES` entry. Every envelope is validated with the shared Zod schemas; a malformed or failed response becomes `{ ok: false, error }` with code `NETWORK` or the server code. No runtime fallback to the mock. |
-| Labelled mock | `src/features/recall/api/mockClient.ts`, `api/mock/server.ts`, `api/mock/data.ts` | Selected only by `NEXT_PUBLIC_RECALL_UI_MOCKS=true`. Enforces `TRANSITIONS`, `expectedVersion` (STALE_VERSION), idempotency replay/DUPLICATE_ACTION, INVALID_REFERENCE, VERIFICATION_REQUIRED on close. Sample data uses `EV_DEMO` ids. `controls.failNext(method, error)` injects failures for tests. |
-| Vehicles view | `src/components/recall/VehicleExplorer.tsx`, `VehicleSketch.tsx`, `PartPanel.tsx`, `src/features/recall/sketches/models.ts` | Three synthetic models (sedan DEMO-EV-005, crossover DEMO-EV-006, compact DEMO-EV-007). White line art on black, draw-on animation, tap-to-zoom viewBox tween, sub-sketch for the charge port (connector + bracket) and battery (cell modules). Hotspot colour = recorded `sourcingType`; red pulse = open issue. Right rail: vehicle identity (build ID, VIN or "not assigned yet"), parts grouped by Bought from supplier / Made in-house / Unknown origin, selected-part provenance, containment path, replacement history, linked issues, "Report issue on this part". |
+| Workspace shell and export | `frontend/features/recall/RecallWorkspace.tsx`, `frontend/features/recall/index.ts` | `export { RecallWorkspace }`; props `client?`, `initialView?`, `instantZoom?`. Mock-mode banner and top-bar badge. |
+| Typed client | `frontend/features/recall/api/types.ts`, `httpClient.ts`, `index.ts` | One method per frozen `ISSUE_ROUTES` entry. Every envelope is validated with the shared Zod schemas; a malformed or failed response becomes `{ ok: false, error }` with code `NETWORK` or the server code. No runtime fallback to the mock. |
+| Labelled mock | `frontend/features/recall/api/mockClient.ts`, `api/mock/server.ts`, `api/mock/data.ts` | Selected only by `NEXT_PUBLIC_RECALL_UI_MOCKS=true`. Enforces `TRANSITIONS`, `expectedVersion` (STALE_VERSION), idempotency replay/DUPLICATE_ACTION, INVALID_REFERENCE, VERIFICATION_REQUIRED on close. Sample data uses `EV_DEMO` ids. `controls.failNext(method, error)` injects failures for tests. |
+| Vehicles view | `frontend/components/recall/VehicleExplorer.tsx`, `VehicleSketch.tsx`, `PartPanel.tsx`, `frontend/features/recall/sketches/models.ts` | Three synthetic models (sedan DEMO-EV-005, crossover DEMO-EV-006, compact DEMO-EV-007). White line art on black, draw-on animation, tap-to-zoom viewBox tween, sub-sketch for the charge port (connector + bracket) and battery (cell modules). Hotspot colour = recorded `sourcingType`; red pulse = open issue. Right rail: vehicle identity (build ID, VIN or "not assigned yet"), parts grouped by Bought from supplier / Made in-house / Unknown origin, selected-part provenance, containment path, replacement history, linked issues, "Report issue on this part". |
 | Issues | `IssueBoard.tsx`, `NewIssueForm.tsx`, `IssueDetail.tsx` | Filters (status, severity, team + role, text). Manual form with idempotency key per draft; draft preserved on error. Detail always re-fetches; four attribution labels; linked vs suspected vs confirmed supplier; comments with evidence; PATCH assignment with `expectedVersion` and a reload action on STALE_VERSION; audit history. |
 | Investigation | `CausePanel.tsx` | Hypotheses, confirmed and rejected causes listed separately; record form with supersede. |
 | Resolution | `ResolutionPanel.tsx` | Similar-resolution panel (source issue, fix, verification, match reasons, applicability warnings, unverified suggestions flagged). Reuse creates an editable proposal labelled "Proposed from a verified prior resolution". Apply, verification (pass/fail), triage/start/close/reopen through the API. Close is pre-checked in the UI and enforced by the server. |
 | Assembly context | `AssemblyContext.tsx` | Per marked entity: origin, current containment path to vehicle and location state, historical containment (removed intervals), limitations. |
 | Insights | `InsightsView.tsx` | Filters: date, defect type, part family/number, process area, station, team role, supplier, status, severity. Team table (reported / assigned open / confirmed cause), supplier table (linked / confirmed / distinct units / cohort / rate or N/A), detection-station, causal-process, cause-type and defect-family buckets. Every count opens a drilldown of the issues and their evidence. |
-| Styling | `src/components/recall/recall.css` | Scoped under `.rrx`; re-maps the shared tokens to the dark theme. Zubair's `globals.css` untouched. |
+| Styling | `frontend/components/recall/recall.css` | Scoped under `.rrx`; re-maps the shared tokens to the dark theme. Zubair's `globals.css` untouched. |
 | Mount | `src/app/page.tsx` | Replaced the placeholder body with `<RecallWorkspace />` (the edit the placeholder comment expects). `src/app/layout.tsx` still says "food co-packers" in `metadata.description`; Zubair's file, please update. |
 
 ## Setup and commands
@@ -41,8 +43,8 @@ Environment variable names used by this lane: `NEXT_PUBLIC_RECALL_UI_MOCKS` only
 | Check | Command | Result |
 | --- | --- | --- |
 | Typecheck | `npm run typecheck` | passed |
-| Mock rule tests (node) | `tests/ui/mock-server.test.ts` | 6 passed: create/reload/idempotency replay and DUPLICATE_ACTION; STALE_VERSION and INVALID_REFERENCE; close blocked before pass, allowed after, history kept on reopen; similar-resolution ranking with reasons and warnings; role-separated team counts, supplier linked vs confirmed, rate present only with a complete cohort, N/A otherwise; entity context origins, replacement history, build ID with null VIN, NOT_FOUND for unknown ids |
-| Rendered workflow tests (jsdom) | `tests/ui/workspace.test.tsx` | 10 passed: mock banner and three models; zoom reveals connector (supplier, batch, receipt evidence, "no VIN yet") and bracket (lot, work order, process); unrecorded/replaced part shows historical containment; New Issue prefilled from a part; manual create -> stored record -> reload; backend NETWORK error keeps the draft and retry succeeds with the same key; assignment save and STALE_VERSION conflict with reload; attribution labels on the prior closed issue (reporter vs confirmed causal team, linked supplier not at fault); supplier hypothesis kept separate from confirmed fault; full loop prior verified fix -> "Proposed from a verified prior resolution" -> Close disabled -> start work -> apply -> failed verification keeps it open -> pass -> close -> retrievable for a later issue; insights counts, N/A rate, drilldown dialog with evidence |
+| Mock rule tests (node) | `frontend/tests/ui/mock-server.test.ts` | 6 passed: create/reload/idempotency replay and DUPLICATE_ACTION; STALE_VERSION and INVALID_REFERENCE; close blocked before pass, allowed after, history kept on reopen; similar-resolution ranking with reasons and warnings; role-separated team counts, supplier linked vs confirmed, rate present only with a complete cohort, N/A otherwise; entity context origins, replacement history, build ID with null VIN, NOT_FOUND for unknown ids |
+| Rendered workflow tests (jsdom) | `frontend/tests/ui/workspace.test.tsx` | 10 passed: mock banner and three models; zoom reveals connector (supplier, batch, receipt evidence, "no VIN yet") and bracket (lot, work order, process); unrecorded/replaced part shows historical containment; New Issue prefilled from a part; manual create -> stored record -> reload; backend NETWORK error keeps the draft and retry succeeds with the same key; assignment save and STALE_VERSION conflict with reload; attribution labels on the prior closed issue (reporter vs confirmed causal team, linked supplier not at fault); supplier hypothesis kept separate from confirmed fault; full loop prior verified fix -> "Proposed from a verified prior resolution" -> Close disabled -> start work -> apply -> failed verification keeps it open -> pass -> close -> retrievable for a later issue; insights counts, N/A rate, drilldown dialog with evidence |
 | All suites | `npm test` | 32 passed (16 foundation contract tests + 16 UI tests) |
 | Production build | `npm run build` | passed (Next 16.3.5, Turbopack) |
 | Browser run | dev server in mock mode, headless Chromium 1440x900 | Vehicles -> zoom -> report from part -> save -> Resolution -> reuse -> save proposal -> Insights -> drilldown; no console errors; screenshots in `docs/pitch/screenshots/` |
@@ -61,6 +63,16 @@ Not tested: any real HTTP route, Neo4j persistence, or the integrated run with m
 8. **Shipment lines.** `EntityContext` has no shipment records; the assembly path ends at the vehicle's `locationState` ("shipped (shipment record)"). If a shipment DTO is added to the detail, the UI can show it.
 9. **Drilldown fetching.** Metric drilldown calls `GET /api/issues/:id` for up to 20 ids in parallel. If that is too heavy for the real service, an `ids` filter on `GET /api/issues` would replace it.
 10. **Landing view.** Per Ali's request the app opens on the Vehicles sketch explorer with the issue workflow one tap away (New issue in the top bar and on every part); no upload wizard or alert inbox. `initialView="issues"` is available if the team prefers the board as the landing page.
+
+## Shared config changes requested through Zubair
+
+| File | Change | Why |
+| --- | --- | --- |
+| `vitest.config.mts` | `include` adds `"frontend/tests/**/*.test.{ts,tsx}"` | UI tests moved under `/frontend` |
+| `package.json` | `test:ui` runs `vitest run frontend/tests/ui` | same |
+| `src/features/recall/index.ts` | one-line `export * from "../../../frontend/features/recall"` | keeps the agreed mount path |
+
+No dependency or alias changes; frontend files import contracts via the existing `@/contracts/*` alias and each other by relative path.
 
 ## Remaining work and limits
 

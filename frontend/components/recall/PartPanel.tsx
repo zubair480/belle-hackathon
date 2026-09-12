@@ -6,10 +6,10 @@
  */
 import type { EntityContext, SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
-import type { ClientError } from "@/features/recall/api/types";
-import { useWorkspace } from "@/features/recall/context";
-import { ATTRIBUTION, SOURCING_LABEL, fmtDate } from "@/features/recall/format";
-import { allParts, type SketchModel, type SketchVehicle } from "@/features/recall/sketches/models";
+import type { ClientError } from "../../features/recall/api/types";
+import { useWorkspace } from "../../features/recall/context";
+import { ATTRIBUTION, SOURCING_LABEL, fmtDate } from "../../features/recall/format";
+import { allParts, type SketchModel, type SketchVehicle } from "../../features/recall/sketches/models";
 import { Empty, ErrorBanner, KV, Loading, SourcingBadge, StatusBadge } from "./primitives";
 
 export type PartLoad = { status: "loading" | "ready" | "error"; data: EntityContext | null; error: ClientError | null };

@@ -2,8 +2,8 @@
 import type { ReactNode } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { CauseState, FixState, IssueStatus, Severity } from "@/contracts/issues";
-import type { ClientError } from "@/features/recall/api/types";
-import { CAUSE_STATE_LABEL, FIX_STATE_LABEL, SEVERITY_LABEL, SOURCING_LABEL, STATUS_LABEL, errorHint, severityBadgeClass, statusBadgeClass } from "@/features/recall/format";
+import type { ClientError } from "../../features/recall/api/types";
+import { CAUSE_STATE_LABEL, FIX_STATE_LABEL, SEVERITY_LABEL, SOURCING_LABEL, STATUS_LABEL, errorHint, severityBadgeClass, statusBadgeClass } from "../../features/recall/format";
 
 export function StatusBadge({ status }: { status: IssueStatus }) {
   return <span className={statusBadgeClass(status)}>{STATUS_LABEL[status]}</span>;

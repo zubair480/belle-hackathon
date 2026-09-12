@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { SourcingType } from "@/contracts/common";
-import { VIEWBOX, allParts, type SketchModel, type SketchPart, type SketchShape } from "@/features/recall/sketches/models";
+import { VIEWBOX, allParts, type SketchModel, type SketchPart, type SketchShape } from "../../features/recall/sketches/models";
 
 export type HotspotInfo = { sourcing: SourcingType | null; openIssueCount: number; recorded: boolean };
 

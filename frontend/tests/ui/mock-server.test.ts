@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { EV_DEMO, IssueDetailSchema, InsightsSchema, SimilarResolutionsSchema } from "@/contracts/issues";
 import { EntityContextSchema } from "@/contracts/common";
-import { createMockClient } from "@/features/recall/api/mockClient";
+import { createMockClient } from "../../features/recall/api/mockClient";
 
 const baseIssue = {
   title: "Charge-port connector misaligned on DEMO-EV-005",

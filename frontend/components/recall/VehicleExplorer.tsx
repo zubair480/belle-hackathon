@@ -6,8 +6,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
-import { useWorkspace } from "@/features/recall/context";
-import { SKETCH_VEHICLES, allParts, modelById, type SketchVehicle } from "@/features/recall/sketches/models";
+import { useWorkspace } from "../../features/recall/context";
+import { SKETCH_VEHICLES, allParts, modelById, type SketchVehicle } from "../../features/recall/sketches/models";
 import { PartPanel, type PartLoad } from "./PartPanel";
 import { Banner } from "./primitives";
 import { VehicleSketch, type HotspotInfo } from "./VehicleSketch";

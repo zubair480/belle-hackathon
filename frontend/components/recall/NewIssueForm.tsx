@@ -7,10 +7,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import type { CreateIssueCommand, Severity } from "@/contracts/issues";
 import { SEVERITIES } from "@/contracts/issues";
-import { newIdempotencyKey } from "@/features/recall/api/types";
-import { useWorkspace, type NewIssuePrefill } from "@/features/recall/context";
-import { nowLocalInput, toUtcIso } from "@/features/recall/format";
-import { useMutation } from "@/features/recall/hooks";
+import { newIdempotencyKey } from "../../features/recall/api/types";
+import { useWorkspace, type NewIssuePrefill } from "../../features/recall/context";
+import { nowLocalInput, toUtcIso } from "../../features/recall/format";
+import { useMutation } from "../../features/recall/hooks";
 import { ErrorBanner } from "./primitives";
 
 export type NewIssueFormProps = { prefill?: NewIssuePrefill; onCreated: (issueId: string) => void; onCancel: () => void };

@@ -6,10 +6,10 @@
  */
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { IssueCommentInput, IssueDetail as IssueDetailDto, IssueUpdate } from "@/contracts/issues";
-import { newIdempotencyKey } from "@/features/recall/api/types";
-import { useWorkspace } from "@/features/recall/context";
-import { ATTRIBUTION, fmtDate } from "@/features/recall/format";
-import { useAsync, useMutation } from "@/features/recall/hooks";
+import { newIdempotencyKey } from "../../features/recall/api/types";
+import { useWorkspace } from "../../features/recall/context";
+import { ATTRIBUTION, fmtDate } from "../../features/recall/format";
+import { useAsync, useMutation } from "../../features/recall/hooks";
 import { AssemblyContext } from "./AssemblyContext";
 import { CausePanel } from "./CausePanel";
 import { Banner, Empty, ErrorBanner, Loading, SeverityBadge, SourcingBadge, StatusBadge } from "./primitives";

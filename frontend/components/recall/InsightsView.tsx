@@ -6,9 +6,9 @@
 import { useState } from "react";
 import type { Insights, InsightsFilter, IssueDetail, IssueStatus, Severity } from "@/contracts/issues";
 import { ISSUE_STATUSES, SEVERITIES } from "@/contracts/issues";
-import { useWorkspace } from "@/features/recall/context";
-import { STATUS_LABEL, fmtRate } from "@/features/recall/format";
-import { useAsync } from "@/features/recall/hooks";
+import { useWorkspace } from "../../features/recall/context";
+import { STATUS_LABEL, fmtRate } from "../../features/recall/format";
+import { useAsync } from "../../features/recall/hooks";
 import { Banner, Empty, ErrorBanner, Loading, StatusBadge } from "./primitives";
 
 type Drill = { title: string; issueIds: string[] };

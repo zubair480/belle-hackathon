@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 
-// Default environment is node. UI tests (Ali, tests/ui/**) can opt into jsdom per file with:
+// Default environment is node. UI tests (Ali, frontend/tests/ui/**) can opt into jsdom per file with:
 //   // @vitest-environment jsdom
 export default defineConfig({
   resolve: {
@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["tests/**/*.test.{ts,tsx}"],
+    include: ["tests/**/*.test.{ts,tsx}", "frontend/tests/**/*.test.{ts,tsx}"],
     passWithNoTests: true,
     testTimeout: 20_000,
   },

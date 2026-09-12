@@ -1,6 +1,5 @@
 /**
- * Public surface of Ali's lane. Zubair mounts `RecallWorkspace` in src/app/page.tsx.
+ * Re-export shim: the UI lane lives in /frontend. This keeps the agreed mount path
+ * (`import { RecallWorkspace } from "@/features/recall"`) working for Zubair's route.
  */
-export { RecallWorkspace, type RecallWorkspaceProps } from "./RecallWorkspace";
-export { createHttpClient, createMockClient, getDefaultClient, isMockModeEnabled, type ClientError, type ClientResult, type MockControls, type RecallClient } from "./api";
-export type { WorkspaceView } from "./context";
+export * from "../../../frontend/features/recall";

@@ -1,7 +1,7 @@
 "use client";
 /** P1: component -> subassembly -> vehicle -> shipment context for each marked entity. */
 import type { IssueDetail } from "@/contracts/issues";
-import { useWorkspace } from "@/features/recall/context";
+import { useWorkspace } from "../../features/recall/context";
 import { PartProvenance } from "./PartPanel";
 import { Empty, SourcingBadge } from "./primitives";
 

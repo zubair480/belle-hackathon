@@ -2,9 +2,9 @@
 import { useState } from "react";
 import type { IssueListFilter, IssueStatus, Severity } from "@/contracts/issues";
 import { ISSUE_STATUSES, SEVERITIES } from "@/contracts/issues";
-import { useWorkspace } from "@/features/recall/context";
-import { STATUS_LABEL, fmtDate } from "@/features/recall/format";
-import { useAsync } from "@/features/recall/hooks";
+import { useWorkspace } from "../../features/recall/context";
+import { STATUS_LABEL, fmtDate } from "../../features/recall/format";
+import { useAsync } from "../../features/recall/hooks";
 import { Empty, ErrorBanner, Loading, SeverityBadge, StatusBadge } from "./primitives";
 
 export type IssueBoardProps = { mode?: "issues" | "resolutions" };

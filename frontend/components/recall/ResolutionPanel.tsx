@@ -8,10 +8,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import type { FixRevision, FixRevisionInput, IssueDetail, SimilarResolution, TransitionAction, TransitionCommand, VerificationInput } from "@/contracts/issues";
 import { TRANSITIONS } from "@/contracts/issues";
-import { newIdempotencyKey } from "@/features/recall/api/types";
-import { useWorkspace } from "@/features/recall/context";
-import { ATTRIBUTION, STATUS_LABEL, fmtDate } from "@/features/recall/format";
-import { useAsync, useMutation } from "@/features/recall/hooks";
+import { newIdempotencyKey } from "../../features/recall/api/types";
+import { useWorkspace } from "../../features/recall/context";
+import { ATTRIBUTION, STATUS_LABEL, fmtDate } from "../../features/recall/format";
+import { useAsync, useMutation } from "../../features/recall/hooks";
 import { Banner, Empty, ErrorBanner, FixStateBadge, Loading } from "./primitives";
 
 type FixDraft = { summary: string; steps: string[]; partNumber: string; partRevision: string; processStepId: string; limitations: string; workInstructionRef: string; sourceFixRevisionId: string | null; sourceIssueId: string | null };
