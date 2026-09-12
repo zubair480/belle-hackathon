@@ -224,3 +224,21 @@ real key); run `npm run typecheck`, `npm run build`, `npm test`, `npm run test:i
   under the existing `NEO4J_*` names; never commit or print them. Provisioning alone proves
   nothing until `neo4j:check` passes and Codey's seed and services exist.
 - Qoder: my lane was built with Claude Code, not Qoder. I have no Qoder evidence to contribute.
+
+## Ali's second push merged (906a230)
+
+- Merged `origin/codex/ali-ui-pitch` @ `906a230` into `codex/final-integration` (no conflicts):
+  3D wireframe sketch replaces the 2D one, an in-app agent harness (`frontend/agent/**`), a new
+  additive route `src/app/api/agent/chat/route.ts` (my path; taken as a thin delegate like the
+  page mount), synthetic EV-platform wiring data with a namespaced Cypher import under
+  `frontend/data/ev-platform/` (Ali's own design data, separate from Codey's EV seed).
+- Review of the agent route: tools are read-only against the app's own frozen routes
+  (`getEntityContext`, `listIssues`, `getIssue`, `findSimilarResolutions`, `runTrace` which only
+  creates a stored read result); no issue writes, no cause confirmation, no closure, no Cypher, no
+  database credentials. Provider is explicit (`RECALL_AGENT_PROVIDER=stub|qoder`); the Qoder
+  planner needs `QODER_PERSONAL_ACCESS_TOKEN` server-side and answers AI_UNAVAILABLE otherwise.
+  Added these env names to `.env.example`.
+- Note for Ali: the `impact_of_part` tool sends `revisionId: "ui-current"`; the double's accepted
+  EV revision is `ev-r1` and Codey's will be whatever his handoff says. Read it from
+  `tests/integration/acceptance-expectations.json` or a health/catalog field rather than a literal.
+- Checks on the merged branch: typecheck passed; vitest 80 passed / 5 skipped.
