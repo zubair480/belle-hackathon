@@ -290,3 +290,18 @@
 .rrx-ni-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--rr-border); background: var(--rr-surface-2); }
 .rrx-chip--on { border-color: var(--rr-accent); color: var(--rr-accent); }
 @media (max-width: 800px) { .rrx-ni-evidence { grid-template-columns: 1fr; } .rrx-form-grid { grid-template-columns: 1fr; } }
+
+/* ---- graph view ---- */
+.rrx .rrx-input { background: #000; border: 1px solid var(--rr-border-strong); border-radius: 6px; padding: 7px 9px; outline: none; color: var(--rr-text); transition: border-color .15s; }
+.rrx .rrx-input:focus { border-color: var(--rr-accent); }
+.rrx .rrx-graph-form { display: flex; flex-direction: column; gap: 10px; }
+.rrx .rrx-graph-form .rrx-field input { width: 100%; }
+.rrx .rrx-graph-tip { position: absolute; background: rgba(10,10,14,.95); border: 1px solid var(--rr-border-strong); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: var(--rr-text); }
+.rrx .rrx-legend-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+.rrx [data-testid="graph-view"] svg text { user-select: none; }
+.rrx [data-testid="graph-view"] .rrx-graph-tip { pointer-events: none; }
+
+/* ---- assistant: recorded tool results ---- */
+.rrx .rrx-tool-detail { margin-top: 6px; border: 1px solid var(--rr-border); border-radius: 6px; background: #050507; }
+.rrx .rrx-tool-detail summary { cursor: pointer; font-size: 11px; color: var(--rr-muted); padding: 4px 8px; text-transform: uppercase; letter-spacing: .04em; }
+.rrx .rrx-tool-detail pre { margin: 0; padding: 6px 10px 8px; font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; color: var(--rr-text); font-family: inherit; }

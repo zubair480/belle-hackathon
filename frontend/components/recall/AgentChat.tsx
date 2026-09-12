@@ -14,6 +14,9 @@ import { Banner, ErrorBanner } from "./primitives";
 
 type ChatEntry = AgentMessage & { toolCalls?: ToolCallRecord[]; provider?: AgentChatResponse["provider"]; warnings?: string[] };
 
+/** The assistant's normalised reply is the answer; the raw recorded tool result stays available, collapsed. */
+const plain = (t: string) => t.replace(/\*\*|__|^#{1,6}\s+/gm, "");
+
 const SUGGESTIONS = [
   "The charge port is misaligned, where should I look?",
   "The right front tire has an issue",
@@ -22,6 +25,11 @@ const SUGGESTIONS = [
   "Circle the bracket and the charge connector",
   "Show the wiring on the charge port",
   "Open an issue for the marked parts",
+  "Which distributors received cars with this defect?",
+  "Which suppliers are linked to open issues?",
+  "What else is affected by the harness supplier?",
+  "Are there related issues on this part's lot?",
+  "Create an issue for the marked parts",
 ];
 
 export function AgentChat() {
@@ -77,7 +85,7 @@ export function AgentChat() {
       <div className="rrx-chat-scroll" ref={scroller}>
         {!entries.length ? (
           <div className="rrx-stack">
-            <Banner kind="info">Ask about a part, a symptom or a circuit. I zoom the sketch, read provenance, list issues, trace wiring and show which customers received parts from the same batch or lot. I never save or close an issue for you.</Banner>
+            <Banner kind="info">Ask about a part, a symptom or a circuit. I zoom the sketch, read provenance, list issues, trace wiring and show which customers received parts from the same batch or lot. I can also walk the recorded relationship graph (supplier, lot, part, vehicle, customer, issue, cause) and create an issue when you ask me to; I never close or assign an issue or confirm a cause.</Banner>
             <div className="rrx-chips">
               {SUGGESTIONS.map((s) => (
                 <button key={s} type="button" className="rrx-chip" onClick={() => send(s)} disabled={pending}>
@@ -98,7 +106,13 @@ export function AgentChat() {
                 ))}
               </div>
             ) : null}
-            <div className="rrx-msg-body">{e.content}</div>
+            <div className="rrx-msg-body">{plain(e.content)}</div>
+            {e.toolCalls?.filter((t) => t.detail && t.ok).map((t, j) => (
+              <details key={`d${j}`} className="rrx-tool-detail" data-testid={`tooldetail-${t.name}`}>
+                <summary>Recorded result · {t.name}</summary>
+                <pre>{t.detail}</pre>
+              </details>
+            ))}
             {e.provider ? <div className="rrx-muted rrx-small" style={{ marginTop: 4 }}>{e.provider.name}{e.provider.model ? ` · ${e.provider.model}` : ""}</div> : null}
             {e.warnings?.length ? <div className="rrx-muted rrx-small">{e.warnings.join(" ")}</div> : null}
           </div>

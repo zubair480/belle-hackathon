@@ -63,3 +63,27 @@ RETURN path LIMIT 50;
 - One platform revision. Vehicle-specific deviations (replaced connector on DEMO-EV-006, unknown windshield origin on 004/005/007, older bracket lot on 002) live in `seed.json` and therefore in `seed.cypher`.
 - `seed.cypher` uses v4 DTO field names as properties and plain relationship names; Codey owns the final Neo4j schema and may rename labels/relationships when loading. The UI mock loads the same `seed.json`, so the app and the graph stay in step.
 - Codey owns persistence: copy or reference these files from `fixtures/` as he prefers; do not treat them as measured factory data.
+
+## Loading into Neo4j Aura
+
+`neo4j/import.cypher` uses cypher-shell syntax (`:param`). Aura has no shell, so load it through the driver:
+
+```bash
+node frontend/data/ev-platform/seed-aura.mjs   # reads NEO4J_* from the environment or .env.local
+```
+
+Idempotent (MERGE on `platform`/`revision`/id). Loaded on the team instance on 2026-09-12: 56 PartSlot, 45 Wire,
+12 Circuit, 42 Connector, 10 Zone, 9 System. The app reads it back through `GET /api/platform/design`
+(`frontend/features/recall/server/platformDesign.ts`); the sketch names the source under the wireframe and
+reports any drift between the bundled JSON and the graph.
+
+## Demo records for the sketched vehicles (Zubair's model)
+
+```bash
+node frontend/data/ev-platform/seed-demo-aura.mjs   # app running in graph mode; idempotent
+```
+
+Writes suppliers, lots, part entities, origins and installations for every design slot of the six seed vehicles
+(except the charge-port trio that `npm run neo4j:seed` owns) using the same labels and properties as Zubair's
+seed, ensures the seed customers and the DEMO-EV-007 shipment, then loads the non-charge-port issues and cause
+hypotheses through the real API. Re-running replays (idempotency keys `seed-<id>`).

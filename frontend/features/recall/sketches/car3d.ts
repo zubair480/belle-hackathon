@@ -6,6 +6,7 @@
  */
 import partsJson from "../../../data/ev-platform/parts.json";
 import wiringJson from "../../../data/ev-platform/wiring.json";
+import type { PlatformDesign } from "../api/types";
 
 export type Vec3 = [number, number, number];
 export type Box3 = { center: Vec3; size: Vec3 };
@@ -501,4 +502,20 @@ export function slotsForCircuit(circuitId: string): PartSlot[] {
     if (w.harness) ids.add(w.harness);
   }
   return PARTS.filter((p) => ids.has(p.slot));
+}
+
+/** Design dataset identity; matches the `:param` values in data/ev-platform/neo4j/import.cypher and seed-aura.mjs. */
+export const PLATFORM = { id: "EV-PLATFORM-1", revision: "v1" } as const;
+
+/** The bundled JSON design as a PlatformDesign (what the mock serves; the live route reads the same dataset from Neo4j). */
+export function bundledPlatformDesign(): PlatformDesign {
+  return {
+    platform: PLATFORM.id,
+    revision: PLATFORM.revision,
+    source: "bundled",
+    counts: { slots: PARTS.length, wires: WIRES.length, circuits: CIRCUITS.length, connectors: CONNECTORS.length },
+    slotIds: PARTS.map((p) => p.slot),
+    wireIds: WIRES.map((w) => w.id),
+    circuitIds: CIRCUITS.map((c) => c.id),
+  };
 }

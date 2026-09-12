@@ -12,7 +12,8 @@ import { ATTRIBUTION, SOURCING_LABEL, fmtDate } from "../../features/recall/form
 import { CIRCUITS, PARTS, SYSTEMS, ZONES, entityIdFor, isExteriorSlot, slotById, slotForEntityId, wiresForSlot, type PartSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
 import { Empty, ErrorBanner, KV, Loading, SeverityBadge, SourcingBadge, StatusBadge } from "./primitives";
 
-export type PartLoad = { status: "loading" | "ready" | "error"; data: EntityContext | null; error: ClientError | null };
+/** `absent`: the backend vehicle record does not contain this sketch part, so no request was made and nothing is shown for it. */
+export type PartLoad = { status: "loading" | "ready" | "error" | "absent"; data: EntityContext | null; error: ClientError | null };
 
 export type PartPanelProps = {
   vehicle: SketchVehicle;
@@ -35,13 +36,15 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
   const ex = ws.explorer;
   const parts = PARTS.filter((slot) => isExteriorSlot(slot.slot)).map((slot) => ({ slot, id: entityIdFor(slot, vehicle.suffix) }));
   const vehicleLoad = contexts[vehicle.entityId];
-  const sourcingOf = (id: string): SourcingType | "unrecorded" => {
+  /** `unrecorded`: the backend vehicle record does not contain the part. `unavailable`: the read failed (backend error), which is never shown as "not recorded". */
+  const sourcingOf = (id: string): SourcingType | "unrecorded" | "unavailable" => {
     const c = contexts[id];
     if (!c || c.status === "loading") return "unknown";
-    if (c.status === "error" || !c.data) return "unrecorded";
+    if (c.status === "error") return "unavailable";
+    if (c.status === "absent" || !c.data) return "unrecorded";
     return c.data.entity.origin?.sourcingType ?? "unknown";
   };
-  const counts = { supplier: 0, in_house: 0, unknown: 0, unrecorded: 0 };
+  const counts = { supplier: 0, in_house: 0, unknown: 0, unrecorded: 0, unavailable: 0 };
   for (const p of parts) counts[sourcingOf(p.id)] += 1;
   const recordedTotal = counts.supplier + counts.in_house + counts.unknown;
   const issuesFor = (id: string) => issues.filter((i) => i.entityIds.includes(id));
@@ -81,6 +84,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
               ["Build ID", <span className="rrx-mono" key="b">{vehicleLoad.data.entity.vehicle?.buildId ?? vehicle.buildId}</span>],
               ["VIN", vehicleLoad.data.entity.vehicle?.vin ? <span className="rrx-mono">{vehicleLoad.data.entity.vehicle.vin}</span> : <span className="rrx-muted">Not assigned yet (build ID is the working identifier)</span>],
               ["Location state", vehicleLoad.data.entity.locationState],
+              ["Origin", vehicleLoad.data.entity.origin ? <SourcingBadge sourcing={vehicleLoad.data.entity.origin.sourcingType} compact /> : <span className="rrx-muted" data-testid="vehicle-origin">Assembled here · no origin record</span>],
               ["Shipment", vehicleLoad.data.limitations.find((l) => l.startsWith("Shipped")) ?? <span className="rrx-muted">not shipped</span>],
               ["Open issues", openIssues.length ? <button type="button" className="rrx-count-btn" onClick={() => ws.navigate("issues")}>{openIssues.length}</button> : "0"],
             ]}
@@ -147,8 +151,13 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
           {selectedLoad?.status === "error" && selectedLoad.error ? (
             <>
               <ErrorBanner error={selectedLoad.error} />
-              <p className="rrx-muted rrx-small">This part is drawn on the sketch but the backend has no record for it. No provenance is shown.</p>
+              <p className="rrx-muted rrx-small">The record for this part could not be read. No provenance is shown.</p>
             </>
+          ) : null}
+          {selectedLoad?.status === "absent" ? (
+            <p className="rrx-muted rrx-small" data-testid="part-absent">
+              No backend record for this sketch part on {vehicle.buildId}: the vehicle record does not list it as installed. No provenance is shown and nothing is invented; it can still be marked on an issue.
+            </p>
           ) : null}
           {selectedLoad?.status === "ready" && selectedLoad.data ? <PartProvenance ctx={selectedLoad.data} issues={issuesFor(selected.id)} slot={selected.slot} /> : null}
           <div className="rrx-row" style={{ marginTop: 12 }}>
@@ -183,7 +192,7 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
       <section className="rrx-card rrx-panel-section">
         <div className="rrx-card-head">
           <h3>Exterior parts on this sketch</h3>
-          <span className="rrx-muted rrx-small">{recordedTotal} recorded{counts.unrecorded ? `, ${counts.unrecorded} not in backend` : ""}</span>
+          <span className="rrx-muted rrx-small">{recordedTotal} recorded{counts.unrecorded ? `, ${counts.unrecorded} not in backend` : ""}{counts.unavailable ? `, ${counts.unavailable} unavailable` : ""}</span>
         </div>
         <div className="rrx-sourcing-bar" aria-hidden="true">
           <span style={{ width: `${recordedTotal ? (counts.supplier / recordedTotal) * 100 : 0}%`, background: "var(--rr-supplier)" }} />
@@ -224,7 +233,8 @@ export function PartPanel({ vehicle, contexts, issues, sourcingFilter, onFilter 
             </div>
           );
         })}
-        {counts.unrecorded ? <p className="rrx-muted rrx-small" style={{ marginTop: 8 }}>Parts drawn on the sketch but not recorded in the backend are listed as "not in backend"; nothing is invented for them.</p> : null}
+        {counts.unrecorded ? <p className="rrx-muted rrx-small" style={{ marginTop: 8 }} data-testid="unrecorded-note">{counts.unrecorded} part(s) drawn on the sketch have no record in the backend for this vehicle (only recorded parts are listed above); nothing is invented for them.</p> : null}
+        {counts.unavailable ? <p className="rrx-muted rrx-small" style={{ marginTop: 8 }} data-testid="unavailable-note">{counts.unavailable} part record(s) could not be read from the backend.</p> : null}
       </section>
     </aside>
   );

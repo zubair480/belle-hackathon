@@ -5,6 +5,8 @@
  * It is selected only by NEXT_PUBLIC_RECALL_UI_MOCKS=true and is never a fallback for a
  * failed live call. Sample data lives in data.ts.
  */
+import { countKinds, type GraphEdge, type GraphNode, type WorkspaceGraph } from "../../graph/model";
+import { EV_DEMO, type CatalogItem, type CatalogKind, type CatalogUpsert } from "@/contracts/issues";
 import type { EntityContext, EntityRecord, Evidence, Installation, ReviewIssue } from "@/contracts/common";
 import type { TraceRequest, TraceResult, TraceRow } from "@/contracts/recall";
 import {
@@ -153,6 +155,72 @@ export class MockServer {
   }
 
   // ---- catalog and entities ----
+
+  /** Same graph shape the live route builds from Neo4j, built from this store. */
+  getGraph(): WorkspaceGraph {
+    const st = this.store;
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    const c = st.catalog;
+    for (const t of c.teams) nodes.push({ id: t.id, kind: "Team", label: t.name, sub: "team", props: { name: t.name } });
+    for (const t of c.suppliers) nodes.push({ id: t.id, kind: "Supplier", label: t.name, sub: "supplier", props: { name: t.name, active: t.active } });
+    for (const t of c.stations) nodes.push({ id: t.id, kind: "Station", label: t.name, sub: "station", props: { name: t.name } });
+    for (const t of c.processSteps) nodes.push({ id: t.id, kind: "ProcessStep", label: t.name, sub: "process step", props: { name: t.name } });
+    for (const t of c.defectCodes) nodes.push({ id: t.id, kind: "DefectCode", label: t.name, sub: "defect code", props: { name: t.name } });
+    const lots = new Map<string, GraphNode>();
+    for (const e of st.entities.values()) {
+      nodes.push({ id: e.id, kind: "Entity", label: e.kind === "vehicle" ? (e.vehicle?.buildId ?? e.id) : e.id, sub: `${e.kind} · ${e.partNumber}`, props: { kind: e.kind, partNumber: e.partNumber, partRevision: e.partRevision, locationState: e.locationState, buildId: e.vehicle?.buildId ?? null, vin: e.vehicle?.vin ?? null } });
+      const o = e.origin;
+      if (o?.sourcingType === "supplier" && o.productionLotId) {
+        if (!lots.has(o.productionLotId)) {
+          lots.set(o.productionLotId, { id: o.productionLotId, kind: "SupplierLot", label: o.supplierBatchCode ?? o.productionLotId, sub: `supplier lot · ${o.partNumber}`, props: { code: o.supplierBatchCode, partNumber: o.partNumber, supplierId: o.supplierId } });
+          if (o.supplierId) edges.push({ from: o.productionLotId, to: o.supplierId, type: "SUPPLIED_BY", removed: false });
+        }
+        edges.push({ from: e.id, to: o.productionLotId, type: "FROM_SUPPLIER_LOT", removed: false });
+      } else if (o?.sourcingType === "in_house" && o.productionLotId) {
+        if (!lots.has(o.productionLotId)) {
+          lots.set(o.productionLotId, { id: o.productionLotId, kind: "MfgLot", label: o.manufacturingLotCode ?? o.productionLotId, sub: `in-house lot · ${o.partNumber}`, props: { code: o.manufacturingLotCode, partNumber: o.partNumber, workOrderId: o.workOrderId, teamId: o.manufacturingTeamId } });
+          if (o.manufacturingTeamId) edges.push({ from: o.productionLotId, to: o.manufacturingTeamId, type: "MADE_BY", removed: false });
+        }
+        edges.push({ from: e.id, to: o.productionLotId, type: "PRODUCED_IN", removed: false });
+      }
+    }
+    nodes.push(...lots.values());
+    for (const i of st.installations) edges.push({ from: i.childId, to: i.parentId, type: "INSTALLED_IN", removed: Boolean(i.removedAt) });
+    for (const c of seed.customers) nodes.push({ id: c.id, kind: "Customer", label: c.name, sub: c.kind, props: { name: c.name, kind: c.kind } });
+    for (const sh of seed.shipments) edges.push({ from: sh.vehicleId, to: sh.customerId, type: "SHIPPED_TO", removed: false });
+    for (const i of st.issues.values()) {
+      nodes.push({ id: i.id, kind: "Issue", label: i.title, sub: `${i.status} · ${i.severity}`, props: { status: i.status, severity: i.severity, partNumber: i.partNumber, defectCode: i.defectCode, reportingTeamId: i.reportingTeamId, assignedTeamId: i.assignedTeamId, version: i.version } });
+      for (const id of i.entityIds) edges.push({ from: i.id, to: id, type: "AFFECTS", removed: false });
+      for (const id of i.linkedSupplierIds) edges.push({ from: i.id, to: id, type: "LINKS_SUPPLIER", removed: false });
+      edges.push({ from: i.id, to: i.reportingTeamId, type: "REPORTED_BY", removed: false });
+      if (i.assignedTeamId) edges.push({ from: i.id, to: i.assignedTeamId, type: "ASSIGNED_TO", removed: false });
+      if (i.defectCode) edges.push({ from: i.id, to: i.defectCode, type: "HAS_DEFECT", removed: false });
+    }
+    for (const ca of st.causes.filter((x) => x.isCurrent)) {
+      nodes.push({ id: ca.id, kind: "Cause", label: `${ca.state} · ${ca.causeType}`, sub: ca.rationale.slice(0, 80), props: { state: ca.state, causeType: ca.causeType, responsibleTeamId: ca.responsibleTeamId, responsibleSupplierId: ca.responsibleSupplierId, issueId: ca.issueId } });
+      edges.push({ from: ca.id, to: ca.issueId, type: "ASSESSES", removed: false });
+      if (ca.responsibleTeamId) edges.push({ from: ca.id, to: ca.responsibleTeamId, type: "RESPONSIBLE_TEAM", removed: false });
+      if (ca.responsibleSupplierId) edges.push({ from: ca.id, to: ca.responsibleSupplierId, type: "RESPONSIBLE_SUPPLIER", removed: false });
+    }
+    for (const f of st.fixes) {
+      nodes.push({ id: f.id, kind: "Fix", label: `${f.state} v${f.version}`, sub: f.summary.slice(0, 80), props: { state: f.state, summary: f.summary, version: f.version, issueId: f.issueId } });
+      edges.push({ from: f.id, to: f.issueId, type: "FIXES", removed: false });
+      if (f.sourceFixRevisionId) edges.push({ from: f.id, to: f.sourceFixRevisionId, type: "DERIVED_FROM", removed: false });
+    }
+    const ids = new Set(nodes.map((n) => n.id));
+    return { workspaceId: EV_DEMO.workspaceId, source: "mock", nodes, edges: edges.filter((e) => ids.has(e.from) && ids.has(e.to)), counts: countKinds(nodes) };
+  }
+
+  upsertCatalogItem(kind: CatalogKind, item: CatalogUpsert): CatalogItem {
+    const id = item.id ?? `${kind.toUpperCase().replace(/S$/, "")}-${item.name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24)}`;
+    const list = (this.store.catalog as unknown as Record<CatalogKind, Array<CatalogItem & Record<string, unknown>>>)[kind];
+    const existing = list.find((x) => x.id === id);
+    const next = { ...(existing ?? {}), ...item, id, active: item.active ?? true } as CatalogItem & Record<string, unknown>;
+    if (existing) Object.assign(existing, next);
+    else list.push(next);
+    return clone({ id: next.id, name: next.name, active: next.active });
+  }
 
   getCatalog(): ReferenceCatalog {
     return clone(this.store.catalog);

@@ -19,3 +19,20 @@ frontend/
 - Contracts come from `src/contracts/*` via the `@/contracts/*` alias; nothing here imports server code except the agent route adapter.
 
 See `docs/handoffs/ALI.md` for tested results and API assumptions, and `docs/pitch/` for the judge materials.
+
+## Running against Neo4j (graph mode)
+
+`.env.local` (gitignored): `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`,
+`RECALL_SERVICES=graph`, `RECALL_WORKSPACE_ID`, `NEXT_PUBLIC_RECALL_UI_MOCKS=false`. Then:
+
+```bash
+npm run neo4j:check                                  # connectivity
+npm run neo4j:seed                                   # Zubair's EV seed (idempotent)
+node frontend/data/ev-platform/seed-aura.mjs         # platform design dataset (idempotent)
+npm run dev                                          # top bar shows "Neo4j graph" from /api/health
+```
+
+The top-bar badge is what the server reports: "Neo4j graph" (graph services registered and Neo4j configured),
+"Service double · demo data" (`RECALL_SERVICES=double`) or "Backend unreachable". Sketch parts the vehicle
+record does not contain are marked "not in backend" without a request; a failed read is shown as unavailable.
+Leave `RECALL_AGENT_DATA` unset so the assistant's server tools call the real routes.

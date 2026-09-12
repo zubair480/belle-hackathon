@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { SourcingType } from "@/contracts/common";
 import type { Issue } from "@/contracts/issues";
 import { useWorkspace, type CameraPreset } from "../../features/recall/context";
+import type { EntityContext } from "@/contracts/common";
+import type { ClientError as ClientErr, PlatformDesign as DesignDto } from "../../features/recall/api/types";
 import { CAMERA_PRESETS, CIRCUITS, DEFAULT_CAMERA, PARTS, SKETCH_VEHICLES, SYSTEMS, WIRES, ZONES, bodyLines, describeWire, entityIdFor, isExteriorSlot, project, slotById, slotForEntityId, wiresForSlot, type SketchVehicle } from "../../features/recall/sketches/car3d";
 import { PartPanel, type PartLoad } from "./PartPanel";
 import { Banner } from "./primitives";
@@ -38,19 +40,47 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [issuesError, setIssuesError] = useState<string | null>(null);
   const [wireInfo, setWireInfo] = useState<string | null>(null);
+  const [design, setDesign] = useState<{ status: "loading" | "ready" | "error"; data: DesignDto | null; error: ClientErr | null }>({ status: "loading", data: null, error: null });
+  /** Bundled wires the graph does not carry (the sketch draws the bundled design, so any drift is named). */
+  const designDrift = useMemo(() => {
+    if (design.status !== "ready" || !design.data) return null;
+    const ids = new Set(design.data.wireIds);
+    const missing = WIRES.filter((w) => !ids.has(w.id)).length;
+    return missing ? `${missing} bundled wire(s) missing from the graph` : null;
+  }, [design]);
 
   useEffect(() => {
     let cancelled = false;
-    const ids = [vehicle.entityId, ...PARTS.map((p) => entityIdFor(p, vehicle.suffix))];
-    // Every part is loaded so an interior part selected via an issue or the assistant still shows its record.
-    setContexts(Object.fromEntries(ids.map((id) => [id, { status: "loading", data: null, error: null } as PartLoad])));
-    Promise.all(
-      ids.map(async (id) => {
-        const r = await ws.client.getEntityContext(id);
-        return [id, r.ok ? ({ status: "ready", data: r.data, error: null } as PartLoad) : ({ status: "error", data: null, error: r.error } as PartLoad)] as const;
-      }),
-    ).then((entries) => {
-      if (!cancelled) setContexts(Object.fromEntries(entries));
+    const sketchIds = PARTS.map((p) => entityIdFor(p, vehicle.suffix));
+    setContexts(Object.fromEntries([vehicle.entityId, ...sketchIds].map((id) => [id, { status: "loading", data: null, error: null } as PartLoad])));
+    setDesign({ status: "loading", data: null, error: null });
+    // Vehicle record first, then only the parts the backend says are installed in it (children walked up to
+    // three levels). Sketch parts the record does not contain are marked absent without a request; nothing is
+    // invented for them. If the vehicle record itself fails, every part carries that error, not "absent".
+    (async () => {
+      const out: Record<string, PartLoad> = {};
+      const v = await ws.client.getEntityContext(vehicle.entityId);
+      out[vehicle.entityId] = v.ok ? { status: "ready", data: v.data, error: null } : { status: "error", data: null, error: v.error };
+      const seen = new Set<string>([vehicle.entityId]);
+      // Children = currently installed parts plus every part the record shows as installed there before
+      // (removed/replaced parts keep their history and must stay visible).
+      const childIds = (ctx: EntityContext, id: string) => [...new Set([...ctx.currentChildren.map((c) => c.id), ...ctx.installations.filter((i) => i.parentId === id).map((i) => i.childId)])];
+      let queue: Array<{ id: string; depth: number }> = v.ok ? childIds(v.data, vehicle.entityId).map((id) => ({ id, depth: 1 })) : [];
+      while (queue.length) {
+        const batch = queue.filter((q) => !seen.has(q.id));
+        queue = [];
+        batch.forEach((q) => seen.add(q.id));
+        const results = await Promise.all(batch.map(async (q) => ({ q, r: await ws.client.getEntityContext(q.id) })));
+        for (const { q, r } of results) {
+          out[q.id] = r.ok ? { status: "ready", data: r.data, error: null } : { status: "error", data: null, error: r.error };
+          if (r.ok && q.depth < 3) for (const id of childIds(r.data, q.id)) if (!seen.has(id)) queue.push({ id, depth: q.depth + 1 });
+        }
+      }
+      for (const id of sketchIds) if (!out[id]) out[id] = v.ok ? { status: "absent", data: null, error: null } : { status: "error", data: null, error: v.error };
+      if (!cancelled) setContexts(out);
+    })();
+    ws.client.getPlatformDesign().then((r) => {
+      if (!cancelled) setDesign(r.ok ? { status: "ready", data: r.data, error: null } : { status: "error", data: null, error: r.error });
     });
     ws.client.listIssues({ entityId: vehicle.entityId, limit: 200 }).then((r) => {
       if (cancelled) return;
@@ -71,7 +101,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
     const out: Record<string, HotspotInfo> = {};
     for (const [id, c] of Object.entries(contexts)) {
       if (!c) continue;
-      out[id] = { sourcing: c.status === "ready" ? (c.data?.entity.origin?.sourcingType ?? "unknown") : null, recorded: c.status !== "error", openIssueCount: issues.filter((i) => i.status !== "closed" && i.entityIds.includes(id)).length };
+      out[id] = { sourcing: c.status === "ready" ? (c.data?.entity.origin?.sourcingType ?? "unknown") : null, recorded: c.status === "ready", openIssueCount: issues.filter((i) => i.status !== "closed" && i.entityIds.includes(id)).length };
     }
     return out;
   }, [contexts, issues]);
@@ -110,7 +140,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
     const lines = [
       `${SYSTEMS[slot.system] ?? slot.system} · ${ZONES[slot.zone] ?? slot.zone}${slot.side !== "C" ? ` · ${slot.side}` : ""}`,
       `Part ${slot.partNumber}${slot.partRevision ? ` rev ${slot.partRevision}` : ""}${slot.parent ? ` · inside ${slotById(slot.parent)?.label}` : ""}`,
-      c?.status === "error" ? "Not recorded in backend" : o?.sourcingType === "supplier" ? `Bought from ${ws.lookup.supplier(o.supplierId)} · batch ${o.supplierBatchCode}` : o?.sourcingType === "in_house" ? `Made in-house · lot ${o.manufacturingLotCode} · ${ws.lookup.process(o.processStepId)}` : "Unknown origin",
+      c?.status === "absent" ? "No backend record for this sketch part" : c?.status === "error" ? `Record unavailable (${c.error?.code ?? "error"})` : o?.sourcingType === "supplier" ? `Bought from ${ws.lookup.supplier(o.supplierId)} · batch ${o.supplierBatchCode}` : o?.sourcingType === "in_house" ? `Made in-house · lot ${o.manufacturingLotCode} · ${ws.lookup.process(o.processStepId)}` : "Unknown origin",
       ...spec.slice(0, 3),
       wires.length ? `${wires.length} wire(s): ${wires.slice(0, 3).map((w) => `${w.id} ${w.signal}`).join("; ")}${wires.length > 3 ? " …" : ""}` : "No wires in the wiring design",
       open.length ? `${open.length} open issue(s): ${open.map((i) => i.id).join(", ")}` : "No open issues",
@@ -148,7 +178,7 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               sourcingFilter={filter}
               markers={ex.markers}
               circuitId={ex.circuitId}
-              wiring={ex.wiring}
+              wiring={ex.wiring && design.status === "ready"}
               markMode={ex.markMode}
               onMark={addMarker}
               onWireSelect={(wireId) => {
@@ -224,6 +254,13 @@ export function VehicleExplorer({ instantZoom = false }: VehicleExplorerProps) {
               {wireInfo ? <span className="rrx-small" data-testid="wire-info">{wireInfo}</span> : null}
             </div>
           ) : null}
+          <p className="rrx-muted rrx-small" data-testid="design-source">
+            {design.status === "ready" && design.data
+              ? `Design data: ${design.data.source === "neo4j" ? "Neo4j graph" : "bundled JSON"} · ${design.data.platform}/${design.data.revision} · ${design.data.counts.slots} slots · ${design.data.counts.wires} wires · ${design.data.counts.circuits} circuits${designDrift ? ` · ${designDrift}` : ""}`
+              : design.status === "error" && design.error
+                ? `Design graph unavailable (${design.error.code}): wiring overlay disabled until the design dataset can be read`
+                : "Loading design data"}
+          </p>
           <p className="rrx-muted rrx-small" style={{ marginTop: 8 }}>
             Wireframe is illustrative geometry; part positions, wiring paths and colours come from the platform design data, while provenance, containment and issues come from the recorded data. Left/right follow the driver's seat on the left.
           </p>

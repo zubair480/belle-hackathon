@@ -17,7 +17,8 @@ export const UiActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("camera"), preset: z.enum(["iso", "left", "right", "front", "rear", "top"]) }),
   z.object({ type: z.literal("open_issue"), issueId: z.string() }),
   z.object({ type: z.literal("open_new_issue"), entityIds: z.array(z.string()), title: z.string().nullable(), note: z.string() }),
-  z.object({ type: z.literal("navigate"), view: z.enum(["vehicles", "issues", "resolutions", "insights"]) }),
+  z.object({ type: z.literal("focus_graph"), id: z.string().nullable() }),
+  z.object({ type: z.literal("navigate"), view: z.enum(["vehicles", "issues", "resolutions", "insights", "graph"]) }),
 ]);
 export type UiAction = z.infer<typeof UiActionSchema>;
 
@@ -27,6 +28,8 @@ export const ToolCallRecordSchema = z.object({
   /** Short, human-readable outcome shown in the chat as a tool chip. */
   summary: z.string(),
   ok: z.boolean(),
+  /** Full recorded result text (what the tool actually returned), shown verbatim under the reply so lists are never lost in prose. */
+  detail: z.string().nullable().default(null),
 });
 export type ToolCallRecord = z.infer<typeof ToolCallRecordSchema>;
 
@@ -37,7 +40,7 @@ export type AgentMessage = z.infer<typeof AgentMessageSchema>;
 export const AgentContextSchema = z.object({
   vehicleBuildId: z.string().nullable(),
   selectedEntityId: z.string().nullable(),
-  view: z.enum(["vehicles", "issues", "resolutions", "insights"]),
+  view: z.enum(["vehicles", "issues", "resolutions", "insights", "graph"]),
   openIssueId: z.string().nullable(),
 });
 export type AgentContext = z.infer<typeof AgentContextSchema>;

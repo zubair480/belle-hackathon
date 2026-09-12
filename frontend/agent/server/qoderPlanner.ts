@@ -102,6 +102,10 @@ export async function runQoderTurn(ctx: ToolContext, request: AgentChatRequest):
       // assistant messages `message.content[]` text blocks.
       const msg = raw as { type?: string; session_id?: string; subtype?: string; is_error?: boolean; error?: unknown };
       if (msg.session_id) sessionId = msg.session_id;
+      if (process.env.RECALL_AGENT_DEBUG === "1") {
+        const m = raw as { type?: string; subtype?: string; event?: { type?: string }; message?: { content?: unknown; id?: string } };
+        console.log(`[agent-debug] type=${m.type} subtype=${m.subtype ?? ""} event=${m.event?.type ?? ""} msgId=${m.message?.id ?? ""} text=${JSON.stringify(textOf(raw)).slice(0, 90)} blocks=${Array.isArray(m.message?.content) ? (m.message!.content as Array<{ type?: string }>).map((b) => b.type).join(",") : typeof m.message?.content}`);
+      }
       if (msg.type === "assistant") reply += textOf(raw);
       if (msg.type === "result" && msg.is_error) throw new Error(`Qoder agent returned an error result: ${JSON.stringify(msg.error ?? msg.subtype ?? "unknown")}`);
     }

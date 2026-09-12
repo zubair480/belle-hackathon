@@ -119,3 +119,151 @@ No dependency or alias changes; frontend files import contracts via the existing
 - No CAD/photo drawing. No agent/AI panel in the UI (the `agent*` routes are unused).
 - Screenshots were taken in mock mode and must be recaptured from the integrated build.
 - Qoder usage: this lane's code was written in this session's editor. The submission must list only Qoder sessions that actually happened.
+
+## Round 9 (2026-09-12, evening): frontend on the graph-backed backend
+
+Branch `codex/ali-ui-pitch` was fast-forwarded to `codex/final-integration` @ `8dda91b` (no new commit; my
+f202d63 was already an ancestor). Everything below is uncommitted on top of that SHA at the time of
+writing, per Ali's "don't commit" instruction.
+
+### Database and datasets (Aura instance `7bd3cbcf`, credentials in `.env.local`, gitignored)
+
+| Dataset | Loader | State after this round |
+| --- | --- | --- |
+| Zubair's EV seed (issues, fixes, lots, entities, trace runs; `ws=synthetic-ev-assembler`) | `npm run neo4j:seed` (idempotent MERGE) | re-run; unchanged counts (Issue 12, Fix 6, Entity 21, TraceRun 6) |
+| Codey's fixture (EntityState / DataRevision / SupplierBatch / Installation / Shipment) | his `scripts/neo4j/seed-ev-fixture.ts` | already present on the instance (EntityState 21, Installation 14, Shipment 4); not re-run |
+| Ali's EV-PLATFORM-1 design (PartSlot 56, Wire 45, Circuit 12, Connector 42, Zone 10, System 9) | **new** `node frontend/data/ev-platform/seed-aura.mjs` | loaded (183 statements). Aura has no cypher-shell, so the loader parses `neo4j/import.cypher` (`:param` lines) and runs it through the driver |
+
+`npm run neo4j:check`: connected, server Neo4j/5.27-aura, 77 workspace nodes.
+
+### Code changes (Ali's lane unless flagged)
+
+- `frontend/features/recall/api/{types,httpClient,mockClient}.ts`: two additive client methods. `getHealth()` reads
+  `GET /api/health`; `getPlatformDesign()` reads the new `GET /api/platform/design`. The mock serves the bundled
+  JSON design with `source: "bundled"`.
+- **New route** `src/app/api/platform/design/route.ts` (thin delegate, same pattern as `api/agent/chat`; flagged to
+  Zubair) -> `frontend/features/recall/server/platformDesign.ts`, a read-only query over Zubair's
+  `openSession` for the platform/revision nodes. No fallback to JSON: unreachable graph -> `BACKEND_UNAVAILABLE`
+  (503), dataset not loaded -> `NOT_FOUND` with the loader command.
+- `RecallWorkspace.tsx`: backend badge from `/api/health`. "Neo4j graph" only when `servicesMode=graph`,
+  `servicesRegistered` and `neo4jConfigured`; "Service double · demo data" for the double; "Backend unreachable"
+  on failure. Mock label stays opt-in (`NEXT_PUBLIC_RECALL_SHOW_MODE=true`).
+- `VehicleExplorer.tsx`: vehicle-first loading. Fetch the vehicle record, then only the parts it lists as
+  installed (current children plus historical installations, three levels). Sketch parts the record does not
+  contain get status `absent` with no request (was 23 GETs per vehicle, 20 of them 404). A failed vehicle read
+  marks parts `error` ("unavailable"), never "not recorded". Design-source line under the sketch names where the
+  design data came from and any drift between bundled wires and the graph; the wiring overlay is disabled while
+  the design read fails.
+- `PartPanel.tsx`: `absent` vs `unavailable` counts and copy; vehicle "Origin: Assembled here · no origin record"
+  when the record has `origin: null` (Zubair's note). `IssueDetail.tsx`: same wording for vehicles in the affected
+  items table.
+- `frontend/tests/ui/integration-states.test.tsx`: 8 tests for the states above (badge x4, partial record, failed
+  read, design source + vehicle label, design unavailable).
+- Env: `.env` no longer sets `RECALL_AGENT_DATA=mock`, so the agent's server tools call the real routes.
+
+### Verification (server SHA 8dda91b + uncommitted changes, `RECALL_SERVICES=graph`, `NEXT_PUBLIC_RECALL_UI_MOCKS=false`)
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | passed |
+| `npm run test:ui` | 46 passed (6 files) |
+| `npx vitest run --exclude 'tests/integration/**'` | 110 passed, 4 skipped (15 files); integration suite skipped on purpose because it writes to the shared instance |
+| `GET /api/health` | `servicesMode: graph`, `servicesRegistered: true`, `neo4jConfigured: true` |
+| `GET /api/platform/design` | `source: neo4j`, 56 slots / 45 wires / 12 circuits / 42 connectors |
+| `GET /api/entities/CONN-0005` | supplier origin from the graph; `DOOR-0005-FL` -> NOT_FOUND (expected, no request from the UI any more) |
+| `POST /api/agent/chat` (Qoder Agent SDK, real PAT) | 21.8 s; model chose `impact_of_part`, trace ran in graph mode: DEMO-SUP-LOT-01 -> Demo Dealer 1, DEMO-EV-002/003 shipped |
+| Browser (headless Chromium, 1440x900) | badge "Neo4j graph"; design line "Neo4j graph · EV-PLATFORM-1/v1 · 56 slots · 45 wires · 12 circuits"; DEMO-EV-005: 3 recorded / 20 not in backend; vehicle "Assembled here · no origin record"; charge-port zoom shows lot DEMO-MFG-LOT-02, containment CPM-0005 -> DEMO-EV-005, children CONN-0005 (supplier) / BRKT-0005 (in-house); no console errors. Screenshots 30-32 |
+
+Supersedes earlier bullets in "Remaining work": the live client has now been exercised against the real routes
+in graph mode; per-vehicle entity loading is no longer 57 parallel requests; the Qoder planner has run with a
+real PAT against the graph.
+
+### Still open for Ali
+
+- Full `tests/integration/BROWSER_ACCEPTANCE.md` pass with screenshots (steps 1a, 4, 12, 14, 16, 17 remain from
+  Zubair's run).
+- Pitch screenshots 01-29 are from mock mode; 30-32 are graph mode. Recapture the story set from graph mode.
+- Zubair's handoff mentions a separate agent on `codex/frontend-backend-integration` (not on origin); if it
+  lands, reconcile the badge and absent-part states with this round rather than keeping both.
+
+### For Zubair
+
+- New thin route file under `src/app/api/platform/design/` (your tree). Delete it if you would rather mount it
+  yourself; the handler lives in `frontend/features/recall/server/platformDesign.ts`.
+- `.env.example` could list `NEXT_PUBLIC_RECALL_SHOW_MODE` (opt-in mock label) and note the design loader.
+- `package-lock.json` was left exactly as on the branch (npm 10 strips `libc` fields on install; reverted).
+
+## Round 10 (2026-09-12, night): relationships, graph view, agent that identifies and creates issues
+
+Still uncommitted on top of `codex/final-integration` @ 8dda91b (Ali's instruction). Server run in graph mode
+(`RECALL_SERVICES=graph`, mocks off) against Aura `7bd3cbcf`.
+
+### Data now in Neo4j (workspace `synthetic-ev-assembler`)
+
+- **New loader** `node frontend/data/ev-platform/seed-demo-aura.mjs` (app must be running): (1) catalog items the
+  design references through `POST /api/catalog/:kind` (15 suppliers, 4 teams, 5 stations, 11 process steps,
+  12 defect codes; 46 added); (2) for the six seed vehicles and every design slot except the charge-port trio,
+  `Supplier` / `SupplierLot` / `MfgLot` / `Entity` / `Origin` / `INSTALLED_IN` written with the same labels and
+  properties as `scripts/neo4j/seed-ev.mts` (318 entities, 318 installations, 16 supplier lots, 9 in-house lots),
+  so Zubair's `graphServices` read them unchanged; the sketch now shows 20+ recorded exterior parts per vehicle;
+  (2b) the three seed customers and a `SHIPPED_TO` for DEMO-EV-007 (already shipped, no customer); (3) the 11
+  non-charge-port issues from `seed.json` and their 6 cause hypotheses through `POST /api/issues` and
+  `/causes` (idempotency keys `seed-<id>`, so re-runs replay). Zubair's seed stays the baseline and both loaders
+  are idempotent.
+- **Incident**: after the first run of `npx vitest run --exclude 'tests/integration/**'` the workspace had lost the
+  issues created by Zubair's runner/browser sessions (Issue 12 -> 2, Audit 57 -> 3). The exclude flag did not
+  filter (vitest still listed 13 integration files); `tests/data/neo4j.integration.test.ts` runs
+  `DETACH DELETE` per label on `{workspaceId}`. `npm run neo4j:seed` restored the baseline (idempotent); the
+  runner-created issues referenced in `docs/evidence/acceptance-graph-*.json` are gone and can be recreated
+  with `npm run acceptance`. Do not run `tests/data` or `tests/integration` against the shared instance; the safe
+  set is `npx vitest run tests/api tests/contracts frontend/tests`.
+
+### Code (Ali's lane; two thin route files in src/app flagged for Zubair)
+
+- `frontend/features/recall/graph/model.ts`: WorkspaceGraph (nodes/edges, zod), `adjacency`, `subgraph` (BFS),
+  `vehiclesContaining`, `describeSubgraph`.
+- `frontend/features/recall/server/graphRead.ts` + **new route** `GET /api/graph` (`src/app/api/graph/route.ts`,
+  thin delegate): read-only Cypher over Zubair's model, workspace-scoped, Origin collapsed into
+  `Entity -FROM_SUPPLIER_LOT/PRODUCED_IN-> lot`; current causes only. 450 nodes / 815 edges at the time of writing.
+- Client: `getGraph()`, `upsertCatalogItem(kind, item)` (frozen `catalogUpsert` route). Mock builds the same
+  graph shape from its store.
+- **Graph view** (`frontend/components/recall/GraphView.tsx`, nav "Graph"): force layout in the browser, kind
+  filters, search, focus + depth, neighbour list, open issue/part from a node, supplier list with lot / linked /
+  confirmed counts, **Add a supplier** form (writes through `POST /api/catalog/suppliers`; verified: SUP-BRAKES
+  appears in the catalog and the graph).
+- **Agent tools** (`frontend/agent/tools.ts`): `graph_neighbours`, `supplier_exposure` (lots -> parts -> vehicles
+  on site/shipped with customers -> issues affecting/linking -> confirmed causes naming the supplier),
+  `related_issues` (same lot / same part number / same vehicle; names a pattern vs one-off), `customers_supplied`
+  (issue or defect code or part -> vehicles -> `SHIPPED_TO` distributors, on-site vehicles, same-lot exposure
+  without a reported issue), and `create_issue` (real `POST /api/issues`; only on an explicit ask; refuses unknown
+  supplier ids; links suppliers as context; opens the saved issue). `ToolCallRecord.detail` carries the full
+  recorded result and the chat shows it verbatim under the reply ("Recorded result · tool"), so lists survive
+  whatever the model writes. `focus_graph` UI action only sets the Graph view focus; it never navigates.
+- Tests: `frontend/tests/ui/graph.test.tsx` (model, view + add supplier, tools incl. customers_supplied and
+  create_issue refusing unknown suppliers). Suites: `npx vitest run tests/api tests/contracts frontend/tests`
+  -> 105 passed; typecheck passed.
+
+### Observed with the real Qoder Agent SDK (PAT on the server, graph mode)
+
+| Ask | Tools the model chose | Result |
+| --- | --- | --- |
+| "What else is affected by the harness supplier? Are there related issues?" | find_part, focus_part, supplier_exposure, related_issues | 2 lots, 36 parts, 6 vehicles (4 on site, 2 shipped to Demo Dealer 1), 5 open issues; named a same-lot pattern (AC derate + HV contactor chatter) as "candidate, not confirmed cause" |
+| "Create an issue: right mirror on DEMO-EV-006 grinding noise, minor, link the mirror supplier" | locate_fault, list_issues_for_part, focus_part, graph_neighbours, create_issue | ISS-MTZ0CT3AF378CA created (open v1, Final Inspection, supplier linked as context), fold-motor zone marked, issue opened |
+| "The left headlamp on DEMO-EV-007 has condensation, what should I do?" | locate_fault, list_issues_for_part, related_issues | No issue created; found the existing open issue and said not to duplicate it |
+| "Which distributors received cars with the defects on this vehicle?" (DEMO-EV-007) | customers_supplied | Demo Dealer North: DEMO-EV-007 with 3 open issues; Demo Dealer 1: DEMO-EV-002/003 exposed through the same lots, no issue reported; user stays on the current screen |
+
+Model prose varied between runs on one phrasing ("defections"); the recorded result block under the reply is the
+authoritative list.
+
+### Screenshots (graph mode)
+
+33 whole graph, 34 supplier focus (SUP-HARNESS), 35 add supplier, 36 chat distributors list.
+
+### Open
+
+- Full browser checklist replay (sketch marking -> create -> assign -> cause -> reuse -> verify -> close -> reopen,
+  stale second tab, insights drilldown) was started and paused by Ali after the first step: it left one open
+  issue in the graph, `ISS-MTZ0HBDN7C52F5` "... (graph-mode browser run)" (v1, three marked parts, no
+  assignment/cause/fix). Harmless demo data; delete or reuse it. Zubair's earlier browser run covers the loop on
+  the previous seed.
+- `.env.example` for Zubair: nothing new is required; `RECALL_AGENT_DEBUG=1` logs the SDK message stream server-side.

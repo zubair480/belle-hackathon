@@ -20,6 +20,8 @@ import { getDefaultClient, type RecallClient } from "./api";
 import { WorkspaceContext, type ExplorerState, type NewIssuePrefill, type WorkspaceApi, type WorkspaceView } from "./context";
 import { makeLookup } from "./format";
 import { SKETCH_VEHICLES, slotForEntityId } from "./sketches/car3d";
+import { GraphView } from "../../components/recall/GraphView";
+import type { BackendHealth as HealthDto, ClientResult as Result, RecallClient as ClientT } from "./api/types";
 
 export type RecallWorkspaceProps = {
   /** Injected client (tests / integration). Defaults to env-selected live or mock client. */
@@ -38,10 +40,42 @@ const NAV: Array<{ id: WorkspaceView; label: string }> = [
   { id: "issues", label: "Issues" },
   { id: "resolutions", label: "Resolutions" },
   { id: "insights", label: "Team & supplier insights" },
+  { id: "graph", label: "Graph" },
 ];
 
-/** Mode badge is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE=true); the screens carry no mock/sample wording by default. */
+/** Mock-mode label is opt-in (NEXT_PUBLIC_RECALL_SHOW_MODE=true); the screens carry no mock/sample wording by default. */
 const SHOW_MODE = process.env.NEXT_PUBLIC_RECALL_SHOW_MODE === "true";
+
+/**
+ * Backend badge (live client): reads GET /api/health and names the data source the way the server
+ * reports it. A reachable HTTP route alone is not "Neo4j": the badge says "Neo4j graph" only when
+ * graph services are registered and Neo4j is configured; the in-memory double is labelled as such.
+ */
+function BackendBadge({ client }: { client: ClientT }) {
+  const [health, setHealth] = useState<Result<HealthDto> | null>(null);
+  useEffect(() => {
+    if (client.mode === "mock") return;
+    let on = true;
+    client.getHealth().then((r) => {
+      if (on) setHealth(r);
+    });
+    return () => {
+      on = false;
+    };
+  }, [client]);
+  if (client.mode === "mock") {
+    return SHOW_MODE ? <span className="rrx-badge rrx-badge--warning" data-testid="mode-badge">{client.modeLabel}</span> : null;
+  }
+  if (!health) return <span className="rrx-badge" data-testid="backend-badge">Checking backend</span>;
+  if (!health.ok) {
+    return <span className="rrx-badge rrx-badge--blocking" data-testid="backend-badge" title={`${health.error.code}: ${health.error.message}`}>Backend unreachable</span>;
+  }
+  const h = health.data;
+  const graph = h.servicesMode === "graph" && h.servicesRegistered && h.neo4jConfigured;
+  const label = graph ? "Neo4j graph" : h.servicesMode === "double" ? "Service double · demo data" : `Backend: ${h.servicesMode}${h.servicesRegistered ? "" : " (not registered)"}`;
+  const title = `services=${h.servicesMode} · registered=${h.servicesRegistered ? "yes" : "no"} · Neo4j ${h.neo4jConfigured ? "configured" : "not configured"} · workspace=${h.workspaceId ?? "n/a"}`;
+  return <span className={`rrx-badge ${graph ? "rrx-badge--ok" : "rrx-badge--warning"}`} data-testid="backend-badge" title={title}>{label}</span>;
+}
 
 const INITIAL_EXPLORER: ExplorerState = { vehicleBuildId: SKETCH_VEHICLES[0]!.buildId, selectedEntityId: null, markers: [], circuitId: null, wiring: false, markMode: false, cameraRequest: null };
 
@@ -50,6 +84,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
   const [route, setRoute] = useState<Route>({ view: initialView, issueId: null, issueTab: "overview" });
   const [explorer, setExplorerState] = useState<ExplorerState>(INITIAL_EXPLORER);
   const [chatOpen, setChatOpen] = useState(chatOpenInitial);
+  const [graphFocus, setGraphFocus] = useState<string | null>(null);
   const [newIssue, setNewIssue] = useState<{ open: boolean; prefill?: NewIssuePrefill }>({ open: false });
   const [catalog, setCatalog] = useState<ReferenceCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<{ code: string; message: string } | null>(null);
@@ -116,6 +151,10 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
           case "camera":
             setExplorer((s) => ({ cameraRequest: { preset: a.preset, seq: (s.cameraRequest?.seq ?? 0) + 1 } }));
             break;
+          case "focus_graph":
+            // Only sets the Graph view focus; never navigates away from what the user is looking at.
+            setGraphFocus(a.id);
+            break;
           case "open_issue":
             openIssue(a.issueId);
             break;
@@ -139,9 +178,14 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
 
   const agentContext = useCallback((): AgentContext => ({ vehicleBuildId: explorer.vehicleBuildId, selectedEntityId: explorer.selectedEntityId, view: route.view, openIssueId: route.issueId }), [explorer.vehicleBuildId, explorer.selectedEntityId, route.view, route.issueId]);
 
+  const openGraph = useCallback((focusId: string | null) => {
+    setGraphFocus(focusId);
+    navigate("graph");
+  }, [navigate]);
+  const refreshCatalog = useCallback(() => setCatalogTick((t) => t + 1), []);
   const api: WorkspaceApi = useMemo(
-    () => ({ client: c, catalog, lookup: makeLookup(catalog), view: route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen, setChatOpen }),
-    [c, catalog, route.view, navigate, openIssue, openNewIssue, openEntity, explorer, setExplorer, applyUiActions, agentContext, chatOpen],
+    () => ({ client: c, catalog, lookup: makeLookup(catalog), view: route.view, navigate, openIssue, openNewIssue, openEntity, graphFocus, openGraph, refreshCatalog, explorer, setExplorer, applyUiActions, agentContext, chatOpen, setChatOpen }),
+    [c, catalog, route.view, navigate, openIssue, openNewIssue, openEntity, graphFocus, openGraph, refreshCatalog, explorer, setExplorer, applyUiActions, agentContext, chatOpen],
   );
 
   return (
@@ -166,11 +210,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
             <button type="button" className="rrx-btn rrx-btn--primary rrx-btn--sm" onClick={() => openNewIssue()} data-testid="topbar-new-issue">
               + New issue
             </button>
-            {SHOW_MODE ? (
-              <span className={`rrx-badge ${c.mode === "mock" ? "rrx-badge--warning" : "rrx-badge--ok"}`} data-testid="mode-badge">
-                {c.modeLabel}
-              </span>
-            ) : null}
+            <BackendBadge client={c} />
             <span className="rrx-muted rrx-small rrx-mono">{CONTRACT_VERSION}</span>
           </div>
         </header>
@@ -186,6 +226,7 @@ export function RecallWorkspace({ client, initialView = "vehicles", instantZoom 
           {route.view === "issues" ? route.issueId ? <IssueDetailView issueId={route.issueId} initialTab={route.issueTab} onBack={() => navigate("issues")} /> : <IssueBoard mode="issues" /> : null}
           {route.view === "resolutions" ? <IssueBoard mode="resolutions" /> : null}
           {route.view === "insights" ? <InsightsView /> : null}
+          {route.view === "graph" ? <GraphView /> : null}
         </main>
         {chatOpen ? <AgentChat /> : null}
 

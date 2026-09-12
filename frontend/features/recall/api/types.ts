@@ -28,11 +28,18 @@ import type {
 import type { EntityContext } from "@/contracts/common";
 import type { TraceRequest, TraceResult } from "@/contracts/recall";
 import type { AgentChatRequest, AgentChatResponse } from "../../../agent/types";
+import type { WorkspaceGraph } from "../graph/model";
+import type { CatalogItem, CatalogKind, CatalogUpsert } from "@/contracts/issues";
 
 /** `NETWORK` is client-side only: the request never produced a valid envelope. */
 export type ClientErrorCode = ErrorCode | "NETWORK";
 export type ClientError = { code: ClientErrorCode; message: string; details?: unknown };
 export type ClientResult<T> = { ok: true; data: T } | { ok: false; error: ClientError };
+
+/** GET /api/health as reported by the server: which domain services are wired and whether Neo4j is configured. */
+export type BackendHealth = { ok: boolean; contractVersion: string; servicesMode: string; servicesRegistered: boolean; neo4jConfigured: boolean; aiProvider: string; workspaceId: string | null };
+/** Platform design dataset (part slots, wires, circuits, connectors) as served by the backend; `source` says where it was read from. */
+export type PlatformDesign = { platform: string; revision: string; source: "neo4j" | "bundled"; counts: { slots: number; wires: number; circuits: number; connectors: number }; slotIds: string[]; wireIds: string[]; circuitIds: string[] };
 
 export type ClientMode = "mock" | "live";
 
@@ -57,6 +64,14 @@ export interface RecallClient {
   runTrace(incidentId: string, request: TraceRequest): Promise<ClientResult<TraceResult>>;
   /** Server-side agent turn (live mode only; the mock runs the stub planner in the browser). */
   agentChat(request: AgentChatRequest): Promise<ClientResult<AgentChatResponse>>;
+  /** Backend wiring as the server reports it (graph / double) so the UI can label the data source truthfully. */
+  getHealth(): Promise<ClientResult<BackendHealth>>;
+  /** Design dataset as stored in the graph (live) or bundled (mock). Never silently swapped. */
+  getPlatformDesign(): Promise<ClientResult<PlatformDesign>>;
+  /** Recorded relationships (suppliers, lots, parts, vehicles, customers, issues, causes, fixes) for the Graph view and the assistant. */
+  getGraph(): Promise<ClientResult<WorkspaceGraph>>;
+  /** Manual catalog entry (e.g. a new supplier) through the frozen catalogUpsert route. */
+  upsertCatalogItem(kind: CatalogKind, item: CatalogUpsert): Promise<ClientResult<CatalogItem>>;
 }
 
 export const clientFail = (code: ClientErrorCode, message: string, details?: unknown): ClientResult<never> => ({

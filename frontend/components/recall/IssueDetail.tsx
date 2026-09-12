@@ -217,7 +217,7 @@ function Overview({ d, onChanged }: { d: IssueDetailDto; onChanged: (note?: stri
                     </td>
                     <td>
                       <SourcingBadge sourcing={e.origin?.sourcingType} compact />
-                      <div className="rrx-muted rrx-small">{e.origin?.sourcingType === "supplier" ? `${ws.lookup.supplier(e.origin.supplierId)} · ${e.origin.supplierBatchCode}` : e.origin?.sourcingType === "in_house" ? `${e.origin.manufacturingLotCode} · ${e.origin.workOrderId}` : "no origin record"}</div>
+                      <div className="rrx-muted rrx-small">{e.origin?.sourcingType === "supplier" ? `${ws.lookup.supplier(e.origin.supplierId)} · ${e.origin.supplierBatchCode}` : e.origin?.sourcingType === "in_house" ? `${e.origin.manufacturingLotCode} · ${e.origin.workOrderId}` : e.kind === "vehicle" ? "Assembled here · no origin record" : "no origin record"}</div>
                     </td>
                   </tr>
                 ))}

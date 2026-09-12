@@ -6,7 +6,7 @@ import type { RecallClient } from "./api/types";
 import type { CatalogLookup } from "./format";
 import type { CAMERA_PRESETS } from "./sketches/car3d";
 
-export type WorkspaceView = "vehicles" | "issues" | "resolutions" | "insights";
+export type WorkspaceView = "vehicles" | "issues" | "resolutions" | "insights" | "graph";
 
 export type NewIssuePrefill = Partial<IssueInput> & { contextNote?: string };
 
@@ -36,6 +36,11 @@ export type WorkspaceApi = {
   openNewIssue: (prefill?: NewIssuePrefill) => void;
   /** Open the vehicle explorer focused on an entity (part or vehicle). */
   openEntity: (entityId: string) => void;
+  /** Graph view focus (node id) and setter; `openGraph` navigates there focused on an id. */
+  graphFocus: string | null;
+  openGraph: (focusId: string | null) => void;
+  /** Re-fetch the reference catalog (after a manual catalog entry such as a new supplier). */
+  refreshCatalog: () => void;
   explorer: ExplorerState;
   setExplorer: (patch: Partial<ExplorerState> | ((s: ExplorerState) => Partial<ExplorerState>)) => void;
   /** Execute agent-proposed UI actions (select vehicle, focus, mark, open issue ...). */

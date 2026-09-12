@@ -4,6 +4,7 @@
  * back to sample data (see mockClient.ts for the visibly labeled development mock).
  */
 import { z } from "zod";
+import { WorkspaceGraphSchema } from "../graph/model";
 import { EntityContextSchema, IDEMPOTENCY_HEADER, apiResponseSchema, type ApiResponse } from "@/contracts/common";
 import {
   CauseAssessmentSchema,
@@ -73,6 +74,23 @@ async function call<T extends z.ZodTypeAny>(
 }
 
 /** `baseUrl` is only set server-side (the agent route calls the app's own routes); browsers use relative paths. */
+export const HEALTH_ROUTE = "/api/health" as const;
+/** Additive read-only route (Ali's lane): the workspace graph from Neo4j. Thin adapter in src/app/api/graph. */
+export const GRAPH_ROUTE = "/api/graph" as const;
+const CatalogItemLooseSchema = z.looseObject({ id: z.string(), name: z.string(), active: z.boolean().default(true) });
+/** Additive route (Ali's lane): platform design read from Neo4j. Thin adapter in src/app/api/platform/design. */
+export const PLATFORM_DESIGN_ROUTE = "/api/platform/design" as const;
+const BackendHealthSchema = z.looseObject({ ok: z.boolean(), contractVersion: z.string(), servicesMode: z.string(), servicesRegistered: z.boolean(), neo4jConfigured: z.boolean(), aiProvider: z.string(), workspaceId: z.string().nullable() });
+const PlatformDesignSchema = z.object({
+  platform: z.string(),
+  revision: z.string(),
+  source: z.enum(["neo4j", "bundled"]),
+  counts: z.object({ slots: z.number(), wires: z.number(), circuits: z.number(), connectors: z.number() }),
+  slotIds: z.array(z.string()),
+  wireIds: z.array(z.string()),
+  circuitIds: z.array(z.string()),
+});
+
 export function createHttpClient(baseUrl = ""): RecallClient {
   const b = baseUrl;
   return {
@@ -95,5 +113,9 @@ export function createHttpClient(baseUrl = ""): RecallClient {
     getInsights: (filter: InsightsFilter) => call("GET", ISSUE_ROUTES.insights.path + toQuery(filter), InsightsSchema, undefined, undefined, b),
     runTrace: (incidentId, request) => call("POST", ROUTES.traceCreate.path(incidentId), TraceResultSchema, request, undefined, b),
     agentChat: (request) => call("POST", AGENT_CHAT_ROUTE, AgentChatResponseSchema, request, undefined, b),
+    getHealth: () => call("GET", HEALTH_ROUTE, BackendHealthSchema, undefined, undefined, b),
+    getPlatformDesign: () => call("GET", PLATFORM_DESIGN_ROUTE, PlatformDesignSchema, undefined, undefined, b),
+    getGraph: () => call("GET", GRAPH_ROUTE, WorkspaceGraphSchema, undefined, undefined, b),
+    upsertCatalogItem: (kind, item) => call("POST", ISSUE_ROUTES.catalogUpsert.path(kind), CatalogItemLooseSchema, item, undefined, b),
   };
 }
