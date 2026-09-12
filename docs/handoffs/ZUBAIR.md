@@ -309,3 +309,13 @@ rejected as a reason for every result.
   for Zubair's lane (built with Claude Code).
 - Ali's full browser checklist (BROWSER_ACCEPTANCE.md) with screenshots against this graph-backed
   build is still to be recorded.
+
+### Browser run in graph mode (2026-09-12, later)
+`docs/evidence/BROWSER_ACCEPTANCE_RUN_2026-09-12.md`: through Ali's UI against Neo4j, with mocks
+disabled, a manual issue was created, reloaded, assigned, given a confirmed in-house cause, a
+prior verified fix was reused as a new proposal, applied, failed then passed verification, closed
+and reopened with full history; insights showed role-separated counts and an N/A supplier rate.
+Not run in the browser: sketch marking, second-tab stale edit, later-issue retrieval, lot traces,
+AI-off and database-down states (the HTTP runner covers retrieval, stale writes and traces).
+A front-end integration agent is working on codex/frontend-backend-integration (worktree) on
+backend-mode badges, sketch-only entity states and vehicle labelling; merge pending its report.
