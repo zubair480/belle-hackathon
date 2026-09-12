@@ -16,7 +16,7 @@
     "test:api": "vitest run tests/api",
     "test:integration": "vitest run tests/integration",
     "test:data": "vitest run tests/data",
-    "test:ui": "vitest run tests/ui",
+    "test:ui": "vitest run frontend/tests/ui",
     "reference:assembly": "python docs/reference/assembly/assembly_reference_case.py",
     "reference:quality": "python docs/reference/quality/build_quality_fixture.py",
     "acceptance": "node tests/integration/acceptance-runner.mts"
