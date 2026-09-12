@@ -36,7 +36,7 @@ The graph retrieves a compatible prior verified fix with its reasons and evidenc
 | Linked supplier excluded, N/A rates | runner step 10 | verified on double only |
 | Supplier-lot and manufacturing-lot traces, distinct vehicles | runner step 11 with the EV fixture revision | unverified (needs Codey's fixture) |
 | Neo4j used substantively | Codey handoff + real integration suite output | unverified |
-| Qoder used in development | Codey/Ali handoffs | unverified |
+| Qoder used in development | Codey/Ali handoffs (Zubair's lane used Claude Code, not Qoder) | unverified |
 
 ## Three-minute demo (from the judge kit, EV story)
 

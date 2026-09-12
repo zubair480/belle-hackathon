@@ -10,6 +10,30 @@ Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessment
 
 `codex/final-integration` holds the API lane and Ali's UI lane (RecallWorkspace mounted, UI mocks disabled, real routes). Codey's graph services are not on the remote yet, so the real Neo4j acceptance run has not happened. `npm run acceptance -- --base <url>` (HTTP) plus `tests/integration/BROWSER_ACCEPTANCE.md` (browser) will produce that evidence; fixture expectations live in `tests/integration/acceptance-expectations.json`. The latest dry run on the service double passed 22/22 and its post-restart persistence check failed as expected for an in-memory double. That is development evidence only; nothing below claims Neo4j persistence.
 
+## Run modes and what each one proves
+
+| Mode | Settings | What it proves |
+| --- | --- | --- |
+| UI mock | `NEXT_PUBLIC_RECALL_UI_MOCKS=true` | Ali's screens against the labelled mock; no API, no database |
+| API with double | `RECALL_SERVICES=double`, `NEXT_PUBLIC_RECALL_UI_MOCKS=false` | real HTTP routes, contract shapes and workflow rules against an in-memory double; nothing persists across a server restart |
+| Real graph | `RECALL_SERVICES=graph`, `NEXT_PUBLIC_RECALL_UI_MOCKS=false`, `NEO4J_*` set, Codey's `graphServices` wired | Neo4j persistence, graph retrieval and analytics; the only mode that counts as integration evidence |
+
+Commands:
+
+```bash
+npm run neo4j:check
+```
+
+```bash
+npm run acceptance -- --base http://localhost:3000 --out docs/evidence/acceptance-graph-before.json
+```
+
+```bash
+npm run acceptance -- --base http://localhost:3000 --persist-from docs/evidence/acceptance-graph-before.json --out docs/evidence/acceptance-graph-after.json
+```
+
+The runner exits with code 2 unless the server reports real graph services; add `--allow-double` only for a labelled development dry run. Browser acceptance is a separate checklist in `tests/integration/BROWSER_ACCEPTANCE.md`. Codey's merge requirements are in `docs/INTEGRATION_REQUIREMENTS_CODEY.md`.
+
 ## Zubair lane status (codex/zubair-api-integration)
 
 All v4 routes below are implemented as thin adapters over dependency-injected handlers and run

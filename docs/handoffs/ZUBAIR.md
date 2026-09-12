@@ -208,3 +208,19 @@ real key); run `npm run typecheck`, `npm run build`, `npm test`, `npm run test:i
 - Still missing: `codex/codey-data-graph` (no branch under any name on origin). Real Neo4j
   remains blocked locally (no credentials; Docker Desktop engine never answered and its
   processes exit).
+
+## Integration prep while Neo4j provisions (2026-09-12, later)
+
+- Merged main's `73e989c` (next-step prompts) into `codex/final-integration`.
+- Labelled dry run: `npm run acceptance -- --base http://localhost:3111 --allow-double --out docs/evidence/acceptance-double.json`
+  -> 22/22 on the double (development evidence). The dev server in this environment listens on 3111.
+- Added `docs/INTEGRATION_REQUIREMENTS_CODEY.md` (exports, DomainError codes, lifecycle rules,
+  EV fixture expectations, handoff contents, merge sequence), `tests/integration/neo4j-check.mts`
+  (`npm run neo4j:check`), `tests/integration/graph-services-shape.test.ts` (skips until
+  `src/server/graph` exists) and `tests/api/lifecycle.test.ts` (request_verification applies the
+  fix, fix_applied audit, fail keeps work open, pass then close, source fix untouched).
+- Checks: typecheck passed; vitest 70 passed / 5 skipped; `neo4j:check` exit 2 (placeholders).
+- Cloud connection: put the returned URI, username, password and database into `.env.local`
+  under the existing `NEO4J_*` names; never commit or print them. Provisioning alone proves
+  nothing until `neo4j:check` passes and Codey's seed and services exist.
+- Qoder: my lane was built with Claude Code, not Qoder. I have no Qoder evidence to contribute.
