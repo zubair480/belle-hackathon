@@ -1,7 +1,7 @@
 # Video recording plan (3 minutes, graph-backed build)
 
 Deck: `docs/pitch/RecallRadius_Judge_Deck.pptx` (4 slides, speaker notes inside each slide).
-Slides 1 and 2 come before the live demo, slides 3 and 4 after it. Slide 2 carries public
+Slides 1 and 2 take fifteen seconds before the live demo, slides 3 and 4 fifteen seconds after it. Slide 2 carries public
 industry figures (Warranty Week, WardsAuto, NHTSA) and says "not our measurements" in its footer.
 Demo path: `docs/pitch/DEMO_RUNBOOK_GRAPH.md`. Every number in the deck was observed on the
 shared Aura instance or in `docs/evidence` on 2026-09-12. Say "synthetic data" once, early.
@@ -30,19 +30,19 @@ shared Aura instance or in `docs/evidence` on 2026-09-12. Say "synthetic data" o
 
 ## Shot list and voiceover
 
-Two slides, then the app for two minutes, then two slides. Most of the talking happens over the app.
+Thirty seconds of slides in total. Fifteen seconds up front, two and a half minutes in the app, fifteen seconds to close.
 
 | Time | On screen | Say |
 | --- | --- | --- |
-| 0:00 to 0:15 | Slide 1 | "RecallRadius. One EV fails final inspection. Where did the part come from, and has anyone fixed this before? All records in this demo are synthetic." |
-| 0:15 to 0:35 | Slide 2 | "This is not a small problem. Forty global carmakers paid fifty-eight billion dollars in warranty claims in 2024, the claims rate is rising, and electrical systems lead US recalls. Public figures, not ours. We take cost out on three lines: investigation time, repeated issue families, verified fix reuse. Let me show you." |
-| 0:35 to 0:55 | App, Vehicles, DEMO-EV-005, tap the charge port | "Both origins come from the graph: the connector was bought, lot DEMO-SUP-LOT-01; the bracket was made in-house, lot DEMO-MFG-LOT-01, work order WO-DEMO-0001. Parts without a record say so. We never invent provenance." |
-| 0:55 to 1:20 | App, Report issue, fill, Save, press F5, assign to In-house Manufacturing | "Report from the part. No CSV, no alert, no model call. Saved as version one in Neo4j. Reload: same record, with its audit entry. Assign it." |
-| 1:20 to 1:40 | App, Investigation, record confirmed in-house cause | "A reviewed cause assessment: confirmed, in-house manufacturing, bracket forming. The header now shows three separate facts: who reported, who is assigned, who is confirmed causal. The supplier stays linked, not blamed." |
-| 1:40 to 2:15 | App, Resolution: reuse FIX-BRKT-PRIOR-V1, Save proposal, Close disabled, Mark applied, Fail, Pass, Close | "The graph walks issue, fix and verification relationships and finds the bracket fix verified on DEMO-EV-002, with why it matched and its limits. Reuse creates a new proposal; the original is never edited. Close is blocked until this vehicle passes its own check. First verification fails, the failure is kept. Second passes. Close." |
-| 2:15 to 2:30 | App, Team & supplier insights | "Final Inspection reported it and caused none. In-house Manufacturing caused it and reported none. The supplier rate reads N/A because there is no complete inspection cohort. We show N/A, not zero." |
-| 2:30 to 2:48 | Slide 3 | "Why Neo4j: these are relationship questions over lots, origins, installations, fixes and verifications. Twenty-two of twenty-two acceptance steps pass against the live Aura instance, twenty-three of twenty-three after a server restart, and the runner refuses to run against the in-memory double." |
-| 2:48 to 3:00 | Slide 4 | "Not built: CSV import in graph mode, late-evidence correction, supplier cohorts. AI is optional and off by default. The ask: one bounded pilot with three measured numbers. Thank you." |
+| 0:00 to 0:08 | Slide 1 | "RecallRadius. One EV fails final inspection. Where did the part come from, has anyone fixed this before? Synthetic data throughout." |
+| 0:08 to 0:15 | Slide 2 | "Warranty is fifty-eight billion a year across forty carmakers and rising. We work on the step between finding a defect and proving the fix." |
+| 0:15 to 0:40 | App, Vehicles, DEMO-EV-005, tap the charge port | "The connector was bought, lot DEMO-SUP-LOT-01. The bracket under it was made in-house, lot DEMO-MFG-LOT-01. Both come from the graph. Parts without a record say so; we never invent provenance." |
+| 0:40 to 1:10 | App, Report issue, fill, Save, press F5, assign to In-house Manufacturing | "Report from the part. No CSV, no alert, no model call. Saved as version one in Neo4j. Reload: same record, with its audit entry. Assign it." |
+| 1:10 to 1:35 | App, Investigation, record confirmed in-house cause | "A reviewed cause assessment: confirmed, in-house manufacturing, bracket forming. The header now separates who reported, who is assigned, who is confirmed causal. The supplier stays linked, not blamed." |
+| 1:35 to 2:20 | App, Resolution: reuse FIX-BRKT-PRIOR-V1, Save proposal, Close disabled, Mark applied, Fail, Pass, Close | "The graph walks issue, fix and verification relationships and finds the bracket fix verified on DEMO-EV-002, with why it matched and its limits. Reuse creates a new proposal; the original is never edited. Close is blocked until this vehicle passes its own check. First verification fails and the failure is kept. Second passes. Close." |
+| 2:20 to 2:45 | App, Team & supplier insights, then History tab | "Final Inspection reported it and caused none. In-house Manufacturing caused it and reported none. Supplier rate N/A, because there is no complete inspection cohort. We show N/A, not zero. And the whole trail is in History." |
+| 2:45 to 2:53 | Slide 3 | "Relationship questions, so a graph. Twenty-two of twenty-two acceptance steps against live Aura, twenty-three after a restart." |
+| 2:53 to 3:00 | Slide 4 | "Not built: CSV import in graph mode, supplier cohorts. AI off by default. The ask: one bounded pilot. Thank you." |
 
 ## Rules for the narration
 
