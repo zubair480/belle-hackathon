@@ -18,7 +18,8 @@
     "test:data": "vitest run tests/data",
     "test:ui": "vitest run tests/ui",
     "reference:assembly": "python docs/reference/assembly/assembly_reference_case.py",
-    "reference:quality": "python docs/reference/quality/build_quality_fixture.py"
+    "reference:quality": "python docs/reference/quality/build_quality_fixture.py",
+    "acceptance": "node tests/integration/acceptance-runner.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.125.0",
