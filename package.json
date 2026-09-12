@@ -2,7 +2,7 @@
   "name": "recallradius",
   "version": "0.1.0",
   "private": true,
-  "description": "RecallRadius: recall investigation workspace for food co-packers (B.E.L.L.E / Qoder / Neo4j hackathon, 2026-09-12)",
+  "description": "RecallRadius: issue, investigation and reusable-resolution workspace for EV vehicle assembly (B.E.L.L.E / Qoder / Neo4j hackathon, 2026-09-12; contract assembly-quality-v4)",
   "engines": {
     "node": ">=20.9.0"
   },
@@ -17,7 +17,8 @@
     "test:integration": "vitest run tests/integration",
     "test:data": "vitest run tests/data",
     "test:ui": "vitest run tests/ui",
-    "reference:python": "python docs/research/reference_case.py"
+    "reference:assembly": "python docs/reference/assembly/assembly_reference_case.py",
+    "reference:quality": "python docs/reference/quality/build_quality_fixture.py"
   },
   "dependencies": {
     "neo4j-driver": "6.2.0",

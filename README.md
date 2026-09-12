@@ -4,7 +4,7 @@ An internal issue and learning workspace for **EV vehicle assembly with purchase
 
 Neo4j connects issues, serialized assemblies, teams, suppliers, cause assessments, fix versions and evidence. Team and supplier insights distinguish reporting, ownership and confirmed cause, with drilldown to the records behind each metric.
 
-**Status: foundation plus updated planning/reference files.** The application source still needs migration from the earlier lot-based contract to `assembly-quality-v4`. Start with [project context](docs/PROJECT_CONTEXT.md); this documentation update does not claim the new workflow is implemented.
+**Status: foundation plus the published `assembly-quality-v4` source contract.** The frozen schemas live in `src/contracts/common.ts` (envelope, errors, evidence, provenance, entities), `src/contracts/issues.ts` (issue workflow, catalogs, insights, agent tools, `IssueServices`) and `src/contracts/recall.ts` (assembly trace, imports, `TraceServices`, `DomainServices`). Codey and Ali bind to these; the application implementation lands in the lane branches and is merged at the end. Start with [project context](docs/PROJECT_CONTEXT.md).
 
 ## Start here
 

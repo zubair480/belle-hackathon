@@ -1,4 +1,5 @@
-import { CONTRACT_VERSION, DEMO, ROUTES } from "@/contracts/recall";
+import { CONTRACT_VERSION, ROUTES } from "@/contracts/recall";
+import { EV_DEMO } from "@/contracts/issues";
 
 /**
  * Foundation placeholder. At final integration Zubair replaces this body with
@@ -12,15 +13,16 @@ export default function HomePage() {
       <div className="rr-card">
         <h1 style={{ marginTop: 0 }}>RecallRadius</h1>
         <p className="rr-muted">
-          Foundation scaffold. Contract version <code>{CONTRACT_VERSION}</code>. The RecallWorkspace UI is mounted
-          here at final integration.
+          Issue, investigation and reusable-resolution workspace for EV vehicle assembly. Contract{" "}
+          <code>{CONTRACT_VERSION}</code>. The RecallWorkspace UI is mounted here at final integration.
         </p>
         <p>
-          Synthetic demo workspace <code>{DEMO.workspaceId}</code>, site <code>{DEMO.siteId}</code>, root lot{" "}
-          <code>{DEMO.rootLotId}</code>. Health endpoint: <code>{ROUTES.health.path}</code>.
+          Synthetic demo workspace <code>{EV_DEMO.workspaceId}</code>, site <code>{EV_DEMO.siteId}</code>, demo vehicle{" "}
+          <code>{EV_DEMO.vehicleBuildId}</code>. Health endpoint: <code>{ROUTES.health.path}</code>.
         </p>
         <p className="rr-muted">
-          Absence of a recorded material path is not a safety clearance. QA retains authority over holds and recalls.
+          A linked supplier or producing team is not a confirmed cause. Closing an issue does not release a vehicle for
+          shipment. All factory records in the demo are synthetic.
         </p>
       </div>
     </main>
